@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CARTE IAHP AFR — France 2025/2026</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#141b26;--panel:#1a2335;--border:#263348;--text:#cdd9e9;--muted:#5c7899;--accent:#f97316;--commercial:#f43f5e;--backyard:#f59e0b;--wild:#10b981;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'IBM Plex Mono',monospace;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+header{background:var(--panel);border-bottom:2px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:16px;flex-shrink:0;z-index:1200;}
+header h1{font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;color:#fff;white-space:nowrap;}
+header .sub{font-size:.58rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-top:2px;}
+.rbadge{margin-left:auto;padding:4px 14px;border-radius:4px;font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;transition:all .5s;}
+.rbadge.low{background:rgba(16,185,129,.12);color:#10b981;border:1px solid #10b981;}
+.rbadge.mid{background:rgba(245,158,11,.12);color:#f59e0b;border:1px solid #f59e0b;}
+.rbadge.high{background:rgba(244,63,94,.15);color:#f43f5e;border:1px solid #f43f5e;animation:pb 1.8s infinite;}
+@keyframes pb{0%,100%{opacity:1}50%{opacity:.55}}
+.main{flex:1;display:flex;overflow:hidden;position:relative;}
+#map{flex:1;}
+.sidebar{width:310px;background:var(--panel);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;}
+.stats-row{display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid var(--border);}
+.stat{padding:10px 8px;text-align:center;border-right:1px solid var(--border);}
+.stat:last-child{border-right:none;}
+.stat .lbl{font-size:.52rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:3px;}
+.stat .val{font-family:'Syne',sans-serif;font-weight:800;font-size:1.5rem;line-height:1;}
+.stat.c .val{color:var(--commercial)}.stat.b .val{color:var(--backyard)}.stat.w .val{color:var(--wild)}
+.tl{padding:12px 14px;border-bottom:1px solid var(--border);}
+.sec-label{font-size:.54rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:8px;}
+.cur-date{font-family:'Syne',sans-serif;font-weight:700;font-size:.95rem;color:#fff;margin-bottom:8px;}
+input[type=range]{width:100%;-webkit-appearance:none;height:3px;background:var(--border);border-radius:2px;outline:none;cursor:pointer;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);border:2px solid var(--bg);box-shadow:0 0 6px var(--accent);cursor:pointer;}
+.ctrl{display:flex;gap:6px;margin-top:8px;align-items:center;}
+.btn{background:transparent;border:1px solid var(--border);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:.62rem;padding:4px 10px;cursor:pointer;border-radius:3px;transition:all .2s;white-space:nowrap;}
+.btn:hover{border-color:var(--accent);color:var(--accent);}
+.btn.on{background:var(--accent);border-color:var(--accent);color:#fff;}
+.spd{background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:.58rem;padding:3px 6px;cursor:pointer;border-radius:3px;margin-left:auto;}
+.legend{padding:10px 14px;border-bottom:1px solid var(--border);}
+.li{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:.6rem;}
+.ld{width:11px;height:11px;border-radius:50%;flex-shrink:0;}
+.lhdr{padding:7px 14px;font-size:.54rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);flex-shrink:0;border-bottom:1px solid var(--border);}
+.events{flex:1;overflow-y:auto;}
+.events::-webkit-scrollbar{width:3px;}
+.events::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.evi{padding:8px 14px;border-bottom:1px solid rgba(38,51,72,.6);display:flex;gap:8px;align-items:flex-start;cursor:pointer;transition:background .15s;animation:si .3s ease;}
+@keyframes si{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:translateX(0)}}
+.evi:hover{background:rgba(249,115,22,.07);}
+.evi.sel{background:rgba(249,115,22,.14);border-left:2px solid var(--accent);padding-left:12px;}
+.eid{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:3px;}
+.eb{flex:1;min-width:0;}
+.edept{font-size:.65rem;font-weight:600;color:#fff;}
+.edet{font-size:.55rem;color:var(--muted);margin-top:1px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+.edate{font-size:.5rem;color:var(--muted);white-space:nowrap;padding-top:2px;flex-shrink:0;}
+.empty{padding:20px;text-align:center;color:var(--muted);font-size:.6rem;line-height:1.7;}
+/* DETAIL PANEL */
+#dp{position:absolute;top:8px;right:318px;width:300px;z-index:1100;background:#111827;border:1px solid var(--border);border-radius:6px;box-shadow:0 8px 32px rgba(0,0,0,.7);overflow:hidden;display:none;}
+#dp.show{display:block;animation:pop .25s ease;}
+@keyframes pop{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.dph{padding:10px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);}
+.dpd{width:12px;height:12px;border-radius:50%;flex-shrink:0;}
+.dpdept{font-family:'Syne',sans-serif;font-weight:700;font-size:.9rem;color:#fff;flex:1;}
+.dpcl{cursor:pointer;color:var(--muted);font-size:.9rem;padding:2px 6px;border-radius:3px;}
+.dpcl:hover{color:#fff;background:rgba(255,255,255,.1);}
+.dpb{padding:12px 14px;}
+.dpbadge{display:inline-block;padding:2px 10px;border-radius:12px;font-size:.58rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px;}
+.dpbadge.commercial{background:rgba(244,63,94,.15);color:var(--commercial);border:1px solid rgba(244,63,94,.35);}
+.dpbadge.backyard{background:rgba(245,158,11,.15);color:var(--backyard);border:1px solid rgba(245,158,11,.35);}
+.dpbadge.wild{background:rgba(16,185,129,.15);color:var(--wild);border:1px solid rgba(16,185,129,.35);}
+.dpr{display:flex;gap:6px;margin-bottom:6px;font-size:.6rem;}
+.drk{color:var(--muted);min-width:90px;flex-shrink:0;}
+.drv{color:var(--text);font-weight:500;line-height:1.4;}
+.dpm{margin-top:10px;padding:8px;background:rgba(255,255,255,.03);border-radius:4px;border-left:2px solid var(--border);}
+.dpmt{font-size:.55rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:5px;}
+.dpmi{font-size:.58rem;color:var(--text);margin-bottom:3px;padding-left:10px;position:relative;}
+.dpmi::before{content:'›';position:absolute;left:0;color:var(--muted);}
+.dplink{margin-top:10px;padding-top:10px;border-top:1px solid var(--border);}
+.dplink a{font-size:.58rem;color:var(--accent);text-decoration:none;}
+.dplink a:hover{text-decoration:underline;}
+/* LEAFLET */
+.leaflet-container{background:#e8ecf0 !important;}
+.ctt{background:#111827 !important;border:1px solid var(--border) !important;color:var(--text) !important;font-family:'IBM Plex Mono',monospace !important;font-size:.62rem !important;padding:5px 9px !important;border-radius:4px !important;box-shadow:0 4px 16px rgba(0,0,0,.7) !important;white-space:nowrap;}
+.leaflet-tooltip-bottom::before{border-bottom-color:var(--border) !important;}
+.milestone{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);z-index:1050;background:rgba(10,15,25,.96);border:1px solid var(--accent);padding:9px 20px;border-radius:5px;font-size:.68rem;color:var(--accent);pointer-events:none;animation:mi .4s ease, mo .5s ease 2.8s forwards;white-space:nowrap;}
+@keyframes mi{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@keyframes mo{to{opacity:0}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1 style="display:flex;align-items:center;gap:10px;">🦆 CARTE IAHP AFR <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALAAAABKCAYAAAAbvt4hAABJz0lEQVR4nO29+bMkx3Hn+fGIyMw63tl3A+gGQIAEKVIkRUriarRz7GU2P+z/uz+s2Y7Nru1oKGko3iRIEEc3Gn13v7OqMiPCfX+IyKp6jSYksrlLSbZh9l6+V2dmhKcfX/+6h/AvejigAXoI9aHkgA4hAZHWQ8ogHOBpgHOMBQDSwiBgBsQJ+CvgO5i9AbvfNJobSHeINQa7S2gE0hR6T4gZM4NGUCcEL3gveAPVDJoAyNnIBmaCEgAPrkVcQMRweUDIiHgAjHJUAgaoOWjKe8BApRzFQ2OgC3AGBDAH6kCFJitijkEDhBZCAxLBepxfsqvHDLQseR3aCU26x4HdY778gCe/+S9y/vRXdPQooEAa51uoj9Rh/y8t7T9xhH/8Jf9Cxm+ZSLXx6URGq2CXl1ssaw6Auw6z23Djlu2+9lVm7Vv0Cw8EcpNZtA1ZM9icyXzCxAW8ZBZxQWg9XdfgREhDT0wDoi0igvceM8jmUZMikDiyeUAxC3gxRDwiguKKMJuA8+ACOI8hZBOyVfFxHhGjcXNUtF6+Qwy8CcE8ooHWBdQLqxTRaOBg3s5o2cOykJsDYlpwMJ2wb1POnp2yOD8FQOS3z+s/l/GvRIAdmFbtAKBYnfmkZSHMegBEIiEIOQuqINnhJ28yuf4fbHrzz7DLbzD4GasUmF5uuX5ll/leg8yMoVfi+RSNjmVa0McTbl/ZYToLzOYTRI2+XzIMQxEk71kul5gJZkJWyKloZVUlGuS2ASlCrarkqKSoRbsjDMOAKmQFZ4JQ7riM4VWYJo8jk/1AdIkkQpSW3jowj3MOrCd4CLMWYY7mwFmaot5oQmQiPfM2EZ8949GDu6KrUxy2vll+qwz/MxDufz0CjG5N6Gj4yjADI5a/BQY1sAmwg81usn/rL6298e/Q2VtYu8tMhGuHE9567ZDpdMXe3IMkjp6ccnbagw/IVEi0XLncMZu3TKcdZkaMnpQSzjmCOJbLSRHMbOScyVHJOaPZSAjLbKgTVI3UR/q4YsgRjQkzQ5ORUiIlxQyCFAFOpkhyTNIElzM5LEm+JyEkF1CbgAXMMvjE/sGE2eVLLFLDnSeR5dDgJi2y+oj92Tm6eMhnn/wCfXIPiLStJw1fMOXl/vqjC/G/eAGW+tsuTOTmH/GgWl/o2Ey6HML8HcKbf2V2689ZTb9Eip5DFa5P4aY74sr5Ew5CZD8HGoWT5QmrpdE6YRoyvjP8sqW1jqZvUAzNYE4Q8TijCGvKxBjJKaExgRpiGcyxiqncYCkT+4F+uSKtigBLNsSMHBMpJUQFXwVYVcnJEbhU/ncn4JZ4U1DD5wmYJzulu7xPmB1y4uCD1PJYHIt2B+cjM86Y8Yynj35Nuve+wBIJRtYeanxQVIErlqJaOqnT/MdWwv/iBXitaUeNIHphVgUPkovwhvo6m8L8Tfy171j72vc4CzfZ9RNuTR1v9M/Ze3aH6zzl5t7A290uez4wwxOJDD7RmTGNS7waXXMJcouzQFbFxOFCW/zenNGYyDmRh0geeiQnRDNepPi8ORcN2w8Mq5606tEhon3Espa/U8ZyxgFOBGdFgGMK5DTDBHBLRJYEi3hT2hTIdKTZLqF7m0fW8fcPTjk597jmJl0Dlk/YD2fEp7/m+d2fCcMT8CssLUkooYEcXyKkF+b3jyvE/woEeJy+6kZAFeLqV2YHrgpwDdaZvcbO5W/b9Pqf0+++i9PADXfGe+kZXzr6NW+u7vGNQ3hvt8Me/AbiOcPZguFkgS6FHee43Cpt48mzfWQyRUKDmmDi8E2LmpBSAstYViwOSExIHvCmCIYXo4+RNKyK5h0GdCha2uKApVxeq1a0qhM8UlwLVVSNOJTAz9wAEgmSEBJeYeV2WNnbPH0Kn/XG0bLjJO2RdqHzPT4fkc8+5PFHP4DH7wMLkBXIiKAUl2szv//8xr9wAdZtsS1jnHADcFUxB6yiD7g5svuW7V35EyaX3uXZ2cC712d8MwzcuPNT3n70M/79Zcd7psSff8T5s7tofw7LgSaDtwmtgcQFvSrLdorb2aNpJ+VsnEOaFnDFFzawnHA5ITni0oBaQqyc/9Q7hmHA9T2aIg7Bi+Cyobm8zhVsguDqBVrGTFF07UJptT5eyksUeN7MyekaT54ec2eInE1uItMDxAcm+Yi97pTnn/yS5YP3BTsrwptWiID3kNLL5ty9fN7/SONfuADDZhpfpiGkCK+mjaJur3Nw5at0e29zcqJc3VW6Jz9j9/xn/Mlwh+/trPhKPEc+vMf5x78k2IKGaio1kKxHzOFUccGhqxVDyqycJ3QTQjtBhgHTYua1+BKoZpxGxDKmEUsZy4ngWtosNOYRAzPDLBcBF198ziqmphdFxmHF0IgRquCiEBVyK/S713mwd4uf6w3e53XuuJucSkPbGk3+lGcf/y3PfvV9QY+AHqxEbWYvCu8/T+0L/yoE+IVxwSlzrJ1fjdAdIPtvW7vzBtkdIGFK58/Z6e/z5uoR33Ln3Dp/jD29Sz5/xp5GGiseieJIFnDOIU7w3oETZm1LkoCEBt94fBDECeoFy2BZERGcArkkOpw4nIAED6sxqCsnPR7XUdIomFS9J7q5UKmu/6gOtVyuNh0n0yt8Nr/NP9hl7hy+y/3wOk9lips7gjzk7PHf8/zu/y3oc5wti1WoH7uevhcd3Go1Nr///yDuDzfGhZWth3DV1HlMO2gOuHzpXaazN1hYR/ICtmLPlrxlK74UF+yfHrF8+oiUl0ybgJgr0TwzUmih8UiTwC1BjPlkhoqnGHowSZhmRBXM0JRwppgakhOqkZwT3sBjuKZKjBlmVvxd2YjHkDeq0GQLGqyXWhIXFSpUcDInTV/js703+en8Hf7Wvcmd2S0esMfKZy61x6ye/5Tnn/5n4flPEYs4TaPyvjjsheP2U/Lbn/v/cvzrEWDYCO9WQsMhCJ5EANlhOr+B+B0Wq4EQHGnVsyueG6ln9vwB+uwBnUZa32A5l9Sy96js4JuOtvPQJlJwJI20TQMWSKPLoAlVxbScRAgezBchcw7LHpNENsNUsTxUn1ZQLVCZWU1TQ0Eq6vVYxQJ1HaRCQ1set4FMQNsrPJm9zq933+JH3et8NH2LD92UE5fpukhc3OXp3R/Asw9AlpBfomS35/PCAxfx9X8O41+XAMMLk64YNUNnDqRFZE6yhig9Xdshi5bJ0DI5OkMePyAtntEFBZmQBgUnGA7x0HoHUgR2KXAmkU4nOAuIK2laqzhscOCc4/TkFC+jD9Cippg1kLXAXa7BWwIVVBLmxtcaJkWAx2Gy5UYU55eVehppEBdZ+Akn85t8svs6P5u9xs/DVT7bvcQTNaZdj9cnPP30h+TPfiXkeMFarTNuo2ofJ3OtarcEV7jw3j+mFv4XL8C/XR8oDocjYSZAyUxpDpgIbqKEqTHTOXYEeXmOo0eajJrhzOGaCWqR7AbMLYuzmQO9TPjE9rjvPIvscO2EtgsEKdoTy3gEJwatVM2s5TzMFXNvhlMrUT8VKqtDNgSNtSYeNa5J4fM4o2AQUjgY3pSF73i+e52789v8dPI6n7hDnrmACzB1xywfv8/w6Q+F1UMINjJ0Cgy3PXUvcR3+mXgMnxv/4gUYxkl9GbAzEnci0II5YlY84JqB7JaI9xiQu4pUDC2rPuJkggseKBkucz1RMj5N+Ez2+SG3+Mn0MndCQ97f5WBvl9m0w2OYFj/YmZKGTN/3rFY9Q8xrso6pI6FI05Ipvq9ZwXul+gxijqapGIhtkACT8lx2ioZy3U1WzDcs/R5HYY/PmkOeuxZT2NET9PEvOP/w+3D8EXCCs9Umw7aNMrxEUqvj8s/MeSjj1QX4hQuWl7xk+6598XlbT+CWf7VO97JOSGyGXjja+Nz4+moLt62gjDlRlJStJBFM0D6yXCgJwTcOhup3uoC6jsGMtpsgKCbKmWt5Gg74RXOTH86+xI/mN1jceg1/7RC5eplwuMu0DXiKG+EMzo6OOF0sOTk5YdmvSCogHtNANDjPiVgza5oy5JLBQ8FUqgZ+YQ6qWTeB5IWkmaDg8ah19OrppcG5zFwW+NUDntz7MfrgxwJHiCxQNUILqVdeDpPpC/+94EKsz2X73C6uzYWA+nOqu1qUV7wtXk2AhYrhwEim+cemYqQjjCPTVCGs9ky2WWUO8PU0N0IuZDYCvPUtG8h0/b1qIK7m8OMSmXiiOXzf4C1grmWl0PiWFocmRxM6BhdAPFkCzu9gCqfz1/i+u83/YVf45MY7nL32Dt21q0z2Jkyv7TDbn3L1UmDaQb8AJ7Afb3C2gKPzI86XC/qYidEYeqOPRpszESXGwoWIsaSWcyoaeRhidTusstq2jnicn5KTI0Yl58qDaDJzF+ncCaG/z+M7/5X+fhFeZIG5ytRL43y9JGOxNY/2oga6QOTpuKiA8gVEaPyYClfXvwuPu7w6vpIQ/+FciN/iJG0AoY2JN4pYbhDFrQu/gCRU7WCpnqqyralfptnN1sz2oqiqvykoZko0RUzorCnBTz0HqQkDEQERskB0DvEN6hxqnueyx0fT63zSvcGTg+vE+T6r5TnHi0csTzKPJ/DZvKXzgcX5QPAd7WzOKq1Y9ufEPJAUUnakKMRctKeakVJhqVlWRBWX6/XkYS3ANUoEs2JVcGhe4KzBapoZl2msp9NzJvqMx3f/ntWz94X0CFgAaQuDe/mafeG44B+PiucFDWxbay1FcEc9X4zkHy4x8uoCPPJw64Vt30sb3xRGzmu2F6GY+ILQvjAk1c+Pm8+1F17/jy2Aff4FhQwuOM0ESeC1BDYNZA8pCMkJ4sGFQBoCZxJ4Zh19c4BM9vAYjz/8MSePP8DiM4JbMQ0FXVgtE20zJbQdmYySCvFcHKYOzW0h23tX0sLrLNwInxVsWaT4vzpmGSivwxwmikpCncckgIUSfGpkqQtaPeX5nR8Jq8egpwiVmWNFsJyMAeMFmt7vcIwF0ruwBoFSJVOCVawiQRj5wgqMVvSP6UL8NoB723+VF52GsjB57Q5sa8+XQI8vCvcFmOd3HBWSGqfSeSn8Wq+IdxA80gacCOIdzjucRJxTYnD0FjjTjiHsQOgKa+v8Pmf3fgxHnwqccywRdICYoZtBHwtkEEagSsBa0MKXwI+JC3fhHBFPZeJz0THbdiwzuFWVxJYiOB7GkiZbwuIpsARWNC6jlaynBkap9Ph99eHauo6uwoWFc3Utt90LLep4nZDR9Q31+45X1sCecgIlC8WWgIWyAOtAjK0Th2IOK9mmpiiLUXwhYLAtKHJ7fE7Sv3gIgnmP80Ie7xQPOEHF0QuYeMQK9ulrnZrXHs2Kp0UdrGRCaudIGzA9ZdauID8U0n2gEmI0Ag7JI4nIilBRJ8k86LTMT45FELevC4oAQ3UZZOu5bXHL4Jf176b+1No4UvlOFxk5DqmuTUHsRoZHIssraMF1kmU8N60PFw07umiFubFJwPDC63/f8UoC/Dm5Wguv22gSeEFwR1xz1DplodyWV+y2fCplI+C/NUf/Agf4xa9av2x9TopzFIgqRjJCyp6YHD5R/GFJ+AROlxgrxLX4ACYBaRomjUNiJLqIaF9KlqQHW6zPUXK/uakvTEEq52CCMaxvYtu+rhqQCr/lBkaQGhUVU92Xn1FxUMBisVgsm20+Wmgx2vIlaxeN3++4vqm23AHbAHSbodWReAFpesXxh8WBtzXv9rCtFTR94S3bKKO9cNEeVzkGFyZp+/P+Se6Ew6ip2+pjhsYx6yakKITcoDFgqcEGh2gGpzgfaSUxRMWFnqCGN6UxmLtCSh/o8DIjSQcuQR4ooIdugsft663Bj6Ndn5laKle39ULDNq77Sxe6SIDPo6C4wvlYz9fL5hO0amnB189/oRzrdz2uv2tzfRuncQu7Hl83Cv3484rg8h9MgA2qz/ui8FZnvVrti4juVqq3vj+vL9+9xDvbjnZfxB5/29j6DE2FbyBGCJ6uCQQZ6NQIGVyWGlsoogknAq3ghoJgjGiF04i3TCMKNctW87yU4sy0FThumdUxcFK/Xv/iPMgLAQ6F31DfdAF2vRCQujpbrv6Ud+bqWNoWPOakZPBEFSNh6zN4RQna0sifx3pH18GtX/q7KZ5/fPxBBHitIcVdPDHLYCXztXY52VhU3X4QinbWUGCAMb0pVrX21mLUSbFRc3zBZIgIhiBm2NbNFUJg1jaoGJMcmUkmLc+YeiuwVl4iTYDVghhaTmNP8tA2guYe74vAqpRKiOJrVn/WMrgCya05vFJONVsR143NedHPufjv59yHrf/NoFTKbycQtiII2bw/j+9zGbZvl+35+12PABZK3CAJ54rVUNtWL1oFWEBC9RrrHP2xXYiLrl09SRvJJuVZD7QOnJZpG99jCCa2OQMNYDOwOUgNMLyBnhXfkgSWEOfwOMiM4dEXn+MYsEFBA8ZIGMV5Q11PtjNMF1heFJ/QIkHK96gazXSKdzP6GNG8oO2MwTuenCYenSa0D2C7pXlIburFui24z6rglCDGrCXrhBGKuhAj/GOaSS7+bXjyehJeiPbdeDNtv7nGHbaNDn0BDuG+4DlzIFOs74GezACNgq3IquCrRbP6vZXcXzSXq9rsjwmj1VE05YuPbtyGMT/hKNeTcWQasAZygN0rMH+d1l8x013IgeAzIaw4Pf9QOL0D8Un5LlFUS1TtcC+JoLcXZfS7L6ppM0OcYUGxaSaGc7I/Q/wCS4bLSgdIEmICtEF8aVQidkqWM+JuR7f3Lv7RfXg9GvEpIUTEBhovaKyV0uILVioZs4yr3XOctmRzNLMOdXrh3Lb/dqH9gnkXCE0pJDXFGchW6shGCwfr6N+ZIOZKUamBui++Y9wXCTCBtplzdnaE2SnTacTyEc+efCw8/RTSaqPMFEaFVmoCFZeFAT7nPv0u4w8XxL3ElI/zN05pEd6WTAe0ILtw8DbN9a/YjevvMZ1cY7XqiDHTNonZdCAPd+3uJ3/L8u4PhPQMtCePN4T7LejDbxsi68BKRAhtIM48Q6skN5AlkVRxORdlnRXnJizPeqSds3/gucIp7ek9Gom88afvcG3nkMdvf50cj3GyxFmmC+Xm9K5lSKCSyRZRG2qVBkhqyUDUTJJid7PpFnOtJDW0Kqzx/81Pgf80tJiUPAxm+O0bACmJEmDUst4oAqxF2NV/zol5Ycq+SMALvXSeVzRNz84sgz6nfXrHnj78iHj6FIm92NEzOD0C63EsERYESmHrq45XhtFGPVcBHT6HEtRHiwFtScxA5tDuw+GX7dK7/xNh9hYyvczSpqwCRMmlccgsMT98g9eaA+77PVvc/YGwvA9yVsz07wDFrJdJion1XgjTjrRsWKjRWyH1mEEwoRXFWSpuxCrRSeaarXgnP+OTY8/R/U+Qt74KYQ4HryFxp/jNpohv0dwQmjl9MjKZzIBqLvV5SbAcUINViiXoykrGUGUtxABDX1LiGx6ErTNxCUi+ZL1EwKsWiiZQPGMpyITUQMpyqQQxrfSgTLZ0odLjJRP3W4dWuFTCLt5FjvqB4PZpD1/jcP4tZHlGp73lk8f0T+8Qj+8wnHwkw/JT5GX8i99jvLIG3k4+mLlNKHrxgBGIMgHm4Pbg2ju2f/sv2L3xHc7iAc9iJmUhi0MaYamZoxNlp51yef9bvPHOnI97Z8OdvxVUMXdG/l3dpy3tFEJg0k5o3S4uT/FMCWFWuClNwrtY/GxzNL5h4gxdHPNOu+BBMn7w/k/5aDXnnt/lSZ9xtiCnVY0EGpargPdnqDmyK1rYiJgV/Jdc/Pyma4sCqPZ+FNbNORfNqVLTyiM4DJhsAmfLmSTF7TSzjdBuYz8C2SWyKV5LBJFfyYADJjjviDrAsABtCN0enQgSenDG7vRLXLr6NdLphxw9+Ik9fzCV1clHkM/546aS6xiR3JqgZQuXWANe6lrQBsIOXH2L+RtfZXLlLY5zw7kK0UVoUukAKR4GYGUszyZ4aTmcfIM33254LMGOPvsbYfUBa1zxC7SEyHbXnmKanQgheGbNnEiiS4fMbJ+uPWDljUysDT4iiQliLW2f2Dl6xLst9K1x2t/h/OyQ5vZXoZ3gXFugNpMSpEVBbEqWBjPFJGMu1eSDw7kACEO09XliRUhH+FDEk6tGlS1exPicimIuIighFzdCNAOFJ5EwsvOYjAyxSra3oVSBAOCL4vl91t0cGiPOe3woZVe5UZTAUosyO1ssWEz3OOgu07b7THcuky6/bv2DX2APfiks7oGe/17fD38AAb6IwmgNXIpgZYrPlZxD1RXXYf82sze+bZMrX+HcXWIRQV3awGm5NuSSKUymtLnlyckKt7fD7Te/w2Tac3J6D109gHAGUdfguW6d0ej3baD8YjRlPD8PIThCVWgBwyF4FdQFsjl6DKYe1wOa6FY9l4fEO23Lid7j0v4VfvB44LXpnOCMoV+WoEcbVitHaHdJVmvYUEwSiJXztYIEjCVEsk4dv4z34NZuw3rerWYBfMJbIuRCoDcTetfxvNnhJOxw0u2wDL4gPpbxOuAt47RgbOoM/TyA+08aTo3Wh9KBSIE2IDToUPEmCbjpFc7zkrOjM7rQcWXvHfb2b9LPXuMkHBq//k/lfrWKNMEmK7k9tsCk8m+Zi1eG0XLVgI24WhJecEit4G9WwDsYOmCf2c1v2c6173Dsb9AzB1/6+IIUDU1TgpEM3iI5DTSzhsfDOW7lefPtr/Nm/Pf20d88Ek4+xNmSQEYoN0wSLWYVX12G4iM6jByrhhPDB6Pd9cTJAjc9ZTh9DvEZk2VHNBgmyuA8Fns6a8EF6KZMc89rtsDrr3jr2UO+O1zmVBwpxbqQiorgpAVp6vfVtO/oa2ol1dR2q04C3vt1xG+14FNV8d5v5ltlHeChSjZjurOL10y7OsV7z1EPd9w+91/7Fr85/DJ3rt/gZ8cr4uoUPDQYrTrQKYOCefliH/gLhvoSirhQEjNrnL1i5FjCUsI7wTUdmPB8kWiagMy/yZUvX+XJMBiP/kFY3gUp1dpolavRulqxQGPtd7ElJTj9A9ApA0iJoEe9Z+OvNXYm4Hbwr33V9q6+R++u0Mc5hAnYsr64ktYNnCpBEw7DN54h9WSMo17ZGQIHN/+Ea1/+N/boR0ux+ADPogZKlJYyjtLVesQex8xe9SNLF8meIS5wbca1mdaVMnc006nQ59JqOg2lxZMODhcBHQguc9meszs0pKNAwq8Fa0wcazX5owD6quXElG0kwerrnPM4V1atFIaCWr6AAogYYq5WLZcEzSRfYWcy5fzJXU6GzGLvNVzzGot8m9cvT3jgV5hfgh+gCWBCyoKzgBMHuS8p8N8yvhCFsIJDm5Xsn8XMOkXsKOm/bIy00GwezQF1xaJkzRy+9Zechmjp7rnQ96il0l1ofQJs5GLro8czfnU2mtQJ3c4pbbIVRfsyh71bXLn1TaaHtzkbJoWF5Vq8BhwQpfbJtQr2o2Ba/MCUILQsl5GnTxLvXL/FW+/89xx9dt+Gz5YSHWRdAgnvPTnH8l4HlgvhWhEsuOpXQkqJYdVjSXGD4AeB3hXKliaaqEjKtCJYHkjZ4TThSDgzfBImKVa9IFsLvdGiADZcNM8XU8EFH5Z1g+uy2GZ5fdwury8EoDFR5IguIKeJYLs4t6JvWu61Ux5deYPF219jeOMWT+8/IaUTsARuh1UuCZRgmSBGJ4J+gZB+kQCbOGIq/eDEgYVtX1vBMuYKCjJ2p1czLJZ1UJuyf/lLzOSEJ/2x9Z+uxPQ5Str4C+bWMY6y3dKquKmvDqPZmtEAUhI3ZiXpZbRYnkBzg3Dtaxb23+LMZqyyB/EEEbw6SiPmgFYXr0TsNacUIyEEfDdhWGWePh84nHQczN7k9lf+mg9OHpDOBsAIjRYKYc5VEYz6MGHVNVmLTwZS6R6pg2IrB9FRbHvGJaV1GcSRzVA3YE1JARc+g8Os9Dsr31Xsz3qrgCp4227BuCBrkZDxKiv1cRPyfv5YTSnkGpRmGovkXjlL59juJfLsde7ITZ7d+Cr61je4Ex2fnR6VrtrBSpaRBKEh1IXKxC/Mhqnab30OHMGHSklNqOXy+VK1V+WPZNotbyCUBiwOnEw4W3Uc7L3D9TfOeLA8Z3jyS1RPwBTXNmjMVfsWnbuGbKvb88oa2BXjUf7x9SRHKNimwBXc5W/b3o1v07fXOeoh4fChwStFgCn5cx2tvVRPWoycE23blR5jFsjWcv9pxA7mXH/nrzg6vmtPfnYqDE8xl8j9cwRoXPW/pQjk2FvVxCH4UoqOx6vDq+CtA23BhnLyoyZJhpBQl4trXQXJo6iC824DdWEYeQN3sWEmbKcLHNuazaNsegiZyVoTFy3j6/nXj9Q1zQdvRnCJM/M85hL3pu/wdO9POLr6be7pIT+5e5+lzaCzUimSM9DTtA0IrHrF/HZK+fPji9MYSuMi4hQl4/NAMsV8qO5UdSEMkoAjXOR+SMvJsmG2d4Xp/nvsXHpiz06eCqsE9Ftp6Is30TbX4w8Ao12k7K170VkD7ML0S+xf/zbTw/c4kt0SZAWPJ6CxpD9NtvBIKXdxFkVNCY3DxEjDCnHQTndZDkueLYQrV67z1p/8NUfP71n65EeS+yMKBVOZBFgNgKdAUSXKIJtUkmZpphekmrOtEEEl4RkQVbJKIfdIsSpZC1yl6soZu6Jx84h+bHMvYJ2QQEYExIrPO4bZamzoOHUmTZCSL8SXpOtawIXqaogHN7CygeV8xs9Xjo9tj+Wb3+bx/CY/++wRj46O6PYbnC7plqfY6gSGAdfMiLLHapWYTLZS7i8ZX+RCOFOSZWazCZP5DB861LVEFZYr4yxllA6z0p3InCtsOGcltS6KtfucDCtELtHM30Aml7DVEyCjeaCwEjf4Up2etaJ7ZQEeVbrwgiVyE+huMn/jL2xy+A16d4lVBtriHw19phVfmoaIot5tAgAphG8zBR9IqbTbb5oG542UhdMU+exowRtXvsStr/4VH60W8ODnwIrgImnYkiMp/vTIEINisUfFZgJRPMl5VqHcTJ2vLpKMcE0eyXWYteDmiBcW8QyVtHYVRFzx80ZSt4SKQvhKeJTKShPcyAkYT1Nk4zuvvQZXTLRSF7PCbgaDDzwPxmfTOfe6Nzh562scX7/Nh6c9948e0vmBeVZOHn3A8bOPkP4pLi/REFA/g5RZ5lXFjl8+vogLkZ2HMKPfv8zu3iHd7BLd9Aqz9pAgc3wzYdG3DObL5jbiMJdBB0wiSQKu2+F0qUz8AWHnNazdAwklHtINlWNb3rYpnK8Mo23Hr2tlLw66azB/ww5e/yZpdoOT3pddfuahMJJihFlDyroB2tcrWU2oOZKWwC50DcH50qrfMlkdnz07YW9/n+tvfYuzp/ft8dN7Ql6RKqa4Lilb13NX4bAiECkVToSJoMGRgysuhvhSEyeGz22ZSI3lZtUpy2ZOP92nn054pgs0sIbBRiHMOVe0IxbhdfVza9ReuvRkfCoU9O0gcDtlXHY5stIjglx6rtUgrg9KPJjym/YS/dvfY/Zn/44P7DIf3/+QXnr2up5u9YBnn/0Au/NjMT1BpbLfQkmkkIeagNlawK1jHjN/L3veBQhz8uMdjvwcmj04eNOu3fwTdq98hcnkGtobakLN15Reb14hx2rtdrAk6GSfyc5lCI2N96nTsSTJLuAC2xbuFTXwuOAUzK88BLYD01tc/+q/ZZhd41wDCSmTFstuQXSBIfdALEiFrwFUKkEGroWUN+lQg6EGZy7UwMEF7j4+592bV3jn639Jf3TfTn59LJkJjT9Dc7G0ZbLLDMYYcak04Fv1PYvlgr3G4eYT/NDSaCAnhzklhAnSBOJZpAm7kD3HOmO1+zr3rhzwK+B+07L7+i3m8zld1+F96cyex60DUir8hjwGdaVFa4yZfhULdq5bqIVK2QymYsri3XqTFxHD+waRUoY/pMT88iWGw5vkd7/H4+4Sv3x4xhEZFyJNfsLRr/4z4eHPZNAHCAPmPeQVpB5ECo117brwux3VwXAEKYB1YDM4fiKPTp7b+fNj3vrqX3M4v4wtjDSUDp3mMmONU0GJBph2nCwXIML80mXOjwKsVhTe9Ba/boTUykQBfwABxhqMhA81aLIG9r7E/NZfmu68xcJPWZnUoIyCfosUBNys+JDBF1hNM67xJfLUAel2CwwlxQ8VMmYrRlaZmuP5yYqj/QlvHN7i9Xe+xcnju3DU0+cBx0DOVI1RSOYhOMT70p4/lhtEzYgaSTogOeFS4R0rVgOlBmhhconT5go/i1P+IQaevP46O+99h71vfJvu8JDF2Tn9sGIymTCfdIhm8vkCEYdLyrKPDMPAEDPDMBCjEqMjZ1sLe4yRvh8YhqH8X3c3gsLfaNsWM2OxWLBc9uzvXsPtXOXsbMadZ4/4+HxJsiVtfs7i+QfEJ++LX95hxoqMEnODWiQYeG/0xN++vP/YGAU5gfMTVFel3/HjLOcEO732OjvX50yahpU6SqmrRy1g5rFs4GJxLXwD0mLBFWXj0to1d7B1lhuFhugfIogbg5ja30EvMbn6DTt87c85C9dZiUOJRVjV42wCBur7YtpdW26tvKRzwk7wnMeBVTR840i1P28xIwNibZkxtPhVlrj35JRL3Q63v/JdlseP7OO/PxKLEXXnrGnvBlgsCQUHzjc4H1BxlD3cIpZWNLHHZVARfAY0ItKCelZ7hzxs3+FH6vjFm4dM/+IvefvP/yPhYM7Cw/lZneI9GBycLaANNTGVwBbQn52xXA3EmBhUODrLxEwV6Mhq6OlXkb7vSSlxfr4sGhmjbVu6dloEOCxY+Ah5xiRd5fQYniyPSL4n5KecP/o5evfvhJM7dCyqHiuBpNDg6HFZ8LzYr+F3W/nqiODyip5UPis5OJ7I2cmHdumN27TdnJAbYhY0O0Q6nAkp9dAWqA0JmG+LMgu2cftgQ7wUuJBjflUfGCjaVCrYLLtw6WvsXvkm2r3OIk7JoaaKVRDzSCWs6Nqse8gDsyDsukRISwIQmo5Vfwp+l9JguhCxBV87M9Ygr5uxOHnKw8mKN967zVf/7D9w/97H1t89EfMe7LzyKwxyQnPEUSqS2+kOi/Pz6pvmsgGLJjBFaApvFwVNZIFnNuH9sMunl27iv/sN5n/2HX5+PHD/p5+xODulaT3z6YTQeM7PT+n7Jbu7u3jfYCasVisWy1Xx49WRcKyyI265Dcm0uiBF83rfkMxIufjLjcTignhPnHiGleCHJT2KbxNTd8bpo1+iH/+N8PzXwDm5YtclsByrDltird4YhfsLceiXHMfNc6ssEUiIj6S8BFlhek5oMpJyiTMyIC1eAk7aUua1JhXVhi8bwHtrbAX445dV3OgVBVhBhqpFL8HOuxy+/e+tvfQ1TlLLICOd/eI97qyQfAodMtN45cbc4xZPefLpB/im4/DKWxynTO9CIdVoqSzexGNjm1KB0PL0fOC4b3jjrW/ylW/+W37y5B4M90uq1EoColx3afphOMzXdqvqcJqrG1NaL2XnMIXWlcRBDoGnEvhJ73lwcIvd197j+dDys7/7b3zw81+hcWC+MyN4I6WB2K+YTjtUFefKNi055w253zzZFGt8pVPaFm+iQGiF0F53JMIqRizrYFHM0RBIA/SmeBZYf5f88feFo58CJ+AhjaF8oqToBaI1KBvmG7/HsQRWm6rrDCStAXkQmkmDn7S4WKqlqT03cCBWNrNJ2No6q7iCtozZx/XvDR0UYCT2FBLWKw2lsIhaaF7HXf627V77M1btTc7OM7QjmtCU7xXHmEny6hAMdZndYOyy5Ojphxz9+vswmzCZCnv7t3muDdEUpSlaXEpvs/XwHiY7nJ4+5sM7j7h59at88y//R54//sg+/dv/TQqZJ5ZI3wnBlcYmqzhwvuiJyYp7XDdhsZzJIvSAiSJphUhLCsKy7bgvM562h3TDDo9+c5df//C/cPzBT0GEE1HIsWyEEXvoSiPrYvqqG+McuFDqfTTXzTNGrFjAOVv3daBaKJES8a8/x0ryZCx4DYW8lOKJpOVncHYP0hltC8MYutelyDbiqLZO8I0pF37Ho1JYrwBN8KRkxd1zAdoJ891L+DAh0xRB9SVgLF3sDedqEwD11U1sqpBvQ3eFJ3gxo7LpafrK3Sml3lTh8Ot2eOPfMIRbnMYGq/6n0NWA0SosU6LfJjY4hWbH2AkD509+w9OP/wGOfimcOY4OGzucCaFVhAh5Aq6adSnQkpjhpGCMRsNnj4/5zSePeO/Na7z39b/gwZ2fkx6eg60wDLdFjhliZrnoSRFMC0brRrjGwbLyLP0C2hBZ5p6ld6T5JRY6Iz1JdOfHTBe/4fj0vxWfSIciUJNSzVwzF6zrwsY2Wy7IWhDHAFPHBIiXMqnUmGIUGLeZ7AtjtHAOIeLINXrvsGHAjykiRwmWxJXKaEs04krm7BVEIK/T//VG81OYXWV29S3bO3yDZd9wvjJiLDwD5xyWIspq3ZsOC3hrCNLiXMum4+l44ht5K3Kk1ZffFuA1iDvKdn1AXmAq2dbLx4zn5Dp7N77O/Np7PNcZy5TxTVebFIaieW2caK1pbI8ncRCMuR3z5MEvOHvwE4EHkBLn94PML12y2dUDEhMWUprgWRCyBkRLZ8l8fg4B5vtXWZ0f8cP3P8G517l87V2++u1/az/9vx4Jy0TOSs6wq5lQ2VO9pmIAnZXeaK4sgtWd45GyRYaFCcvlij5FXNuwXPWcnixpQyDYCuJRiaZtBRhNdEQGvPPknNcdtnTUhObXkZ3XLeVidblsM7/iIKqgzFinVdcANzTdhNgvCSQaPBHB6p4gpYnJqN0D+LZYBFOMniz2Qgi35SaspXorlStwQROLA185JrkBmcLBbXZufMX2r3+D6cFbPFkK54sBVg6mU7yrDR4lVmKVJ4incZEmDHRirBjT85UnMspkLRgYxdCgbC+2rZ4LibCrsp1AzjZbtFYZHCU/0mD+dXZu/ztrbnyZp9lYpp7gWxoL5CEzqELX1T1LM65pQCOJgf0p7HPC6d0f8vzeD4T4CU4elyk6gaOPrnBj+mV2Z1dQNZY6IJNS6m5LcNIgFpn4CVknqDtkkU/56SfPePtKw5e+8T/w2d0P7dn7f1M0XreDxhUTbyxW5yw0kocTCnW3Jcz3IU7xQ89BCKViN+yTpWPX7zAFQn9O6xPPdYGlnlU4gPllOL8PonjLNcMXCoRXyU2FP1GEI5sUgo04slUmv0RGhpWvMYJKTRR5gXAF/AzsrMpZA1GJ4mCyTyKTrC7OWLaOFMGlIjlS8fay51ctJKiJDQvVfNfeajY6zqMgFW5KKVYYGxpI4Y8kD9M9mpvv2s23v8v+9a+Q2svcPwvce/Qc3BQ/mZZOmCsrldFOGVRx4TJxcU6YP2UiD1kOZ4AUwj+KUttlqV+7omBkVyqALrgQF3kTbvMzmrFKZinRogMuMbnx31lz8C1yd41ES7ZiqqEUMJYW/n1dvZIB8w4mwTGfRpbPPuT40S9Jzz4GPSsun4HlI4ZnH8vRg1/Z9OYe852brHrQVS4JkbZBh8Rs0tL3PZkJvtshi3K8OOZoCW9cvcK3vvc/85+e3IfHCbp9hKK5Q9twdHLCvHLpslnF1wOiAz4Z2StRGrIEUMFrJlgGSwxSynUG15QbXlibtvWQzdGNHgJuo9OEjblcb/ZW5E+qh0ELzcHbTK/9lcnkOst8RI4DEysxQSbU7pBjcebYorUKsW22ChuXcMxpqSjZ6XrLAszjzJWNHNcCTD0ng/odWgXZmSLRaJs53cFV9q6+yeTwLXq3x9FSOT6LiN8hm0OyYhTmnveC+AaHY1BwQQlyhA6PSKvncHa2RotYn2/DuufI1vyGKtBbrlVmAxtbuSPzUASrss0wT7YDmH2Z/df/Gtv7GskdlF4IWLlIEiorGp8Y1BWkQhzkhARh3hpBTnjw6OecPPtAsBWIrx3V60kPjzi5/98kzvdsd+cSE7/H8jzDZA6dg7TCnCNrcfyDeFQEW/WcnijPTwLvvvMN3v36n9sH//mRcK5km2DWFGZUTKVVVN0VXlPGZyu2PhcykTkBVZyWamWPlP0s8ppE+vsP06251vWUj65cpoO8x97+N+3W2/+Rdv8tnp0/Y3F2TsgdRmApQpKar3JslS+VnsKC3+pItE6hYaJ4c7Q6xelGWF/0sK0SRqxSP3XthiueSKdLmgB+skvuphwnxyouOFtA3ztCs1czjT3i+tKVxzlUJwVBSqfsTiONnnP89FNOnj0UdNh8/2ZmtoauL+XzQZwoZdvRgvV5k8oB2PpEmcL8bXZvftfcwZdZtleICVIq3E1zpZxbLNTFL02Yxz5p084T9JiTx7/g5OGPhbO7IKsCYg+hYIMhA2dw+iuWDw6ZzF9jvvM1Bjcj56Zs2epgNSihmQJdIf3kDKFj1Sc+uvOYK/uv8c3v/S98/OCRpTv3xZpdhI64GJjv78AQqw+nWFZItTTdMpINkcLgKfkPqSw2V1pGSYHzXm1sLY9t/9kBM0hT1F+hnd+imb8NcYfoTzHrMGmJXkhjdtWV8qDSTqs2xRZfm2PrWvDWGlQ9bZqiGrY0W9XioiBjM8SRSs56qy8HJAagZ2AgRSOuMoOegThEdmi6OWnwpRImKOIK7yWZknOH5ETrluw3PenoIc8+/TUcPWTc8/kfbdpzIZExWp16C4pFHAE3xuei5ERRj26X7vLXbO+N73LaXWIhDRKXJSDwLWVviVKF7HJPwMgayCR8Y0yaBfr8A55+8l/h+S8gPQEMr27DNspgsgR5AA9/IOfda3bjrauE9i2OIwzDqkymgYSuZNNiBDHaZkLWgafHZ/zms1P+7E+/wnf++n/lF5d/bTs7bzAkj+WIpFgEMY87wpe/iwau974rfpMDgnOb3eLzqO1ebay7EIyARdW+a46aOFaqnKaM9APPYuQka0EoLRFdZdiaIOpZ74JEKRjVNboxQlEVFaFgrpIHnA3V/di4COYKHr7GKMZO7qMvrcXH7m0KMisn7lKJelGMtpyDlK13xZVzyiI1iG1ovHE5DNj5HY4f/RKO7kipUC5WSWRNJ74gtBsZrQK89sfG4zroTLiaLIxjEsbtwKUvMb36NdzBm/TSkVCcK469uFIeo+rXwYQTQ0xwPjF1A7J6yOLhz4n3fyzoMQVLLjmEwnwtXcaTgIUB+ocMD34s/e5tm1zaZWr7aFRoG2hbhqhYGhARmhAKZwKPn+zx8YNT2p0nHNx8jz/dvcWDT89YPDlnMg1YHDZBurmihWsZj4yUSLVqPgv2KlIKK1NK5Fd2IYpgFe93G84qHSRL5JdJbuA0nWLxmPN8RmoSrvIJouQtAVXGtDsWipDZlgSs17j+ocUvrWW4mFjdBqESs9b+zBYubVs/pfNdec4BPuPwGAmLStIeH8reJqq53miuclIyc1kx0Sc8+ezHnH/6MyEfgQxQmX8hUFopU5CTcgq6RmngggYeJ6D8uwHTak2ZOWAGu19i/safWXf1XU6Z0EtJvaqLNK5sHaCaKsupQaWYe6xnLsZETxge/YrjT38snN9H6Gl8YVgCBF+CiKSli4xEiLaC0w959unfcOh3aPe+TJID+txVLkMpi/GNQyTXFqoOF+acrTI/+vUDbt+6zLybsEo94hocQnAOyxEVaihnJQgdxWhs72SKE0OlENeTKjFnsqRXFWE20NWLnxTB9RBazJ2T5QSV52h7Al5xKDH7YjXq/hiMcblusDm3XRS67WeXB8p8VUtSFJlhshXArRvzFexJKsQl9XFxleaZUil+HUunpCANFs4LE0+LRAWZ4ElIfozlhxw//iEnn/yDcPwphAXYcn2v5G2Eb11+dXHmXvCBayR8wRej4o5TsMu4va/awfVvYjuvcb6QNSQDDvOlyVxpvifgOpIJaomgS6ZyznR4zNmj97FHHwErHKVRdHalrVI0xbQYUE9Zi7YxhvSE+PQncn540w4PDpj4XZIqfb8C3+DbUP3VQn7PBkM0up0r9OfP+PDTp4gqM+Z0vqPvz2j35/SxRLBFiMt3mlR/UZRsCZUGqwKuRtlpSCFn49XHlvB87nGtqe3MWDM3pppL2b0Vl41QNK9VuEnchYoPN34WVFrMBktN1CaAa502wnqU47qosh5tTD4XP09SKlbXjQWohSAlXnE+k1gBEWctrQ/MvEfyMcPqY/T8Q44++r5w9BGwhLgEKanudgKr1Ytz8vlZCuscQ708J00lWBSNg0EWD7aPXPkGt9/5D6TuTR4dR3Lb4a0QVcwiWRXvoQlGYigRrDTo8hk7s8xMnvD8o7/j7O5PxOk5QkIQ+mQFc5UiJghkc+vQYUgZmiW4B5w//L6ws2f7N64ybksgXvDOMC3aF2eYllugjwbNHMRjKDELDbA3nzPkxGroofH4EJju7sFiUf29TDfbIThhsAkpecwHXNuhzjNkRf3Y3Pr3FGQBs9rRqFppo8KtuNoxZ0Lr5jidkvsOiXVXzzwj4KtrFwoeq4Xs5F2D07zu/F5w29H3HR3Isj+fWU1IjJp2FFrdaO7asA3vSjMY7wr9Mw4LusbXILeslkkGV/pEJFOcJIRIkIEdHLsayed3Ob/3fVb3fiic3wNOgb6YWyu32mr1ory+3NaFTedRBXN1LxJPaUxUr0la2H+Tw+vfsuxvscoHSAtqQqvFKU+uKXe39hgZIWIy4DpoW5jYc84e/ozj+z8Ulp9gLAiiZKuepIY1ljqWAI0JgIILK3AMi084f/wTmsnrTA++TvRTklNUY8GdRXF14xbLDqTZXJ8kTAJZE0kzMRnjPsEZ2HzhOHlWc4djRYCtf4qloPI7XmHIC8ftMW6MnBtcDlhsIGYkO0RbjIALJeMhVlpEOQtItnojSBGoCptZDd5MGlBfz30NYdSf0WUoD7eNr1mVRMor+iGCFP53M3ElAF7vrKRYjURH+TcTAjBhQJZPOHr6EYtHP2N4/r7QPwROgB7QdeadFwM3YJTP9d/1d9gEcLIxFVCY81jJOjSH7Lz2ddu98Y3SlCTNsXaAGHG5+EUqk5oIqBuXiIJLOFswDQvy6SccPfgR+eRXwPOibZty0znAbNNBcWxNtU6luBqXGqDP4PHP5bS5ZNdmM7rpl1BrC2vLEs5JgZO05m+dryYm4ByIClmMPisSC9N0DJ+sBikyJgO07utmY9v+UsumJmTkVXsz10V/4e91DFK3WzApc5oczntEQxXqDjHDS4+5VHgeVHixKlXnQV3GxDAElaZoXmsqTAewgsJ9K59RU7hjr+EcE84r4pXgE8mGujddBmnJMsXZWNWhZJcLdl4LOYPs4lVZndzl6NEP4cF/E04+pOOEwIo4cohHsXwx4Nx+bEsLjw+F0XRtdgcVnPfrLZmQGVx/z3auvYdNr9PHOX0WchpJUwmRUIjRVvYABiW4Yj5CXmD9A47v/5z+8a8FPUW8YtIQMxS8zAM79RjLjyzRGh8Xvy5XH6+FYUl+8Bt51F23+VvXMeaM7nzRAa52bhyDkcJxEKTgopTGypLLHsNQ69By8b89tU1LHjFVGyuSyndU+O73dh22xxYs9NIhNXFiudqDERUpeG1mqGiCFOzUZZyA84b3BjqgUph4gqsBKTUoBy9DQZuM0mCFMXgvAtG2xqBlpyMLBQ4rrk9NILlA1lD97ERhGxZFULr/dLRuoLcMJ4/g9DPgmJaIVOFVLmpce3FeXszDAKOiXQdxZlayTOTqe3mQCey9zeU3vos7eJujviVJxRdTomk92mTUVtXcFehGXEtwQusGpixZHn3C6rP3hZMHIII1e4WoPmoT8yVIlKbeSQlkSenLoDCZlqvM1btXD2rkpw+JN/vSDpVCHlICyaS8BlcLMhTnCsujkHQakg04akPoujH3OpkhJfApPU5kvfWHo3BYXXVrvrDnxz95VHP9ua3CanDsFPMJcwNJerLvy00oqwJZBylBtpYmJY5AcIrZipQW+JAQSbVO1iN0YB3GtMiGRRwJQXFmpdP7Gq1wpS7QlMECiUBWV9bNNYXIo2Vyyr4YRaicUd2RQIzKdDpl99I1bPUmq/gbeHbEyoyZ86guty+aC00aTD93b2+mqHxvIHhImc0uN7lGtxMIezTXv2bzq+/Rh8ucLIS2wn4SCzVusIxJxqcVjgZcV4oPJdPaEjv7hOHJ+3B0ByyCm+P2b9NcetekPUB7Kz0ixt5oY/cQSYjTNYE7J0fMEHyL85AtMrBXOTGCBEEq93cNbFvBQcXKpgbiiotTGjO3ZHpUY0Voisa1rCUItIJEGHUfZbO14DrcmlD/yuMFv+5ljSKV2ntMQH0hu5fksRQ/wRdflJQILtJKT794TDy5B3ayVgYOAWvAOtCySbdK6UEnVYh9TR27Grwna3HTfSZ7N+h2rtLbnFVyUNd6bIEgWEnLVz96TMRIEM7jwE4z5+rtP6WfrOzRB0h89BHHerbW+EULj9jTKKoXeQ+fs1YmlQlCLdWpwEpGoZsQrt7i8o2vM3CV8zyFxpMk4sXRulA0lK9VFxJxbgTVE8oZmh9y9tkPWd7/sdA/BgnI4btcefOvbHb9z1jqPqtUomGpDeaEFpWa8XGGb0uVr7OGzjyWIfiEc+fErAx5hyyFJKRYJU0XzBIr01Eyp1XLSrlKM0fGl+201EpXxCrs5UhNF2vVBEXlyug62EW34vcfY7SzIapU4864GUuyQLKGZE3JZLlAYlLek6ARj8sDpMROiExYcHxyl3j3H+D0A4FjYIGSK8IQiiBTGiGWby0NZRK5KoDKSrQZOr/B8up7dnDzT5ju3Wbl9lhmT9ICfwoJT8KZ4nVsEBPIGNJmhiFyNDTI9AaTa99jzzo78UF48ksslk11NsI7OgUjjbLeCnWu1WqcaQLiCGPCRyQXilsGcwG38xq7175hk4Mv86ifsXAe2g5NK0Q8bdPQpwKZgJKlVLk6F/G6IsTHtPlTnj3+uXB0t5zA/CrTS1+3nRt/jtv7CsdPE9bulAl0fdG26jHpMCon1xm99bTtlEkzIS5W9LqiDbtkNyChwVlgyKUlafUTKvSTkFCB/Soa654LEuqE94WTa2BWelz6moJVg2SpBKV1c4t1n15rydYgIxGmohGZrWYc237zWjA3f22cvYujYgWMWLCYYRqwcX9lGRfaIGacC4VFZ56GlhZw/TN4/hshfgJyBPTreZB6YxuBvEZRSvAsW0w2swaYQ/+IfPJITvoTu3K7Z2f3Fl52WVhLtK7cVBiYX1tSNUNdQvsVftrhbMLx8ozkrzK/9udE72wZJsKnPyLbGZuQfbytC5T5UoxnnDfLhNZ8wVu9MlSrS3eJ7vq3bP/1v+Z5f5XoDopmkwTBoZaJubgQQTxp2cN0QnSCLc+4Nl0y6x9w50f/u9ijXwADuMtML3/Drn/p39F3t3nwfEF2E9xY1FdxF7FSfbweqVxWGs45G5aM286mCNDWTKnVc6MgDrkuvAe1Vd0pypOgwGweoID9LiemoaSu+zigjWJeyKtUyOsaUU1MpIPUl5YVoeG8F9r5HJFm4wa42lFSavspWHMcTEaobhTRrQscEwdSu3ICarU/mPa03tNqQxwcLjSoc6CFKO8bq9h3h2s8yxyRdFYCuGmCeAK2vHCfmBvrEWs/XjbnuvFBS2VHSXX0kHriJydyf3hqV778HXauvINz+zxftfhwCSczcg95MHCGCxm84dSRh4jlQCP7iO3SpzndzpSdr9y0U9+xevhTYbECMq13taVU2siq25zfWInh6/NhVNzDqJrbKe7G12x26eus5Aa97ZN0VvCu2vDOrKRUnVnhE7gAOSAGs9bB+UNOPvsBev4BcA60hIMvceWN7zGEWzw9C2Sv0AW0z1t81Yoj1szeRluNx9HUaEEk0IpljgKxzcetbCoVMoof90sasV6kJroyfVbibA+5dhthCU4Jg+BDYH9W+trK+ZTsp8QYsUnG+9JlZ81DfQmeu/HtXjJs8/IitKGec3muZAJz+Vln0XxxZQRwZbdNVUPEMOlQCWQnqHnEKaWhcV++a5SEGiwWDvBmF6m1vhvn07apBGfksmEBPHtfnnyUrE+nzK5+lXl7k7O4JEZB3BRpW8wyygosIV7xziHOYSqstMExRyQQWrh0+9+w6Hbt6N5vhNOHDPkM6AkM60m6CK9J5eQXCxmMCM6VjemYws57XL/xXSaH73KWZpj6OkGZTQFiBb1R0CVdmJAHoXOw63oWTz7k5P4PhP4OBIXmEoe3/9Lm17/Lk/4Sq5jxbQLJ1Uhsm4/f9egpNeOuIBwjjroGuEuUXnpzsYaLRlPs2inJ9hj2vkKKc9LiBMxok0O94zxE1AUIwsnqgJw8nSUaN2ByhnuFTVI2AcwYEG7fjJRrcg6cod7KBi1etyytbhJmUtL3uYZ86q3MyxpbvmiMt7dlMEZPc3tuC4TZrN8RS8uu/gju/VpOczbNgdnVXXZkRnKQcmWyeYf6gLLCJJF9IUel5MrWolaKQBt3yM6lv8B3V9H2sp3c/Xvh9H2wniSlXKh2OWCsEjKMbLmci0AwlF4BN4fp6+xd/bZN9r5K5jKrocXh8a4EMqghtYu4VFzVC/gcabVhakvs9GPOHv8cTj8pZBS3z+6tb9rea99kwSGnyeOajsavWC0WODe7iNf+jkcbF3o8XgC9a9sraqc+fKlqrn6fOs9CPM9nh3xy+A5+OeU0PmbqHHPXMVhk0Qq+CXRd4OGwx+CvkNqGlVshtiosvLG3mNvSbvxTh6vabyuLQf2zNHMo7odEzMWNDV2/Xdns2SuYsxKsrUWzumb1u9ZNB7e+Zo0AjAmtUcvbpuNX6czRE+28vOHxh3I+RIYktnft6+zObnN2njnvB1zXlu5HNBQOeN2VVUp3JFRK5beb8jQFduYt+7dbXCd29GkUnr0PeUnScv+i2xv1SKEJSCl5C8lTzLdcYnbjW7Z/7Tsk9wbn/ZyoXY1uEl6HQtioG1tbNUUNE+iX7DRndOkhTx//HfrkR4KeFlz38D32bn2XOL/Og/NI9J6mdVgvSPJI437vPRrWS7C17i/s8lW1LRcQg7EHQ3SeVTfj052Ov7tyiV8cTXl2usPudMJ8OmOlibQ/QQz2Y+DMdnk07HPUwyJkXMhMZHTMfpdr2GjaC2K7beZlfF1psF2CrLwRYK3vtlTN/rCGIE1j4Wgk24LpXgyHNvDdZmpk8/128RzLqwdacQwoDCt4dkp0x3KU71t77TvstG/jrXQh7YcAblK2NRgBc0dxWg0MYaUOy5D8HvuzNzl4PTBpO3va7Ep8+DNIR6jVCHvcbhhX3ccJeE8omOgcLr/N7o0/Jex/mdPhEmepRZoW1QgylMyMZhCHuuoD43AaaEXw9ozV4gNOn/5I6D8r6ER3g0tv/IWx8y7PY8MgBhOpe4opbZgTLV/gjfzOQ7bU3eg7roeuO4xvBHpc/YJ+qut46hw/zDNMV5y1gf3pLt2sY+WNZXBoTOwLBNnhkWs5sx5McE4K6G9V230OGH7Zhb0oSPrC46N7VjFb3+FpCBYI5vBZydQ+Cip4ajNpF2r61/AaGJKUphDWgNVNdC443nrxXF5yqgZELYzfdWhnKwKRTFP61B0vyMOxPFlGe+1Ww+WdPZ73iibwbkIfh3XshCttJ8ekkZpCmLEcBiTuEdqW3cMpstqxR+ed5Ke/AHlWcGyB9SbhCmjZpjjg9uDSl9i7/W1rLr3Dwh9w6iYMbcAFyn4QawmoEIkUv1PNY+pppy2L00959ujvYflh2VBkcpNw7Vu2e+N7HNs1Tl0D0wB+hfXgmhkutJgNfNEmI1845OLEvywJsNmhczSltn5GzMFgHB8lfrFU8mqC5cs0fUtKinal5kxSw16kEJeSlVKcENjJvjawrj/j+fxeN2TVpGMWlAaYgk5p8pxGJ+Q8I2NkC5BbvHm8KZlMDoKYMiETcofEDvqStJDaVo+xf916bFmBF5MEVRObsWYlKqM2zghKMoelHk4h5vflqR3Y/tUpk9mb4A8L11A7MoUo723sNVoqYFIt/zcLaJzRJ8eEK+ztXEKu79upv8rp878T8ieMTLUyYtXCjoAELl2+Ytev3yC3gefxDCfKpBGwSBcSQTNepZTtSCA5YZDCOZhJ4Gq34tHDX8GDvxXiAzDFT3a4feMtpt2M02XPTuOwMLBcndGaZ3cSib3ShVqjdSHV8k8/qgK14uPi83WBnKtasizIqIGlBnXtfMJisaBfGQ6jnToiS45XJwQ3KxtyE+gV8hDpFHZbz9QZnR6z0FoOb5uvHW+ktVPxOeG4YDTW3sDmHSMSk8FFWnfGxJ1g7kkJfCXgpaMWOKGU/ZbFZTqDVp8Q9JixPKeWGTBSVaGU6mxcg/G7N8kU6qaKuV7b+Fq3PvdC/skJCAOcP+Dsw+/L+dnSXn/3v2N3/zZnqcE30wL7AVJrC70pzpWC2dP8hHa2S5snuFXZfmw222V68y0O9pbcu/vAFmdnEhcP1q6TCDXeyIQdnziIJ+iDX3Nmz1myS6IlyopGMkkylg1LhfWvri17i7kIqjQucBofMDz8P0WGTyBmWg+Xm0Q4+YyT0/+Cdwc415AFppLxlsiWcNQG1uIvCKbVfQrG4z9FkO1zj28WRbcEeHzc1Q0Ic1Mp3tpgavQsURKti9hTYdfPNk0JUbJFsiSyy2TrOT+6S2gb0lBU1Bj4/1PVcKFzOhh35hkzfxYxlki74uT072V4JJamlxlkRcoZpx1eSwFBEiV5RbynpcGvnpFOfyZMn8DyZI04XMRLmjpLsT5Xb8J1wMs6uH5RiLdHwKEpofIMbIE9O5ZPP7pjezffZXb4OqlviBoKhqul61bOBlnJMiDtksVC6fOUxjoGdZymSMspE3fE/PKEqBPiuCttBVecDggZmQDd9Dop3OI87YDbqd27V+AyxEXZoSO1YC1IWxptuKH4VgJtc0xe/ASfV5WfCS7sY+0tzldzkL0S0EldKPryIwrMy3PbY/Qlzdam/3cfevGzXnwcyl3sq+nWrrzW+oKfSl3u5EvqdSQayYoCWQFkCC2snoDeK2auxhyu7sdesGu2VG5JlW42u66C5DZ4L9REiNSXty10XwY3Bc7K96Z2Y9udFs6uOGAOuoTlpxCPyqak1T1fbx4IlQsBnn49KzbiwLIVzCllLhRe7HtRnJ2yfVaSEQzpYL4Pe6/BzhUjNuUicnWPxtKXrNW3fSowQJ6DdJDb0uTcenALQteTTj+F5eOCitTTGS3B/wNQIXo0RD7QggAAAABJRU5ErkJggg==" alt="AFR" style="height:32px;object-fit:contain;"></h1>
+    <div class="sub">Surveillance épidémiologique · Saison 2025–2026 · Données au 23/02/2026</div>
+  </div>
+  <div id="rb" class="rbadge low">⬤ RISQUE NÉGLIGEABLE</div>
+</header>
+<div class="main">
+  <div id="map"></div>
+  <div id="dp">
+    <div class="dph">
+      <div class="dpd" id="dpd"></div>
+      <div class="dpdept" id="dpdept"></div>
+      <div class="dpcl" onclick="closeDP()">✕</div>
+    </div>
+    <div class="dpb">
+      <span class="dpbadge" id="dpbadge"></span>
+      <div id="dprows"></div>
+      <div class="dpm" id="dpmesures"></div>
+      <div class="dplink" id="dplink"></div>
+    </div>
+  </div>
+  <div class="sidebar">
+    <div class="stats-row">
+      <div class="stat c"><div class="lbl">Élevages</div><div class="val" id="cC">0</div></div>
+      <div class="stat b"><div class="lbl">Basses-cours</div><div class="val" id="cB">0</div></div>
+      <div class="stat w"><div class="lbl">Faune</div><div class="val" id="cW">0</div></div>
+    </div>
+    <div class="tl">
+      <div class="sec-label">Chronologie</div>
+      <div class="cur-date" id="cdate">1 août 2025</div>
+      <input type="range" id="slider" min="0" max="100" value="0">
+      <div class="ctrl">
+        <button class="btn on" id="pb" onclick="togglePlay()">▶ PLAY</button>
+        <button class="btn" onclick="doReset()">↺ RESET</button>
+        <select class="spd" id="spd" onchange="chgSpd()">
+          <option value="3000">×0.5</option>
+          <option value="1200" selected>×1</option>
+          <option value="500">×2</option>
+          <option value="150">×5</option>
+          <option value="50">×10</option>
+        </select>
+      </div>
+    </div>
+    <div class="legend">
+      <div class="sec-label">Légende</div>
+      <div class="li"><div class="ld" style="background:var(--commercial);box-shadow:0 0 7px var(--commercial)"></div>Foyer élevage commercial</div>
+      <div class="li"><div class="ld" style="background:var(--backyard);box-shadow:0 0 7px var(--backyard)"></div>Basse-cour / oiseaux captifs</div>
+      <div class="li"><div class="ld" style="background:var(--wild);box-shadow:0 0 7px var(--wild)"></div>Faune sauvage</div>
+      <div class="li" style="margin-top:4px;color:var(--muted);font-size:.55rem">👆 Cliquer sur un point ou une ligne pour les détails</div>
+    </div>
+    <div class="lhdr">Journal des détections <span id="evCnt" style="color:var(--accent);margin-left:6px;"></span></div>
+    <div class="events" id="evList"><div class="empty">Appuyez sur ▶ PLAY<br>pour démarrer l'animation</div></div>
+  </div>
+</div>
+<script>
+const D=[
+{date:"2025-08-05",dept:"Morbihan",commune:"Littoral morbihannais",lat:47.74,lng:-2.82,type:"wild",espece:"Cygnes tuberculés",nb:"4 oiseaux",mesures:["Zone de prévention 5 km","Surveillance faune","Signalement LPO"],src:"Plateforme ESA"},
+{date:"2025-08-07",dept:"Hautes-Pyrénées",commune:"Couloir de migration pyrénéen",lat:43.09,lng:0.09,type:"wild",espece:"Grues cendrées migratrices",nb:"8 oiseaux",mesures:["Surveillance renforcée","Alerte éleveurs du couloir"],src:"LPO / Plateforme ESA"},
+{date:"2025-08-10",dept:"Aube",commune:"Région de Troyes",lat:48.29,lng:4.07,type:"wild",espece:"Grues cendrées",nb:"6 oiseaux",mesures:["Surveillance faune sauvage","Signalement DDPP"],src:"Plateforme ESA"},
+{date:"2025-08-12",dept:"Charente-Maritime",commune:"Marais côtiers",lat:45.74,lng:-0.63,type:"wild",espece:"Goélands argentés",nb:"5 oiseaux",mesures:["Zone de vigilance littorale"],src:"Plateforme ESA"},
+{date:"2025-08-14",dept:"Marne",commune:"Plaine champenoise",lat:48.96,lng:4.37,type:"wild",espece:"Oies cendrées",nb:"3 oiseaux",mesures:["Signalement vétérinaire"],src:"Réseau SAGIR"},
+{date:"2025-08-18",dept:"Gironde",commune:"Bassin d'Arcachon",lat:44.69,lng:-1.12,type:"wild",espece:"Canards sauvages",nb:"2 oiseaux",mesures:["Alerte éleveurs locaux"],src:"Réseau SAGIR"},
+{date:"2025-08-22",dept:"Loire-Atlantique",commune:"Marais de Brière",lat:47.35,lng:-2.18,type:"wild",espece:"Canards colverts",nb:"5 oiseaux",mesures:["Surveillance littorale","Périmètre Atlantique-Manche actif"],src:"Plateforme ESA"},
+{date:"2025-08-26",dept:"Somme",commune:"Baie de Somme",lat:50.22,lng:1.58,type:"wild",espece:"Oiseaux migrateurs côtiers",nb:"7 oiseaux",mesures:["Zone de vigilance","Arrêté préfectoral"],src:"Réseau SAGIR"},
+{date:"2025-09-02",dept:"Morbihan",commune:"Golfe du Morbihan",lat:47.58,lng:-2.75,type:"wild",espece:"Bernaches cravants",nb:"9 oiseaux",mesures:["Surveillance faune sauvage"],src:"LPO Bretagne"},
+{date:"2025-09-05",dept:"Vendée",commune:"Marais poitevin",lat:46.37,lng:-0.78,type:"wild",espece:"Grues cendrées",nb:"12 oiseaux",mesures:["Alerte éleveurs de la ZRP"],src:"Plateforme ESA"},
+{date:"2025-09-08",dept:"Charente-Maritime",commune:"Marais de Rochefort",lat:45.95,lng:-0.95,type:"wild",espece:"Hérons et anatidés",nb:"4 oiseaux",mesures:["Signalement DDPP 17"],src:"Réseau SAGIR"},
+{date:"2025-09-12",dept:"Bas-Rhin",commune:"Rhin – couloir rhénan",lat:48.52,lng:7.58,type:"wild",espece:"Oiseaux migrateurs axe rhénan",nb:"6 oiseaux",mesures:["Surveillance faune","Alerte éleveurs Alsace"],src:"Réseau SAGIR"},
+{date:"2025-09-22",dept:"Hautes-Pyrénées",commune:"Col du Tourmalet",lat:43.07,lng:0.22,type:"wild",espece:"Grues cendrées — couloir migratoire",nb:"21 oiseaux",mesures:["Alerte filières Pays de Gascogne"],src:"Plateforme ESA"},
+{date:"2025-09-28",dept:"Marne",commune:"Lac du Der",lat:48.55,lng:4.72,type:"wild",espece:"Grues cendrées en halte migratoire",nb:"Signalement collectif",mesures:["Surveillance renforcée","Alerte éleveurs Champagne"],src:"LPO Champagne / SAGIR"},
+{date:"2025-10-06",dept:"Seine-Maritime",commune:"Estuaire de la Seine",lat:49.43,lng:0.42,type:"wild",espece:"Goélands et canards marins",nb:"5 oiseaux",mesures:["Surveillance littorale","Alerte éleveurs Normandie"],src:"Plateforme ESA"},
+{date:"2025-10-08",dept:"Loire-Atlantique",commune:"Lac de Grand-Lieu",lat:47.05,lng:-1.65,type:"wild",espece:"Anatidés — lac de Grand-Lieu",nb:"8 oiseaux",mesures:["Zone de vigilance élevée","Périmètre ZRP activé"],src:"Réussir Volailles"},
+{date:"2025-10-10",dept:"Landes",commune:"Étangs landais",lat:43.91,lng:-0.82,type:"wild",espece:"Grues cendrées en halte",nb:"18 oiseaux",mesures:["Alerte filière canard Sud-Ouest"],src:"Réseau SAGIR"},
+{date:"2025-10-12",dept:"Allier",commune:"Dombes / Sologne bourbonnaise",lat:46.39,lng:3.32,type:"wild",espece:"Canards et oies sauvages",nb:"4 oiseaux",mesures:["Surveillance zones humides"],src:"Réseau SAGIR"},
+{date:"2025-10-14",dept:"Pas-de-Calais",commune:"Marais Audomarois",lat:50.72,lng:2.25,type:"wild",espece:"Oies des moissons",nb:"6 oiseaux",mesures:["Alerte éleveurs du Calaisis"],src:"Plateforme ESA"},
+{date:"2025-10-10",dept:"Pas-de-Calais",commune:"Saint-Martin-Boulogne",lat:50.68,lng:1.72,type:"commercial",espece:"Poulets de chair",nb:"12 000 animaux",mesures:["Dépeuplement immédiat","ZP 3 km · ZS 10 km","Interdiction mouvements volailles"],src:"Préfecture 62 – 1er foyer élevage saison 2025"},
+{date:"2025-10-15",dept:"Loire-Atlantique",commune:"Saint-Philbert-de-Grand-Lieu",lat:47.02,lng:-1.64,type:"commercial",espece:"Canards mulards (filière gras)",nb:"4 500 animaux vaccinés",mesures:["Dépeuplement","ZP 3 km","ZS 10 km"],src:"DDPP 44"},
+{date:"2025-10-22",dept:"Lot-et-Garonne",commune:"Marmande",lat:44.50,lng:0.16,type:"commercial",espece:"Canards de chair",nb:"2 000 animaux vaccinés",mesures:["Dépeuplement le jour même","ZP/ZS arrêté préfectoral","Enquête virus génotype FR9"],src:"Min. Agriculture – bilan risque élevé 22/10"},
+{date:"2025-10-22",dept:"Vendée",commune:"Nord-est des Sables-d'Olonne",lat:46.72,lng:-1.52,type:"commercial",espece:"Canards mulards",nb:"3 200 animaux",mesures:["Dépeuplement d'urgence","ZP 3 km","ZS 10 km","ZRS mise en place le 21/11"],src:"Préfecture 85 – risque élevé déclenché 22/10"},
+{date:"2025-10-22",dept:"Cher",commune:"Saint-Doulchard",lat:47.12,lng:2.35,type:"commercial",espece:"Poulets de chair",nb:"8 000 animaux",mesures:["Dépeuplement","ZP/ZS en vigueur"],src:"DDPP 18"},
+{date:"2025-10-22",dept:"Loire-Atlantique",commune:"Sainte-Pazanne",lat:47.10,lng:-1.81,type:"backyard",espece:"Canards et oies de basse-cour",nb:"35 oiseaux",mesures:["Dépeuplement","Zone de contrôle temporaire"],src:"Préfecture 44"},
+{date:"2025-10-22",dept:"Seine-Maritime",commune:"Pays de Caux",lat:49.72,lng:1.05,type:"backyard",espece:"Poules et canards particuliers",nb:"22 oiseaux",mesures:["Dépeuplement","Signalement DDPP 76"],src:"DDPP 76"},
+{date:"2025-10-23",dept:"Haute-Marne",commune:"Chaumont",lat:48.11,lng:5.14,type:"commercial",espece:"Volailles mixtes",nb:"5 500 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"Préfecture 52"},
+{date:"2025-10-23",dept:"Charente-Maritime",commune:"Rochefort",lat:45.94,lng:-0.96,type:"backyard",espece:"Oiseaux captifs d'ornement",nb:"18 oiseaux",mesures:["Dépeuplement","Zone de contrôle"],src:"DDPP 17"},
+{date:"2025-10-24",dept:"Allier",commune:"Garnat-sur-Engièvre",lat:46.52,lng:3.45,type:"commercial",espece:"Élevage multi-espèces",nb:"2 800 volailles",mesures:["Dépeuplement","ZP : Garnat-sur-Engièvre, Saint-Martin-des-Lais","ZS : La Chapelle-aux-Chasses, Dompierre-sur-Besbre, Chevagnes…"],src:"Préfecture 03 – arrêté 29/10/2025"},
+{date:"2025-10-24",dept:"Côte-d'Or",commune:"Beaune",lat:47.18,lng:4.69,type:"commercial",espece:"Dindes de chair",nb:"6 200 animaux",mesures:["Dépeuplement","ZP 3 km","ZS 10 km"],src:"DDPP 21"},
+{date:"2025-10-24",dept:"Vendée",commune:"Aizenay",lat:46.74,lng:-1.61,type:"backyard",espece:"Volailles de basse-cour",nb:"28 oiseaux",mesures:["Dépeuplement","Surveillance zone"],src:"DDPP 85"},
+{date:"2025-10-25",dept:"Marne",commune:"Châlons-en-Champagne",lat:48.96,lng:4.37,type:"commercial",espece:"Canards de chair",nb:"3 800 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 51"},
+{date:"2025-11-01",dept:"Vendée",commune:"Est de Montaigu",lat:46.99,lng:-1.24,type:"commercial",espece:"Canards mulards (filière gras)",nb:"4 100 animaux vaccinés",mesures:["Dépeuplement","ZP 3 km","ZS 10 km","Surveillance 3ème dose vaccin"],src:"Préfecture 85 / Réussir Volailles 4/12"},
+{date:"2025-11-02",dept:"Dordogne",commune:"Bergerac-Périgord",lat:44.85,lng:0.48,type:"commercial",espece:"Palmipèdes — filière foie gras",nb:"3 500 animaux",mesures:["Dépeuplement","Arrêté préfectoral ZP/ZS"],src:"DDPP 24"},
+{date:"2025-11-03",dept:"Maine-et-Loire",commune:"Cholet",lat:47.06,lng:-0.88,type:"commercial",espece:"Canards de chair",nb:"5 200 animaux",mesures:["Dépeuplement","ZP/ZS","3ème dose vaccin généralisée 44,85,79,49"],src:"DDPP 49"},
+{date:"2025-11-04",dept:"Loire-Atlantique",commune:"Machecoul-Saint-Même",lat:47.01,lng:-1.81,type:"commercial",espece:"Canards mulards",nb:"4 800 animaux vaccinés",mesures:["Dépeuplement","ZP 3 km","ZS 10 km","Interdiction sortie parcours"],src:"Préfecture 44"},
+{date:"2025-11-05",dept:"Vendée",commune:"La Roche-sur-Yon",lat:46.67,lng:-1.42,type:"commercial",espece:"Canards de chair",nb:"3 900 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 85"},
+{date:"2025-11-06",dept:"Loire",commune:"Saint-Étienne",lat:45.42,lng:4.38,type:"commercial",espece:"Poulets de chair",nb:"7 000 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 42"},
+{date:"2025-11-07",dept:"Deux-Sèvres",commune:"Parthenay",lat:46.65,lng:-0.25,type:"commercial",espece:"Canards (filière gras)",nb:"3 200 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 79"},
+{date:"2025-11-08",dept:"Maine-et-Loire",commune:"Saumur",lat:47.26,lng:-0.08,type:"commercial",espece:"Canards mulards",nb:"4 600 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 49"},
+{date:"2025-11-09",dept:"Haute-Vienne",commune:"Limoges-Sud",lat:45.82,lng:1.26,type:"commercial",espece:"Palmipèdes",nb:"2 900 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 87"},
+{date:"2025-11-10",dept:"Ain",commune:"Bourg-en-Bresse",lat:46.20,lng:5.23,type:"commercial",espece:"Poulets de chair",nb:"9 500 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 01"},
+{date:"2025-11-11",dept:"Vendée",commune:"Challans",lat:46.85,lng:-1.88,type:"commercial",espece:"Canards mulards",nb:"3 700 animaux",mesures:["Dépeuplement","Arrêté préfectoral"],src:"Préfecture 85"},
+{date:"2025-11-12",dept:"Loire-Atlantique",commune:"Ancenis-Saint-Géréon",lat:47.38,lng:-1.18,type:"commercial",espece:"Canards — zone nord Loire-Atlantique",nb:"5 100 animaux vaccinés",mesures:["Dépeuplement","ZP/ZS","Contamination via faune sauvage suspectée"],src:"DDPP 44 / Réussir Volailles"},
+{date:"2025-11-13",dept:"Deux-Sèvres",commune:"Niort-Nord",lat:46.33,lng:-0.46,type:"commercial",espece:"Canards de chair",nb:"2 800 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 79"},
+{date:"2025-11-14",dept:"Loir-et-Cher",commune:"Blois",lat:47.59,lng:1.33,type:"commercial",espece:"Canards",nb:"3 400 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 41"},
+{date:"2025-11-14",dept:"Loir-et-Cher",commune:"Romorantin-Lanthenay",lat:47.36,lng:1.74,type:"backyard",espece:"Oiseaux d'ornement",nb:"12 oiseaux",mesures:["Dépeuplement","Zone de contrôle temporaire"],src:"DDPP 41"},
+{date:"2025-11-15",dept:"Lot-et-Garonne",commune:"Agen",lat:44.35,lng:0.52,type:"commercial",espece:"Canards gras (filière IGP)",nb:"2 100 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 47"},
+{date:"2025-11-16",dept:"Maine-et-Loire",commune:"Angers-Ouest",lat:47.48,lng:-0.55,type:"commercial",espece:"Canards mulards",nb:"4 300 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 49"},
+{date:"2025-11-17",dept:"Dordogne",commune:"Périgueux",lat:45.15,lng:0.72,type:"commercial",espece:"Canards de chair",nb:"3 100 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 24"},
+{date:"2025-11-18",dept:"Vendée",commune:"Fontenay-le-Comte",lat:46.47,lng:-0.81,type:"commercial",espece:"Canards de chair",nb:"3 600 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"Préfecture 85"},
+{date:"2025-11-20",dept:"Bas-Rhin",commune:"Strasbourg-Campagne",lat:48.38,lng:7.62,type:"backyard",espece:"Basse-cour — génotype FR20 (distinct de FR9 élevages)",nb:"24 oiseaux",mesures:["Dépeuplement","Zone de contrôle","Analyse génotypique urgente — alerte nationale FR20"],src:"GDS Bretagne / Préfecture 67"},
+{date:"2025-11-21",dept:"Aube",commune:"Troyes-Est",lat:48.29,lng:4.19,type:"backyard",espece:"Oiseaux captifs d'ornement",nb:"15 oiseaux",mesures:["Dépeuplement","Zone de contrôle temporaire"],src:"DDPP 10"},
+{date:"2025-11-22",dept:"Deux-Sèvres",commune:"Thouars",lat:46.97,lng:-0.21,type:"commercial",espece:"Canards filière gras",nb:"2 700 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 79"},
+{date:"2025-11-24",dept:"Charente-Maritime",commune:"Rochefort-Oléron",lat:45.93,lng:-1.02,type:"backyard",espece:"Oiseaux captifs",nb:"19 oiseaux",mesures:["Dépeuplement","Zone de contrôle"],src:"DDPP 17"},
+{date:"2025-11-25",dept:"Gironde",commune:"Bordeaux-Médoc",lat:44.95,lng:-0.72,type:"backyard",espece:"Basse-cour particuliers",nb:"28 oiseaux",mesures:["Dépeuplement","Zone de contrôle temporaire"],src:"DDPP 33"},
+{date:"2025-11-26",dept:"Vendée",commune:"Mouilleron-en-Pareds",lat:46.67,lng:-0.85,type:"commercial",espece:"Canards mulards",nb:"3 400 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"Préfecture 85"},
+{date:"2025-11-27",dept:"Maine-et-Loire",commune:"Beaupréau-en-Mauges",lat:47.21,lng:-0.99,type:"commercial",espece:"Canards mulards",nb:"5 600 animaux",mesures:["Dépeuplement","ZP/ZS","Interdiction sortie canards vaccinés"],src:"DDPP 49 – 64 foyers au 24/11"},
+{date:"2025-11-28",dept:"Loire-Atlantique",commune:"Pornic",lat:47.11,lng:-2.10,type:"commercial",espece:"Canards de chair",nb:"4 200 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 44"},
+{date:"2025-11-29",dept:"Allier",commune:"Moulins-Yzeure",lat:46.56,lng:3.34,type:"commercial",espece:"Poulets de chair",nb:"8 200 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 03"},
+{date:"2025-11-30",dept:"Marne",commune:"Épernay",lat:49.04,lng:3.95,type:"commercial",espece:"Volailles mixtes",nb:"5 100 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 51"},
+{date:"2025-12-01",dept:"Cher",commune:"Bourges-Nord",lat:47.11,lng:2.38,type:"commercial",espece:"Poulets de chair",nb:"7 500 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 18"},
+{date:"2025-12-01",dept:"Loire-Atlantique",commune:"Nantes-Rezé",lat:47.18,lng:-1.55,type:"backyard",espece:"Canards et oies de basse-cour",nb:"14 oiseaux",mesures:["Dépeuplement","Zone de contrôle"],src:"DDPP 44"},
+{date:"2025-12-02",dept:"Deux-Sèvres",commune:"Bressuire",lat:46.84,lng:-0.49,type:"commercial",espece:"Canards",nb:"3 000 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 79"},
+{date:"2025-12-02",dept:"Loir-et-Cher",commune:"Vendôme",lat:47.79,lng:1.07,type:"commercial",espece:"Canards filière gras",nb:"2 900 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 41"},
+{date:"2025-12-03",dept:"Maine-et-Loire",commune:"Segré-en-Anjou",lat:47.69,lng:-0.87,type:"commercial",espece:"Canards mulards",nb:"4 700 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 49"},
+{date:"2025-12-03",dept:"Vendée",commune:"La Gaubretière",lat:46.97,lng:-1.17,type:"commercial",espece:"Canards de chair",nb:"3 500 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"Préfecture 85"},
+{date:"2025-12-04",dept:"Haute-Vienne",commune:"Ambazac — ~500 poules abattues",lat:46.00,lng:1.41,type:"commercial",espece:"Poules de chair (Thorey-sur-Ouche)",nb:"500 animaux dépeuplés",mesures:["Dépeuplement","ZP/ZS","Abattage préventif volailles voisines"],src:"France Bleu / DDPP 87 – 83 foyers au 4/12"},
+{date:"2025-12-04",dept:"Ain",commune:"Bourg-en-Bresse Est",lat:46.22,lng:5.38,type:"commercial",espece:"Poulets de chair",nb:"9 000 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 01"},
+{date:"2025-12-05",dept:"Yvelines",commune:"Rambouillet",lat:48.65,lng:1.82,type:"commercial",espece:"Élevage avicole",nb:"6 000 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 78"},
+{date:"2025-12-05",dept:"Somme",commune:"Abbeville",lat:50.11,lng:1.83,type:"commercial",espece:"Volailles mixtes",nb:"5 500 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 80"},
+{date:"2025-12-06",dept:"Dordogne",commune:"Sarlat-la-Canéda",lat:44.89,lng:1.22,type:"commercial",espece:"Canards gras",nb:"2 800 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 24"},
+{date:"2025-12-07",dept:"Indre-et-Loire",commune:"Larçay – Athée-sur-Cher",lat:47.36,lng:0.78,type:"backyard",espece:"Oiseaux captifs — 2ème foyer Indre-et-Loire",nb:"16 oiseaux",mesures:["Dépeuplement","Zone contrôle : Larçay, Athée, Esvres, Cormery"],src:"Préfecture 37"},
+{date:"2025-12-08",dept:"Maine-et-Loire",commune:"Doué-en-Anjou",lat:47.19,lng:-0.27,type:"commercial",espece:"Canards mulards",nb:"4 100 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 49"},
+{date:"2025-12-08",dept:"Gironde",commune:"Blaye-Médoc",lat:45.13,lng:-0.66,type:"backyard",espece:"Basse-cour particuliers",nb:"22 oiseaux",mesures:["Dépeuplement","Zone de contrôle"],src:"Préfecture 33"},
+{date:"2025-12-09",dept:"Deux-Sèvres",commune:"Largeasse",lat:46.82,lng:-0.38,type:"commercial",espece:"Canards — 4ème foyer Deux-Sèvres",nb:"2 900 animaux",mesures:["Dépeuplement","ZP/ZS – 4ème foyer du département"],src:"France Bleu Poitou – 15/12"},
+{date:"2025-12-10",dept:"Finistère",commune:"Cléder",lat:48.69,lng:-4.11,type:"commercial",espece:"Canards / dindes",nb:"4 500 animaux",mesures:["Dépeuplement","ZP/ZS — zone assainie fin déc."],src:"Chambre Agriculture Bretagne"},
+{date:"2025-12-10",dept:"Côtes-d'Armor",commune:"Loudéac",lat:48.18,lng:-2.75,type:"commercial",espece:"Canards de chair / dindes",nb:"5 200 animaux",mesures:["Dépeuplement","ZP 3 km","ZS 10 km — foyer actif jusqu'en jan. 2026"],src:"Préfecture 22 – confirmé 29/12"},
+{date:"2025-12-11",dept:"Calvados",commune:"Caen-Falaise",lat:49.08,lng:-0.37,type:"commercial",espece:"Volailles",nb:"6 800 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 14"},
+{date:"2025-12-12",dept:"Landes",commune:"Dax",lat:43.71,lng:-1.05,type:"commercial",espece:"Canards de chair",nb:"3 500 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 40"},
+{date:"2025-12-12",dept:"Nord",commune:"Warhem (Flandres maritimes)",lat:50.97,lng:2.55,type:"commercial",espece:"Élevage avicole — 1er foyer Nord saison",nb:"Mortalités anormales constatées",mesures:["Dépeuplement d'urgence","ZP 3 km — Warhem","ZS 10 km autour du foyer","Arrêté préfectoral du 20/12"],src:"Préfecture Nord – confirmé 20/12/2025"},
+{date:"2025-12-15",dept:"Loire-Atlantique",commune:"Rezé",lat:47.18,lng:-1.56,type:"commercial",espece:"Canards",nb:"3 800 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 44"},
+{date:"2025-12-15",dept:"Aube",commune:"Bar-sur-Aube",lat:48.24,lng:4.71,type:"backyard",espece:"Basse-cour",nb:"17 oiseaux",mesures:["Dépeuplement","Zone de contrôle"],src:"DDPP 10"},
+{date:"2025-12-17",dept:"Allier",commune:"Vichy",lat:46.13,lng:3.43,type:"commercial",espece:"Poulets de chair",nb:"7 200 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 03"},
+{date:"2025-12-18",dept:"Deux-Sèvres",commune:"Melle",lat:46.22,lng:-0.14,type:"commercial",espece:"Canards",nb:"2 700 animaux",mesures:["Dépeuplement","ZP/ZS — nouveaux dpts touchés 18/12"],src:"La France Agricole 18/12/2025"},
+{date:"2025-12-18",dept:"Ain",commune:"Pont-d'Ain",lat:46.05,lng:5.33,type:"backyard",espece:"Oiseaux captifs d'ornement",nb:"11 oiseaux",mesures:["Dépeuplement","Zone de contrôle"],src:"DDPP 01"},
+{date:"2025-12-19",dept:"Lot-et-Garonne",commune:"Mézin",lat:44.05,lng:0.27,type:"commercial",espece:"Palmipèdes (filière foie gras)",nb:"2 400 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 47"},
+{date:"2025-12-20",dept:"Calvados",commune:"Lisieux",lat:49.15,lng:0.23,type:"backyard",espece:"Basse-cour",nb:"20 oiseaux",mesures:["Dépeuplement","Zone de contrôle"],src:"DDPP 14"},
+{date:"2025-12-24",dept:"Drôme",commune:"Châteauneuf-sur-Isère",lat:44.98,lng:4.98,type:"backyard",espece:"Fauconnerie — 30 rapaces — 1er cas Drôme",nb:"30 volatiles abattus",mesures:["Dépeuplement 30 volatiles","Zone réglementée","Alerte fauconniers voisins","Arrêté préfectoral 24/12"],src:"France Bleu Drôme Ardèche 24/12/2025"},
+{date:"2025-12-25",dept:"Dordogne",commune:"Bergerac-Issigeac",lat:44.73,lng:0.62,type:"commercial",espece:"Canards gras IGP Périgord",nb:"3 200 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 24"},
+{date:"2025-12-26",dept:"Finistère",commune:"Landivisiau",lat:48.51,lng:-4.07,type:"commercial",espece:"Canards / dindes",nb:"4 800 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 29"},
+{date:"2025-12-29",dept:"Côtes-d'Armor",commune:"Loudéac (2ème foyer)",lat:48.17,lng:-2.77,type:"commercial",espece:"Canards — 2ème foyer Loudéac",nb:"5 500 animaux",mesures:["Dépeuplement","ZP 3 km — zone active en jan.","ZRS étendue"],src:"Chambre Agriculture Bretagne – confirmé 29/12"},
+{date:"2025-12-30",dept:"Vendée",commune:"Les Essarts-en-Bocage",lat:46.78,lng:-1.25,type:"commercial",espece:"Canards mulards",nb:"4 000 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"Préfecture 85 – 105 foyers au 2/01"},
+{date:"2025-12-31",dept:"Maine-et-Loire",commune:"Saumur-Thouarcé",lat:47.28,lng:-0.45,type:"commercial",espece:"Canards mulards",nb:"4 900 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 49"},
+{date:"2026-01-02",dept:"Drôme",commune:"Marches",lat:44.82,lng:5.02,type:"commercial",espece:"Poulets, dindes, chapons, pintades",nb:"Cheptel total abattu",mesures:["Dépeuplement total","ZP 3 km : Marches","ZS 10 km autour de Marches","Arrêté préfectoral Drôme 2/01"],src:"Chambre Agriculture Drôme 2/01/2026"},
+{date:"2026-01-02",dept:"Ain",commune:"Pont-de-Vaux",lat:46.43,lng:4.94,type:"commercial",espece:"Volailles de chair",nb:"8 500 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 01"},
+{date:"2026-01-03",dept:"Deux-Sèvres",commune:"Parthenay-Airvault",lat:46.84,lng:-0.22,type:"commercial",espece:"Canards mulards",nb:"2 800 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 79"},
+{date:"2026-01-04",dept:"Vendée",commune:"Saint-Fulgent",lat:46.85,lng:-1.18,type:"commercial",espece:"Canards mulards",nb:"3 900 animaux",mesures:["Dépeuplement","ZP/ZS","Interdiction parcours canards vaccinés"],src:"Préfecture 85"},
+{date:"2026-01-05",dept:"Maine-et-Loire",commune:"Montreuil-Bellay",lat:47.13,lng:-0.15,type:"commercial",espece:"Canards de chair",nb:"4 500 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 49"},
+{date:"2026-01-05",dept:"Côtes-d'Armor",commune:"Saint-Connan",lat:48.48,lng:-2.95,type:"commercial",espece:"Dindes de chair",nb:"6 200 animaux",mesures:["Dépeuplement","ZP 3 km","ZS 10 km"],src:"Réussir Volailles – cluster Côtes-d'Armor"},
+{date:"2026-01-06",dept:"Loire-Atlantique",commune:"Clisson",lat:47.09,lng:-1.28,type:"commercial",espece:"Canards mulards",nb:"4 100 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 44"},
+{date:"2026-01-06",dept:"Nord",commune:"Bergues",lat:50.97,lng:2.43,type:"commercial",espece:"Volailles mixtes",nb:"5 800 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 59"},
+{date:"2026-01-07",dept:"Lot-et-Garonne",commune:"Tonneins — élevage canards",lat:44.39,lng:0.31,type:"commercial",espece:"Canards (2 000 vaccinés)",nb:"2 000 animaux vaccinés",mesures:["Dépeuplement le 16/01","ZP 3 km","ZS 10 km","7 communes Dordogne voisines en zone surveillance","Abattage basse-cour (52 oiseaux)"],src:"La France Agricole 19/01/2026 – 110 foyers au 14/01"},
+{date:"2026-01-07",dept:"Lot-et-Garonne",commune:"Marmande-Aiguillon — basse-cour",lat:44.28,lng:0.32,type:"backyard",espece:"Basse-cour (52 oiseaux) — abattage préventif",nb:"52 oiseaux abattus préventivement",mesures:["Abattage préventif","Zone de contrôle"],src:"La France Agricole 19/01/2026"},
+{date:"2026-01-08",dept:"Vendée",commune:"Pouzauges",lat:46.78,lng:-0.84,type:"commercial",espece:"Canards mulards",nb:"3 700 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"Préfecture 85"},
+{date:"2026-01-09",dept:"Dordogne",commune:"Périgueux-Mussidan",lat:45.03,lng:0.36,type:"commercial",espece:"Canards gras",nb:"2 900 animaux",mesures:["Dépeuplement","ZP/ZS — 7 communes en zone de surveillance"],src:"Préfecture 24 – suite foyer Lot-et-Garonne"},
+{date:"2026-01-10",dept:"Allier",commune:"Villefranche-d'Allier",lat:46.40,lng:3.03,type:"commercial",espece:"Poules pondeuses",nb:"Cheptel intégral dépeuplé",mesures:["Dépeuplement immédiat","ZP : Villefranche-d'Allier","ZS : Bézenet, Bizeneuille, Chappes, Chavenon, Cosne-d'Allier, Deneuille-les-Mines, Doyet, Murat, Saint-Priest-en-Murat, Sauvagny, Tortezais, Venas, Vieure","Dépistage RT-PCR gratuit personnes exposées"],src:"Préfecture Allier – arrêté 10/01/2026"},
+{date:"2026-01-13",dept:"Côtes-d'Armor",commune:"Saint-Gilles-Pligeaux",lat:48.42,lng:-2.88,type:"commercial",espece:"Dindes et poules pondeuses — cluster de 7 foyers",nb:"Cluster dans cercle 7-9 km",mesures:["Dépeuplement","ZP 3 km","Arrêté zonage 10 km du 9/02","3 couvoirs de poussins perturbés"],src:"Réussir Volailles 9/02 – 13 foyers Côtes-d'Armor"},
+{date:"2026-01-16",dept:"Gironde",commune:"Région de Blaye",lat:45.13,lng:-0.67,type:"backyard",espece:"Basse-cour de particuliers",nb:"~30 oiseaux",mesures:["Dépeuplement","Zone de contrôle temporaire"],src:"France Bleu Gironde / Préfecture 33"},
+{date:"2026-01-17",dept:"Indre-et-Loire",commune:"Heugnes – Écueillé – Jeu-Maloches",lat:47.13,lng:1.38,type:"wild",espece:"Cygne tuberculé H5N1",nb:"1 cygne mort",mesures:["Arrêté de prévention préfectoral","Vigilance chasseurs et éleveurs","Zone de prévention 3 communes"],src:"Préfecture 37"},
+{date:"2026-01-23",dept:"Ille-et-Vilaine",commune:"Sougéal — marais (près de Fougères)",lat:48.47,lng:-1.38,type:"wild",espece:"Cygnes tuberculés morts — IAHP confirmé",nb:"Plusieurs cygnes morts",mesures:["Zone de prévention 4 communes","Interdiction toucher les carcasses","Signalement mairie ou DDPP"],src:"Préfecture 35 – confirmé 23/01/2026"},
+{date:"2026-01-25",dept:"Jura",commune:"Aumont (étang)",lat:46.72,lng:5.78,type:"wild",espece:"Cygnes morts H5N1 — 6 cas",nb:"6 cygnes morts",mesures:["Zone réglementée 27 communes","Restrictions professionnels et particuliers","Interdictions chasse aux gibiers d'eau","Arrêté préfectoral Jura"],src:"France Bleu Bourgogne-Franche-Comté"},
+{date:"2026-01-26",dept:"Pyrénées-Atlantiques",commune:"Béarn",lat:43.38,lng:-0.77,type:"backyard",espece:"Oiseaux captifs",nb:"14 oiseaux",mesures:["Dépeuplement","Zone de contrôle"],src:"Min. Agriculture – bilan 26/01 : 117 foyers élevages"},
+{date:"2026-01-27",dept:"Essonne",commune:"Étampes",lat:48.43,lng:2.16,type:"backyard",espece:"Basse-cour particuliers",nb:"21 oiseaux",mesures:["Dépeuplement","Zone de contrôle"],src:"DDPP 91"},
+{date:"2026-01-28",dept:"Côtes-d'Armor",commune:"Saint-Connan — parentaux",lat:48.52,lng:-2.92,type:"commercial",espece:"Poulettes parentaux chair",nb:"Couvoir perturbé",mesures:["Dépeuplement","ZP/ZS — restriction export poussins","3 couvoirs impactés par mesures réglementaires"],src:"Réussir Volailles 9/02"},
+{date:"2026-01-29",dept:"Maine-et-Loire",commune:"Segré-Seiches-sur-Loir",lat:47.59,lng:-0.35,type:"commercial",espece:"Canards mulards",nb:"4 600 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 49"},
+{date:"2026-01-31",dept:"Vendée",commune:"Mortagne-sur-Sèvre",lat:47.01,lng:-0.94,type:"commercial",espece:"Canards mulards",nb:"4 200 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"Préfecture 85"},
+{date:"2026-02-02",dept:"Cher",commune:"Presly",lat:47.42,lng:2.72,type:"backyard",espece:"Basse-cour de particuliers",nb:"~40 volailles abattues",mesures:["Abattage immédiat ~40 volailles","Zone de contrôle temporaire","Signalement éleveurs voisins"],src:"France Bleu Berry 2/02/2026"},
+{date:"2026-02-03",dept:"Loire-Atlantique",commune:"Nozay",lat:47.57,lng:-1.62,type:"commercial",espece:"Canards mulards",nb:"4 000 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 44 — 113 foyers au 1/02"},
+{date:"2026-02-04",dept:"Vendée",commune:"Chantonnay-Est",lat:46.69,lng:-0.96,type:"commercial",espece:"Canards",nb:"3 700 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"Préfecture 85"},
+{date:"2026-02-05",dept:"Côtes-d'Armor",commune:"Plémet",lat:48.18,lng:-2.59,type:"commercial",espece:"Poulets de chair",nb:"7 800 animaux",mesures:["Dépeuplement","ZP 3 km","ZS 10 km","Arrêté préfectoral 9/02"],src:"Réussir Volailles – accélération fin jan. Côtes-d'Armor"},
+{date:"2026-02-06",dept:"Maine-et-Loire",commune:"Beaupréau",lat:47.20,lng:-0.99,type:"commercial",espece:"Canards mulards",nb:"5 200 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 49"},
+{date:"2026-02-07",dept:"Ille-et-Vilaine",commune:"Teillay (limite Loire-Atlantique)",lat:47.82,lng:-1.52,type:"backyard",espece:"Canards, oies, cygnes — basse-cour",nb:"15 oiseaux dépeuplés",mesures:["Dépeuplement immédiat des 15 oiseaux","Surveillance alentours","1er cas Ille-et-Vilaine saison 2025-2026"],src:"Préfecture 35 – confirmé 07/02/2026"},
+{date:"2026-02-09",dept:"Côtes-d'Armor",commune:"Saint-Gilles-Pligeaux — cluster",lat:48.40,lng:-2.92,type:"commercial",espece:"Dindes et poules pondeuses — cluster étendu",nb:"7 foyers dans cercle 7-9 km",mesures:["Nouvel arrêté de zonage 10 km le 9/02","Restrictions couvoirs 3 départements","Analyse virus en cours"],src:"Réussir Volailles 9/02/2026"},
+{date:"2026-02-10",dept:"Morbihan",commune:"Vannes",lat:47.66,lng:-2.75,type:"wild",espece:"Oiseaux marins — mouettes",nb:"Signalement",mesures:["Surveillance faune","Alerte éleveurs"],src:"Plateforme ESA"},
+{date:"2026-02-12",dept:"Vendée",commune:"Saint-Hilaire-de-Loulay",lat:47.05,lng:-1.35,type:"commercial",espece:"Canards mulards",nb:"3 900 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"Préfecture 85 — 294 foyers cumulés Min. Agriculture"},
+{date:"2026-02-14",dept:"Loire-Atlantique",commune:"Saint-Nazaire",lat:47.28,lng:-2.21,type:"commercial",espece:"Canards de chair",nb:"4 400 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 44"},
+{date:"2026-02-14",dept:"Charente-Maritime",commune:"Rochefort-Fouras",lat:45.99,lng:-1.08,type:"wild",espece:"Mouettes rieuses — H5N1",nb:"Oiseaux morts",mesures:["Surveillance littorale","Alerte éleveurs côtiers"],src:"Plateforme ESA – laridés morts mult. depuis jan."},
+{date:"2026-02-15",dept:"Côtes-d'Armor",commune:"Quintin",lat:48.40,lng:-2.91,type:"commercial",espece:"Poules pondeuses",nb:"6 500 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"Chambre Agriculture Bretagne"},
+{date:"2026-02-17",dept:"Maine-et-Loire",commune:"Vihiers-Sud",lat:47.05,lng:-0.55,type:"commercial",espece:"Canards mulards",nb:"4 700 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 49"},
+{date:"2026-02-18",dept:"Vendée",commune:"Montaigu-Vendée",lat:46.97,lng:-1.32,type:"commercial",espece:"Canards mulards",nb:"4 100 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"Préfecture 85"},
+{date:"2026-02-20",dept:"Côtes-d'Armor",commune:"Loudéac-Saint-Caradec",lat:48.15,lng:-2.68,type:"commercial",espece:"Dindes de chair — 13 foyers total dans les Côtes-d'Armor",nb:"5 900 animaux",mesures:["Dépeuplement","ZP/ZS","Arrêté zonage revu"],src:"Réussir Volailles – 13 foyers Côtes-d'Armor"},
+{date:"2026-02-21",dept:"Deux-Sèvres",commune:"Saint-Maixent-l'École",lat:46.41,lng:-0.21,type:"commercial",espece:"Canards",nb:"3 000 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"DDPP 79 — 35 foyers Deux-Sèvres total"},
+{date:"2026-02-22",dept:"Vendée",commune:"La Mothe-Achard",lat:46.61,lng:-1.67,type:"commercial",espece:"Canards mulards",nb:"3 800 animaux",mesures:["Dépeuplement","ZP/ZS"],src:"Préfecture 85 — 120 foyers Vendée total"},
+{date:"2026-02-23",dept:"Ille-et-Vilaine",commune:"Bain-de-Bretagne",lat:47.84,lng:-1.68,type:"wild",espece:"Mouettes rieuses — surveillance active",nb:"Signalement faune sauvage",mesures:["Surveillance","Alerte éleveurs locaux"],src:"Plateforme ESA – 23/02/2026"},
+];
+
+D.sort((a,b)=>new Date(a.date)-new Date(b.date));
+const START=new Date("2025-08-01"), END=new Date("2026-02-23");
+const DAYS=Math.ceil((END-START)/86400000);
+const MS=[
+  {date:"2025-10-22",msg:"⚠️ Passage au niveau de RISQUE ÉLEVÉ — 22 octobre 2025"},
+  {date:"2025-11-24",msg:"📊 64 foyers confirmés en élevage (24 nov. 2025)"},
+  {date:"2025-12-04",msg:"📊 83 foyers commerciaux (4 déc. 2025)"},
+  {date:"2026-01-02",msg:"📊 105 foyers élevage + 14 basses-cours (2 jan. 2026)"},
+  {date:"2026-01-26",msg:"📊 117 foyers élevage · 77 en Vendée/Loire-Atlantique"},
+];
+const map=L.map('map',{center:[46.5,2.3],zoom:6,zoomControl:true,attributionControl:false});
+L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png',{maxZoom:20,attribution:'© OpenStreetMap France'}).addTo(map);
+L.control.attribution({position:'bottomleft',prefix:'<span style="color:#777;font-size:.55rem">© OpenStreetMap France · Min. Agriculture · Plateforme ESA</span>'}).addTo(map);
+const col=t=>t==='commercial'?'#f43f5e':t==='backyard'?'#f59e0b':'#10b981';
+const lbl=t=>t==='commercial'?'Élevage commercial':t==='backyard'?'Basse-cour / captif':'Faune sauvage';
+let MK=[],SH=[],play=false,timer=null,spd=1200,day=0,lastM="",selId=null;
+
+function addPt(o,i){
+  const c=col(o.type),r=o.type==='commercial'?10:o.type==='backyard'?9:7;
+  const m=L.circleMarker([o.lat,o.lng],{radius:r,fillColor:c,color:'white',weight:1.8,opacity:1,fillOpacity:.9}).addTo(map);
+  m.bindTooltip(`<b>${o.dept}</b> · ${o.commune}<br><span style="opacity:.7">${lbl(o.type)}</span>`,{className:'ctt',direction:'top',offset:[0,-4]});
+  m.on('click',()=>showDP(i));
+  let rr=r,ro=1;
+  const p=L.circleMarker([o.lat,o.lng],{radius:r,fillColor:'transparent',color:c,weight:1.5,opacity:1,fillOpacity:0}).addTo(map);
+  const iv=setInterval(()=>{ rr+=1.6; ro-=.055; if(ro<=0){clearInterval(iv);map.removeLayer(p);return;} p.setRadius(rr);p.setStyle({opacity:ro}); },28);
+  MK.push({m,o,id:i}); SH.push(o); updStats(); addEv(o,i);
+}
+
+function updStats(){
+  document.getElementById('cC').textContent=SH.filter(x=>x.type==='commercial').length;
+  document.getElementById('cB').textContent=SH.filter(x=>x.type==='backyard').length;
+  document.getElementById('cW').textContent=SH.filter(x=>x.type==='wild').length;
+  document.getElementById('evCnt').textContent='('+SH.length+')';
+}
+
+function addEv(o,i){
+  const L2=document.getElementById('evList'),e=L2.querySelector('.empty');if(e)L2.removeChild(e);
+  const c=col(o.type),el=document.createElement('div');el.className='evi';el.id='ev-'+i;
+  el.innerHTML=`<div class="eid" style="background:${c};box-shadow:0 0 5px ${c}"></div><div class="eb"><div class="edept">${o.dept}</div><div class="edet">${o.commune}</div></div><div class="edate">${new Date(o.date).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</div>`;
+  el.onclick=()=>showDP(i); L2.insertBefore(el,L2.firstChild);
+}
+
+function showDP(i){
+  const o=D[i]; if(!o)return; selId=i;
+  document.querySelectorAll('.evi').forEach(e=>e.classList.remove('sel'));
+  const el=document.getElementById('ev-'+i); if(el){el.classList.add('sel');el.scrollIntoView({block:'nearest'});}
+  const c=col(o.type);
+  document.getElementById('dpd').style.cssText=`background:${c};box-shadow:0 0 8px ${c}`;
+  document.getElementById('dpdept').textContent=o.dept;
+  const b=document.getElementById('dpbadge'); b.textContent=lbl(o.type); b.className='dpbadge '+o.type;
+  const rows=[['Commune',o.commune],['Date',new Date(o.date).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})],['Espèce / Type',o.espece],['Nb animaux',o.nb],['Source',o.src]];
+  document.getElementById('dprows').innerHTML=rows.map(r=>`<div class="dpr"><span class="drk">${r[0]}</span><span class="drv">${r[1]}</span></div>`).join('');
+  const pm=document.getElementById('dpmesures');
+  if(o.mesures&&o.mesures.length){ pm.innerHTML=`<div class="dpmt">Mesures sanitaires</div>`+o.mesures.map(m=>`<div class="dpmi">${m}</div>`).join(''); pm.style.display='block'; } else pm.style.display='none';
+  document.getElementById('dplink').innerHTML=`<a href="https://agriculture.gouv.fr/influenza-aviaire-la-situation-en-france" target="_blank">↗ Situation officielle Min. Agriculture</a>`;
+  const mk=MK.find(x=>x.id===i); if(mk) map.panTo([o.lat,o.lng],{animate:true,duration:.5});
+  document.getElementById('dp').classList.add('show');
+}
+function closeDP(){ document.getElementById('dp').classList.remove('show'); document.querySelectorAll('.evi').forEach(e=>e.classList.remove('sel')); selId=null; }
+
+function setDay(d){
+  day=d;
+  const dt=new Date(START.getTime()+d*86400000), ds=dt.toISOString().split('T')[0];
+  document.getElementById('cdate').textContent=dt.toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('slider').value=(d/DAYS*100).toFixed(1);
+  updRisk(ds);
+  D.forEach((o,i)=>{ if(o.date<=ds&&!SH.includes(o)) addPt(o,i); });
+  MS.forEach(m=>{ if(m.date===ds&&m.date!==lastM){ lastM=m.date; showBanner(m.msg); } });
+}
+function updRisk(ds){
+  const d=new Date(ds),b=document.getElementById('rb');
+  if(d>=new Date("2025-10-22")){b.className='rbadge high';b.textContent='⬤ RISQUE ÉLEVÉ';}
+  else if(d>=new Date("2025-09-01")){b.className='rbadge mid';b.textContent='⬤ RISQUE MODÉRÉ';}
+  else{b.className='rbadge low';b.textContent='⬤ RISQUE NÉGLIGEABLE';}
+}
+function showBanner(msg){
+  document.querySelectorAll('.milestone').forEach(x=>x.remove());
+  const b=document.createElement('div');b.className='milestone';b.textContent=msg;
+  document.querySelector('.main').appendChild(b);
+  setTimeout(()=>{if(b.parentNode)b.remove();},3500);
+}
+function togglePlay(){ play?stopP():startP(); }
+function startP(){
+  if(day>=DAYS){day=0;doReset();setTimeout(startP,100);return;}
+  play=true; document.getElementById('pb').textContent='❚❚ PAUSE'; document.getElementById('pb').classList.add('on');
+  timer=setInterval(()=>{ if(day>=DAYS){stopP();return;} setDay(day+1); },spd);
+}
+function stopP(){ play=false; document.getElementById('pb').textContent='▶ PLAY'; document.getElementById('pb').classList.remove('on'); if(timer){clearInterval(timer);timer=null;} }
+function doReset(){
+  stopP(); closeDP();
+  MK.forEach(x=>map.removeLayer(x.m)); MK=[];SH=[];day=0;lastM="";
+  ['cC','cB','cW'].forEach(id=>document.getElementById(id).textContent='0');
+  document.getElementById('evCnt').textContent='';
+  document.getElementById('cdate').textContent='1 août 2025';
+  document.getElementById('slider').value=0;
+  document.getElementById('rb').className='rbadge low';document.getElementById('rb').textContent='⬤ RISQUE NÉGLIGEABLE';
+  document.getElementById('evList').innerHTML='<div class="empty">Appuyez sur ▶ PLAY<br>pour démarrer l\'animation</div>';
+}
+function chgSpd(){ spd=parseInt(document.getElementById('spd').value); if(play){stopP();startP();} }
+
+document.getElementById('slider').addEventListener('input',function(){
+  stopP();closeDP();
+  MK.forEach(x=>map.removeLayer(x.m));MK=[];SH=[];lastM="";document.getElementById('evList').innerHTML='';
+  const td=Math.round(DAYS*this.value/100);day=td;
+  const dt=new Date(START.getTime()+td*86400000),ds=dt.toISOString().split('T')[0];
+  document.getElementById('cdate').textContent=dt.toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
+  updRisk(ds);
+  D.forEach((o,i)=>{ if(o.date<=ds){
+    const c=col(o.type),r=o.type==='commercial'?10:o.type==='backyard'?9:7;
+    const m=L.circleMarker([o.lat,o.lng],{radius:r,fillColor:c,color:'white',weight:1.8,opacity:1,fillOpacity:.9}).addTo(map);
+    m.bindTooltip(`<b>${o.dept}</b> · ${o.commune}<br><span style="opacity:.7">${lbl(o.type)}</span>`,{className:'ctt',direction:'top',offset:[0,-4]});
+    m.on('click',()=>showDP(i));
+    MK.push({m,o,id:i});SH.push(o);
+  }});
+  updStats();
+  const EL=document.getElementById('evList');
+  if(!SH.length){EL.innerHTML='<div class="empty">Appuyez sur ▶ PLAY<br>pour démarrer l\'animation</div>';return;}
+  [...SH].reverse().forEach(o=>{
+    const i=D.indexOf(o),c=col(o.type),el=document.createElement('div');el.className='evi';el.id='ev-'+i;
+    el.innerHTML=`<div class="eid" style="background:${c}"></div><div class="eb"><div class="edept">${o.dept}</div><div class="edet">${o.commune}</div></div><div class="edate">${new Date(o.date).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</div>`;
+    el.onclick=()=>showDP(i);EL.appendChild(el);
+  });
+});
+
+setTimeout(()=>startP(),600);
+</script>
+</body>
+</html>
