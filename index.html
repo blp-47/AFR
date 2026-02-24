@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CARTE IAHP AFR — France 2025/2026</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#141b26;--panel:#1a2335;--border:#263348;--text:#cdd9e9;--muted:#5c7899;--accent:#f97316;--commercial:#f43f5e;--backyard:#f59e0b;--wild:#10b981;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'IBM Plex Mono',monospace;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+header{background:var(--panel);border-bottom:2px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:16px;flex-shrink:0;z-index:1200;}
+header h1{font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;color:#fff;white-space:nowrap;display:flex;align-items:center;gap:12px;}
+header .sub{font-size:.58rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-top:2px;}
+.rbadge{margin-left:auto;padding:4px 14px;border-radius:4px;font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;transition:all .5s;}
+.rbadge.high{background:rgba(244,63,94,.15);color:#f43f5e;border:1px solid #f43f5e;}
+
+.main{flex:1;display:flex;overflow:hidden;position:relative;}
+#map{flex:1;}
+
+.sidebar{width:330px;background:var(--panel);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;}
+.stats-row{display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid var(--border);}
+.stat{padding:12px 8px;text-align:center;border-right:1px solid var(--border);}
+.stat:last-child{border-right:none;}
+.stat .lbl{font-size:.52rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:5px;}
+.stat .val{font-family:'Syne',sans-serif;font-weight:800;font-size:1.6rem;line-height:1;}
+.stat.c .val{color:var(--commercial)}.stat.b .val{color:var(--backyard)}.stat.w .val{color:var(--wild)}
+
+/* SECTION FILTRE PAR DATE */
+.filter-box{padding:15px;border-bottom:1px solid var(--border);background:rgba(0,0,0,0.2);}
+.sec-label{font-size:.54rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:10px;display:block;}
+.date-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.date-col{display:flex;flex-direction:column;gap:4px;}
+.date-col label{font-size:.5rem;color:var(--muted);text-transform:uppercase;}
+.date-col input{background:var(--bg);border:1px solid var(--border);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:.7rem;padding:6px;border-radius:4px;outline:none;}
+.date-col input:focus{border-color:var(--accent);}
+
+.legend{padding:12px 15px;border-bottom:1px solid var(--border);}
+.li{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:.6rem;}
+.ld{width:11px;height:11px;border-radius:50%;flex-shrink:0;}
+
+.lhdr{padding:10px 15px;font-size:.54rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);flex-shrink:0;border-bottom:1px solid var(--border);background:var(--surface);}
+.events{flex:1;overflow-y:auto;background:rgba(20,27,38,0.3);}
+.events::-webkit-scrollbar{width:4px;}
+.events::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.evi{padding:12px 15px;border-bottom:1px solid rgba(38,51,72,.6);display:flex;gap:10px;align-items:flex-start;cursor:pointer;transition:background .2s;}
+.evi:hover{background:rgba(255,255,255,.03);}
+.evi.sel{background:rgba(249,115,22,.1);border-left:3px solid var(--accent);padding-left:12px;}
+.eid{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:3px;}
+.eb{flex:1;min-width:0;}
+.edept{font-size:.7rem;font-weight:600;color:#fff;}
+.edet{font-size:.55rem;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.edate{font-size:.55rem;color:var(--accent);font-weight:600;padding-top:2px;flex-shrink:0;}
+
+/* DETAIL PANEL */
+#dp{position:absolute;top:15px;right:345px;width:320px;z-index:1100;background:#111827;border:1px solid var(--border);border-radius:8px;box-shadow:0 15px 35px rgba(0,0,0,.6);overflow:hidden;display:none;}
+#dp.show{display:block;animation:pop .2s ease;}
+@keyframes pop{from{opacity:0;transform:scale(0.95)}to{opacity:1;transform:scale(1)}}
+.dph{padding:12px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);}
+.dpd{width:14px;height:14px;border-radius:50%;flex-shrink:0;}
+.dpdept{font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;color:#fff;flex:1;}
+.dpcl{cursor:pointer;color:var(--muted);font-size:1.2rem;line-height:1;}
+.dpcl:hover{color:#fff;}
+.dpb{padding:15px 16px;}
+.dpbadge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:.55rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:12px;}
+.dpbadge.commercial{background:rgba(244,63,94,.15);color:var(--commercial);border:1px solid rgba(244,63,94,.35);}
+.dpbadge.backyard{background:rgba(245,158,11,.15);color:var(--backyard);border:1px solid rgba(245,158,11,.35);}
+.dpbadge.wild{background:rgba(16,185,129,.15);color:var(--wild);border:1px solid rgba(16,185,129,.35);}
+.dpr{display:flex;flex-direction:column;margin-bottom:10px;font-size:.65rem;}
+.drk{color:var(--muted);font-size:.55rem;text-transform:uppercase;margin-bottom:2px;}
+.drv{color:var(--text);font-weight:500;}
+.dpm{margin-top:15px;padding:10px;background:rgba(255,255,255,.02);border-radius:6px;border:1px solid var(--border);}
+.dpmt{font-size:.55rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px;}
+.dpmi{font-size:.6rem;color:var(--text);margin-bottom:4px;padding-left:12px;position:relative;}
+.dpmi::before{content:'•';position:absolute;left:0;color:var(--accent);}
+.dplink{margin-top:15px;padding-top:10px;border-top:1px solid var(--border);}
+.dplink a{font-size:.58rem;color:var(--accent);text-decoration:none;}
+.dplink a:hover{text-decoration:underline;}
+
+/* BARRE DE RECHERCHE */
+.search-wrap{display:flex;align-items:center;gap:8px;margin-left:16px;position:relative;}
+.search-input{background:rgba(255,255,255,.06);border:1px solid var(--border);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:.68rem;padding:6px 12px;border-radius:4px;outline:none;width:220px;transition:border-color .2s;}
+.search-input:focus{border-color:var(--accent);}
+.search-input::placeholder{color:var(--muted);}
+.search-btn{background:var(--accent);border:none;color:#fff;font-family:'IBM Plex Mono',monospace;font-size:.65rem;font-weight:600;padding:6px 12px;border-radius:4px;cursor:pointer;white-space:nowrap;transition:opacity .2s;}
+.search-btn:hover{opacity:.85;}
+.search-results{position:absolute;top:calc(100% + 6px);left:0;width:300px;background:#111827;border:1px solid var(--border);border-radius:6px;z-index:2000;box-shadow:0 8px 24px rgba(0,0,0,.6);overflow:hidden;display:none;}
+.search-results.open{display:block;}
+.sr-item{padding:8px 14px;font-size:.62rem;color:var(--text);cursor:pointer;border-bottom:1px solid rgba(38,51,72,.5);transition:background .15s;}
+.sr-item:last-child{border-bottom:none;}
+.sr-item:hover{background:rgba(249,115,22,.1);color:#fff;}
+.sr-none{padding:10px 14px;font-size:.62rem;color:var(--muted);}
+
+/* LEAFLET */
+.leaflet-container{background:#0b101a !important;}
+.ctt{background:#111827 !important;border:1px solid var(--border) !important;color:var(--text) !important;font-family:'IBM Plex Mono',monospace !important;font-size:.62rem !important;padding:6px 10px !important;border-radius:4px !important;box-shadow:0 4px 16px rgba(0,0,0,.7) !important;}
+.leaflet-tooltip-bottom::before{border-bottom-color:var(--border) !important;}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>🦆 CARTE IAHP <img src="afr.png" alt="Logo AFR" style="height: 28px; object-fit: contain; background: transparent;" onerror="this.style.display='none'"></h1>
+    <div class="sub">Surveillance épidémiologique · Saison 2025–2026</div>
+  </div>
+  <div class="search-wrap">
+    <input class="search-input" id="searchInput" type="text" placeholder="🔍 Rechercher une ville…" autocomplete="off">
+    <button class="search-btn" onclick="searchCity()">Go</button>
+    <div class="search-results" id="searchResults"></div>
+  </div>
+  <div class="rbadge high" style="margin-left:12px;">⬤ RISQUE ÉLEVÉ</div>
+</header>
+
+<div class="main">
+  <div id="map"></div>
+  
+  <div id="dp">
+    <div class="dph">
+      <div class="dpd" id="dpd"></div>
+      <div class="dpdept" id="dpdept"></div>
+      <div class="dpcl" onclick="closeDP()">×</div>
+    </div>
+    <div class="dpb">
+      <span class="dpbadge" id="dpbadge"></span>
+      <div id="dprows"></div>
+      <div class="dpm" id="dpmesures"></div>
+      <div class="dplink" id="dplink"></div>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <div class="stats-row">
+      <div class="stat c"><div class="lbl">Élevages</div><div class="val" id="cC">0</div></div>
+      <div class="stat b"><div class="lbl">Basses-cours</div><div class="val" id="cB">0</div></div>
+      <div class="stat w"><div class="lbl">Faune</div><div class="val" id="cW">0</div></div>
+    </div>
+
+    <div class="filter-box">
+      <span class="sec-label">Période d'analyse</span>
+      <div class="date-grid">
+        <div class="date-col">
+          <label>Du</label>
+          <input type="date" id="dStart" value="2025-08-01">
+        </div>
+        <div class="date-col">
+          <label>Au</label>
+          <input type="date" id="dEnd" value="2026-08-01">
+        </div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <span class="sec-label">Légende</span>
+      <div class="li"><div class="ld" style="background:var(--commercial);box-shadow:0 0 7px var(--commercial)"></div>Foyer commercial</div>
+      <div class="li"><div class="ld" style="background:var(--backyard);box-shadow:0 0 7px var(--backyard)"></div>Basse-cour / captifs</div>
+      <div class="li"><div class="ld" style="background:var(--wild);box-shadow:0 0 7px var(--wild)"></div>Faune sauvage</div>
+      <div style="font-size:0.5rem; color:var(--muted); margin-top:8px;">💡 Cliquez sur un cas pour zoomer sur la carte.</div>
+    </div>
+
+    <div class="lhdr">Journal <span id="evCnt" style="color:var(--accent);margin-left:4px;"></span></div>
+    <div class="events" id="evList"></div>
+  </div>
+</div>
+
+<script>
+// Tableau de données vide au départ
+let D = [];
+
+// INITIALISATION DE LA CARTE LEAFLET
+const map = L.map('map', {center:[46.5, 2.3], zoom:6, zoomControl:true, attributionControl:false});
+L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {maxZoom:20}).addTo(map);
+L.control.attribution({position:'bottomleft', prefix:'<span style="color:#777;font-size:.55rem">© OpenStreetMap · Données officielles</span>'}).addTo(map);
+
+let markersLayer = L.layerGroup().addTo(map);
+
+const col = t => t==='commercial' ? '#f43f5e' : t==='backyard' ? '#f59e0b' : '#10b981';
+const lbl = t => t==='commercial' ? 'Élevage commercial' : t==='backyard' ? 'Basse-cour / captif' : 'Faune sauvage';
+
+// FONCTION DE CHARGEMENT DES DONNÉES DEPUIS LE FICHIER JSON
+async function loadData() {
+  const evList = document.getElementById('evList');
+  evList.innerHTML = '<div style="padding:15px;color:var(--muted);font-size:0.7rem;">Chargement des données en cours...</div>';
+
+  try {
+    const res = await fetch('data.json');
+    if (!res.ok) throw new Error("Fichier introuvable");
+    D = await res.json();
+    
+    // On trie par date (du plus ancien au plus récent)
+    D.sort((a,b) => new Date(a.date) - new Date(b.date));
+    updateMap();
+  } catch (error) {
+    console.error("Erreur de chargement des données :", error);
+    evList.innerHTML = '<div style="padding:15px;color:#f43f5e;font-size:0.7rem;">⚠️ En attente des données (le robot GitHub doit d\'abord s\'exécuter pour créer le fichier data.json).</div>';
+  }
+}
+
+function updateMap() {
+    markersLayer.clearLayers();
+    const evList = document.getElementById('evList');
+    evList.innerHTML = '';
+    
+    const start = document.getElementById('dStart').value;
+    const end = document.getElementById('dEnd').value;
+    
+    let stats = {c: 0, b: 0, w: 0};
+    
+    // Filtrer et trier pour la liste (le plus récent en haut)
+    const filtered = D.filter(o => o.date >= start && o.date <= end).sort((x, y) => new Date(y.date) - new Date(x.date));
+
+    if (filtered.length === 0) {
+        evList.innerHTML = '<div style="padding:15px;color:var(--muted);font-size:0.7rem;">Aucun cas sur cette période.</div>';
+    }
+
+    filtered.forEach((o, i) => {
+        // MAJ des statistiques
+        if(o.type === 'commercial') stats.c++; 
+        else if(o.type === 'backyard') stats.b++; 
+        else stats.w++;
+
+        const c = col(o.type);
+        const r = o.type === 'commercial' ? 10 : o.type === 'backyard' ? 8 : 6;
+
+        // Ajouter le marqueur
+        const m = L.circleMarker([o.lat, o.lng], {
+            radius: r, fillColor: c, color: 'white', weight: 1.5, fillOpacity: 0.9
+        });
+        
+        m.bindTooltip(`<b>${o.dept}</b><br>${o.commune}`, {className:'ctt', direction:'top'});
+        
+        // Clic sur le marqueur : FlyTo + Affichage détails
+        m.on('click', () => { 
+            showDetails(o); 
+            map.flyTo([o.lat, o.lng], 11, {animate: true, duration: 1.5}); 
+        });
+        markersLayer.addLayer(m);
+        
+        // Ajouter l'élément dans la liste à droite
+        const el = document.createElement('div');
+        el.className = 'evi';
+        el.innerHTML = `
+            <div class="eid" style="background:${c}"></div>
+            <div class="eb">
+                <div class="edept">${o.dept}</div>
+                <div class="edet">${o.commune}</div>
+            </div>
+            <div class="edate">${o.date.split('-').reverse().slice(0,2).join('/')}</div>
+        `;
+        
+        // Clic sur la liste : FlyTo + Affichage détails
+        el.onclick = () => { 
+            showDetails(o); 
+            map.flyTo([o.lat, o.lng], 11, {animate: true, duration: 1.5}); 
+        };
+        evList.appendChild(el);
+    });
+
+    // MAJ de l'interface stats
+    document.getElementById('cC').textContent = stats.c;
+    document.getElementById('cB').textContent = stats.b;
+    document.getElementById('cW').textContent = stats.w;
+    document.getElementById('evCnt').textContent = `(${filtered.length})`;
+}
+
+function showDetails(o) {
+    const dp = document.getElementById('dp');
+    const c = col(o.type);
+    
+    document.getElementById('dpd').style.background = c;
+    document.getElementById('dpdept').textContent = o.dept;
+    
+    const b = document.getElementById('dpbadge');
+    b.textContent = lbl(o.type);
+    b.className = 'dpbadge ' + o.type;
+    
+    const rows = [
+        ['Commune', o.commune],
+        ['Date', o.date.split('-').reverse().join('/')],
+        ['Espèce', o.espece],
+        ['Nombre', o.nb],
+        ['Source', o.src]
+    ];
+    
+    document.getElementById('dprows').innerHTML = rows.map(r => `
+        <div class="dpr">
+            <span class="drk">${r[0]}</span>
+            <span class="drv" ${r[0]==='Source' ? 'style="color:var(--accent)"' : ''}>${r[1]}</span>
+        </div>
+    `).join('');
+    
+    const pm = document.getElementById('dpmesures');
+    if (o.mesures && o.mesures.length > 0) {
+        pm.innerHTML = `<div class="dpmt">Détails</div>` + o.mesures.map(m => `<div class="dpmi">${m}</div>`).join('');
+        pm.style.display = 'block';
+    } else {
+        pm.style.display = 'none';
+    }
+    
+    dp.classList.add('show');
+}
+
+function closeDP() { 
+    document.getElementById('dp').classList.remove('show'); 
+}
+
+// Écouteurs d'événements sur les sélecteurs de dates
+document.getElementById('dStart').addEventListener('change', updateMap);
+document.getElementById('dEnd').addEventListener('change', updateMap);
+
+// ── RECHERCHE DE VILLE ──────────────────────────────────────────
+const searchInput = document.getElementById('searchInput');
+const searchResults = document.getElementById('searchResults');
+
+searchInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') searchCity();
+});
+
+// Fermer les résultats si clic ailleurs
+document.addEventListener('click', e => {
+  if (!e.target.closest('.search-wrap')) searchResults.classList.remove('open');
+});
+
+async function searchCity() {
+  const q = searchInput.value.trim();
+  if (!q) return;
+  searchResults.innerHTML = '<div class="sr-none">Recherche…</div>';
+  searchResults.classList.add('open');
+
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q + ', France')}&format=json&limit=5&countrycodes=fr&accept-language=fr`;
+    const res = await fetch(url, { headers: { 'Accept-Language': 'fr' } });
+    const data = await res.json();
+
+    if (!data.length) {
+      searchResults.innerHTML = '<div class="sr-none">Aucun résultat trouvé.</div>';
+      return;
+    }
+
+    searchResults.innerHTML = data.map(item => `
+      <div class="sr-item" onclick="goToPlace(${item.lat}, ${item.lon}, '${item.display_name.replace(/'/g,"\\'")}')">
+        ${item.display_name.split(',').slice(0, 3).join(',')}
+      </div>
+    `).join('');
+  } catch(err) {
+    searchResults.innerHTML = '<div class="sr-none">Erreur réseau.</div>';
+  }
+}
+
+function goToPlace(lat, lon, name) {
+  map.flyTo([parseFloat(lat), parseFloat(lon)], 12, { animate: true, duration: 1.5 });
+  searchResults.classList.remove('open');
+  searchInput.value = name.split(',')[0];
+}
+
+// On lance le chargement des données au démarrage de la page
+window.onload = loadData;
+</script>
+</body>
+</html>
