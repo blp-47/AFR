@@ -1,0 +1,34 @@
+name: Mise à jour quotidienne de la carte IAHP
+
+on:
+  schedule:
+    - cron: '0 2 * * *' # S'exécute tous les jours à 2h du matin (UTC)
+  workflow_dispatch: # Permet de lancer le robot manuellement via un bouton !
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Autorise le robot à sauvegarder le data.json
+
+    steps:
+      - name: Récupérer le code du dépôt
+        uses: actions/checkout@v4
+
+      - name: Installer Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Installer la bibliothèque web
+        run: pip install requests
+
+      - name: Lancer le script de mise à jour
+        run: python update_data.py
+
+      - name: Sauvegarder les nouvelles données sur GitHub
+        run: |
+          git config --global user.name "Robot IAHP"
+          git config --global user.email "actions@github.com"
+          git add data.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Mise à jour des foyers IAHP" && git push)
