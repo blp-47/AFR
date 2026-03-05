@@ -1,0 +1,1464 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<link rel="apple-touch-icon" href="data:image/png;base64,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">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Suivi Semence Mâles SG</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    min-height: 100vh;
+    background: #0a1520;
+    font-family: 'Courier New', monospace;
+    color: #c8d8e8;
+    overflow-x: hidden;
+  }
+  header {
+    background: linear-gradient(135deg, #0d1e2e, #122033);
+    border-bottom: 2px solid #1e4060;
+    padding: 14px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 10px;
+  }
+  .header-title-sub { font-size: 10px; color: #4a8cb0; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 4px; }
+  .header-title { font-size: 20px; font-weight: 700; color: #e8f4ff; letter-spacing: 1px; }
+  .header-logo { height: 48px; width: auto; filter: drop-shadow(0 0 4px rgba(80,140,255,0.3)); }
+  .header-brand { display: flex; align-items: center; gap: 14px; }
+  .header-right { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  input[type=date] {
+    background: #1a2e42; border: 1px solid #2a4a68; border-radius: 6px;
+    color: #c8d8e8; padding: 8px 12px; font-family: inherit; font-size: 14px; cursor: pointer;
+  }
+  .btn-bilan {
+    background: #1a3a5c; border: 1px solid #2a5a8c; border-radius: 6px;
+    color: #7ab8e0; padding: 8px 14px; font-family: inherit; font-size: 11px;
+    cursor: pointer; letter-spacing: 1px; text-transform: uppercase;
+  }
+  .btn-bilan:hover { filter: brightness(1.2); }
+  #saving { font-size: 11px; color: #4a8cb0; }
+  .taux-global {
+    background: #0d1a28; border: 1px solid #1a3048; border-radius: 6px;
+    padding: 5px 10px; font-family: inherit; font-size: 12px;
+    font-weight: 700; letter-spacing: 0.5px; white-space: nowrap;
+  }
+  .layout { display: flex; min-height: calc(100vh - 80px); overflow: hidden; }
+  nav {
+    width: 52px; background: #0d1a28; border-right: 2px solid #1a3048;
+    display: flex; flex-direction: column; padding-top: 12px; gap: 2px; flex-shrink: 0; overflow-y: auto;
+  }
+  .allee-btn {
+    background: transparent; border: none; border-left: 3px solid transparent;
+    color: #4a6a8a; font-family: inherit; font-weight: 700; font-size: 16px;
+    padding: 13px 0; cursor: pointer; transition: all 0.15s; letter-spacing: 1px; width: 100%;
+  }
+  .allee-btn.active { background: #1a4a7a; border-left-color: #3a8cc8; color: #e8f4ff; }
+  .allee-btn:hover:not(.active) { color: #7ab8e0; }
+  main { flex: 1; padding: 18px; overflow-y: auto; }
+  .main-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px; flex-wrap: wrap; gap: 10px;
+  }
+  .allee-title { font-size: 26px; font-weight: 700; color: #e8f4ff; letter-spacing: 2px; }
+  .allee-title span { color: #3a8cc8; }
+  .stats { display: flex; gap: 10px; flex-wrap: wrap; }
+  .stat-box {
+    background: #0d1a28; border: 1px solid #1a3048; border-radius: 8px;
+    padding: 7px 12px; text-align: center;
+  }
+  .stat-val { font-size: 18px; font-weight: 700; }
+  .stat-val span { font-size: 12px; font-weight: 400; opacity: 0.8; }
+  .stat-lbl { font-size: 9px; color: #4a6a8a; letter-spacing: 1px; text-transform: uppercase; }
+  .progress-wrap { display: flex; background: #1a2e42; border-radius: 4px; height: 6px; margin-bottom: 20px; overflow: hidden; }
+  .progress-bar { height: 100%; transition: width 0.3s; }
+  .legend { display: flex; gap: 16px; margin-bottom: 14px; font-size: 11px; color: #4a6a8a; letter-spacing: 1px; flex-wrap: wrap; align-items: center; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    gap: 5px;
+    max-width: 680px;
+  }
+
+  /* ---- CAGES ---- */
+  .cage {
+    background: #1e2a35; border: 1.5px solid #2a3a4a; border-radius: 6px;
+    color: #4a6070; font-family: inherit; font-weight: 700;
+    padding: 9px 4px 5px; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    transition: all 0.12s; user-select: none; line-height: 1;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .cage:hover:not(.femelle) { filter: brightness(1.2); }
+  .cage .icon { font-size: 15px; }
+  .cage .lbl { font-size: 9px; opacity: 1; font-weight: 800; color: #ffffff; letter-spacing: 0.5px; }
+
+  .cage.donne    { background: #0d3d1f; border-color: #16a34a; color: #4ade80; }
+  .cage.nondonne { background: #3d0d0d; border-color: #dc2626; color: #f87171; }
+
+  /* Vide : cage sans mâle */
+  .cage.vide {
+    background: #1a1a2e; border-color: #3a3a5a; color: #6a6a8a;
+    opacity: 0.6;
+  }
+  .cage.vide .icon { font-size: 8px; letter-spacing: 1px; }
+
+  /* Femelles : rayures diagonales, non cliquable */
+  .cage.femelle {
+    cursor: not-allowed;
+    background: repeating-linear-gradient(
+      45deg,
+      #0f1e2e 0px, #0f1e2e 4px,
+      #1a2e42 4px, #1a2e42 9px
+    );
+    border-color: #1a3a5a;
+    color: #2a5070;
+    opacity: 0.75;
+  }
+  .cage.femelle .icon { font-size: 12px; }
+
+  .quick-actions { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+  .qa-btn {
+    border: 1px solid; border-radius: 6px; font-family: inherit;
+    font-size: 11px; padding: 8px 14px; cursor: pointer;
+    letter-spacing: 1px; text-transform: uppercase;
+  }
+  /* Modal */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+    align-items: center; justify-content: center; z-index: 100;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #0d1e2e; border: 2px solid #1e4060; border-radius: 12px;
+    padding: 24px; min-width: 500px; max-width: 700px; max-height: 90vh; overflow-y: auto;
+  }
+  .modal-title { font-size: 12px; color: #4a8cb0; letter-spacing: 2px; margin-bottom: 14px; text-transform: uppercase; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { color: #4a8cb0; border-bottom: 1px solid #1e3a50; padding: 6px 7px; text-align: center; }
+  th:first-child { text-align: left; }
+  td { padding: 7px 7px; text-align: center; border-bottom: 1px solid #0f2030; }
+  td:first-child { text-align: left; font-weight: 700; color: #7ab8e0; }
+  tr.total-row td { border-top: 2px solid #1e4060; font-weight: 700; }
+  .btn-close {
+    margin-top: 18px; width: 100%; background: #1a3a5c; border: 1px solid #2a5a8c;
+    border-radius: 6px; color: #7ab8e0; padding: 10px; font-family: inherit;
+    font-size: 12px; cursor: pointer; letter-spacing: 1px; text-transform: uppercase;
+  }
+  .ldot {
+    display: inline-block; width: 10px; height: 10px; border-radius: 2px;
+    margin-right: 4px; vertical-align: middle;
+  }
+  .tubes-box {
+    background: #0d1a28; border: 1px solid #1e4060; border-radius: 8px;
+    padding: 7px 12px; display: flex; align-items: center; gap: 8px;
+    flex-wrap: wrap;
+  }
+  .tubes-box label { font-size: 10px; color: #4a8cb0; letter-spacing: 1px; text-transform: uppercase; white-space: nowrap; }
+  .tubes-input {
+    background: #1a2e42; border: 1px solid #3a8cc8; border-radius: 5px;
+    color: #e8f4ff; padding: 4px 8px; font-family: inherit; font-size: 15px;
+    font-weight: 700; width: 80px; text-align: center;
+  }
+  .tubes-input:focus { outline: none; border-color: #5ab8f0; }
+
+  /* ===== RESPONSIVE MOBILE ===== */
+  @media (max-width: 640px) {
+
+    /* ----- Header ----- */
+    header {
+      padding: 8px 10px;
+      gap: 6px;
+    }
+    .header-title { font-size: 14px; }
+    .header-logo { height: 32px; }
+    .header-brand { gap: 8px; }
+    .header-right {
+      width: 100%;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+    input[type=date] {
+      font-size: 12px;
+      padding: 5px 7px;
+      flex: 1 1 120px;
+    }
+    .btn-bilan {
+      font-size: 10px;
+      padding: 5px 8px;
+    }
+    #saving { font-size: 10px; }
+    .taux-global { font-size: 10px; padding: 4px 7px; }
+
+    /* ----- Layout : abandon hauteur fixe, page normale ----- */
+    .layout {
+      display: block !important;
+      height: auto !important;
+      min-height: unset !important;
+    }
+
+    /* ----- Nav allées : bandeau horizontal ----- */
+    nav {
+      width: 100% !important;
+      height: auto !important;
+      flex-direction: row !important;
+      overflow-x: auto !important;
+      overflow-y: hidden !important;
+      border-right: none !important;
+      border-bottom: 2px solid #1a3048 !important;
+      padding: 6px 4px !important;
+      gap: 2px !important;
+      -webkit-overflow-scrolling: touch;
+      display: flex !important;
+    }
+    .allee-btn {
+      border-left: none !important;
+      border-bottom: 3px solid transparent;
+      padding: 8px 14px;
+      font-size: 15px;
+      white-space: nowrap;
+      flex-shrink: 0;
+      width: auto !important;
+    }
+    .allee-btn.active {
+      border-left: none !important;
+      border-bottom-color: #3a8cc8 !important;
+      background: #1a4a7a !important;
+    }
+
+    /* ----- Contenu principal : scroll naturel ----- */
+    main {
+      display: block !important;
+      height: auto !important;
+      overflow: visible !important;
+      padding: 12px 8px !important;
+    }
+
+    /* ----- Stats ----- */
+    .main-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .allee-title { font-size: 20px; }
+    .stats { gap: 5px; flex-wrap: wrap; }
+    .stat-box { padding: 5px 8px; }
+    .stat-val { font-size: 14px; }
+    .stat-lbl { font-size: 8px; }
+
+    /* ----- Légende ----- */
+    .legend { font-size: 10px; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+
+    /* ----- Grille cages ----- */
+    .grid {
+      display: grid !important;
+      grid-template-columns: repeat(9, 1fr) !important;
+      gap: 3px !important;
+      max-width: 100% !important;
+      width: 100% !important;
+    }
+    .cage {
+      padding: 7px 2px 4px !important;
+      border-radius: 4px !important;
+      min-height: 38px !important;
+    }
+    .cage .icon { font-size: 12px !important; }
+    .cage .lbl { font-size: 7px !important; }
+    .cage.femelle .icon { font-size: 10px !important; }
+
+    /* ----- Boutons actions rapides ----- */
+    .quick-actions { gap: 6px; margin-top: 14px; flex-wrap: wrap; }
+    .qa-btn { font-size: 10px; padding: 6px 10px; }
+
+    /* ----- Modal ----- */
+    .modal {
+      min-width: unset !important;
+      width: 96vw !important;
+      max-width: 96vw !important;
+      padding: 14px 12px !important;
+      max-height: 88vh !important;
+    }
+    table { font-size: 11px; }
+    th, td { padding: 5px 3px; }
+    .btn-close { padding: 8px; font-size: 11px; }
+  }
+
+  @media (max-width: 380px) {
+    .cage { min-height: 34px !important; }
+    .cage .icon { font-size: 11px !important; }
+    .cage .lbl { font-size: 6px !important; }
+    .btn-bilan { font-size: 9px; padding: 4px 6px; }
+  }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+</head>
+<body>
+
+<header>
+  <div class="header-brand">
+    <img class="header-logo" src="data:image/png;base64,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" alt="AFR" />
+    <div>
+      <div class="header-title">🦆 SG - Récolte Semence</div>
+      <div class="header-title-sub">Suivi Quotidien</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <input type="date" id="datePicker">
+    <span class="taux-global" id="tauxGlobal">—</span>
+    <button class="btn-bilan" onclick="openBilan()">📊 Bilan global</button>
+    <button class="btn-bilan" onclick="exportCSV('jour')" style="border-color:#2a7a4a;color:#4ade80">⬇ Excel jour</button>
+    <button class="btn-bilan" onclick="exportCSV('tout')" style="border-color:#7a5a2a;color:#facc15">⬇ Excel tout</button>
+    <button class="btn-bilan" onclick="resetJournee()" style="border-color:#7a2a2a;color:#f87171">🗑 Réinitialiser journée</button>
+    <span id="saving"></span>
+  </div>
+</header>
+
+<div class="layout">
+  <nav id="navAllees"></nav>
+  <main id="mainContent"></main>
+</div>
+
+<div class="modal-overlay" id="modalOverlay" onclick="closeBilan()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title" id="modalTitle"></div>
+    <table>
+      <thead>
+        <tr>
+          <th>Allée</th>
+          <th style="color:#4ade80">✓ Donnés</th>
+          <th style="color:#f87171">✗ Non donnés</th>
+          <th style="color:#4a6a8a">— Non enr.</th>
+          <th style="color:#6a6a8a">Vides</th>
+          <th style="color:#e8a04c">% Util.</th>
+          <th style="color:#7ab8e0">🧪 Tubes récoltés</th>
+        </tr>
+      </thead>
+      <tbody id="bilanBody"></tbody>
+    </table>
+    <button class="btn-close" onclick="closeBilan()">Fermer</button>
+  </div>
+</div>
+
+<!-- ===== MODAL RESET ===== -->
+<div class="modal-overlay" id="resetOverlay" onclick="closeReset()">
+  <div class="modal" onclick="event.stopPropagation()" style="min-width:320px;max-width:420px;text-align:center;">
+    <div style="font-size:36px;margin-bottom:12px;">⚠️</div>
+    <div class="modal-title" style="color:#f87171;font-size:13px;">RÉINITIALISATION DE LA JOURNÉE</div>
+    <p style="color:#c8d8e8;font-size:13px;margin-bottom:8px;">Vous êtes sur le point de <strong style="color:#f87171;">supprimer toutes les données</strong> de la journée du :</p>
+    <p id="resetDateLabel" style="color:#e8f4ff;font-size:15px;font-weight:700;margin-bottom:16px;">—</p>
+    <p style="color:#7a9ab0;font-size:11px;margin-bottom:20px;">Cages (toutes les allées) + tubes récoltés — cette action est irréversible.</p>
+    <div style="display:flex;gap:10px;">
+      <button class="btn-close" onclick="closeReset()" style="flex:1;background:#1a2e42;border-color:#2a4a68;color:#7ab8e0;">Annuler</button>
+      <button class="btn-close" onclick="confirmReset()" style="flex:1;background:#3d0d0d;border-color:#dc2626;color:#f87171;">Oui, tout supprimer</button>
+    </div>
+  </div>
+</div>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+
+<script>
+// ============================================================
+//  📦  DONNÉES RÉCUPÉRÉES — 26/02/2026 (restauration manuelle)
+// ============================================================
+(function() {
+  const RESTORED_DATE = '2026-02-26';
+  const RESTORED_DATA = {"H":{"2":3,"3":1,"4":1,"5":1,"6":1,"7":1,"8":3,"9":1,"10":3,"11":1,"12":1,"13":1,"14":1,"15":1,"16":1,"17":1,"18":1,"19":3,"20":1,"21":1,"23":3,"24":1,"25":3,"26":1,"27":3,"28":1,"29":1,"30":1,"31":2,"32":1,"33":2,"34":1,"35":1,"36":1,"37":1,"38":1,"40":1,"41":3,"42":3,"43":1,"44":1,"45":1,"46":1,"47":1,"48":1,"49":1,"50":2,"51":1,"52":1,"53":1,"54":3,"55":3,"57":3,"58":1,"59":1,"60":1,"61":3,"62":1,"63":1,"64":1,"65":1,"66":1},"I":{"2":2,"3":1,"4":1,"5":1,"6":1,"7":1,"8":2,"9":3,"10":1,"11":1,"12":1,"13":1,"14":3,"15":3,"16":1,"17":2,"18":2,"19":1,"20":1,"21":1,"23":1,"24":1,"25":3,"26":3,"27":1,"28":1,"29":2,"30":1,"31":1,"32":3,"33":3,"35":1,"36":3,"37":1,"38":1,"40":1,"41":3,"42":1,"43":3,"44":1,"45":3,"46":1,"47":1,"48":1,"50":1,"51":1,"52":2,"53":2,"54":1,"55":1,"57":1,"58":1,"59":1,"60":1,"61":1,"62":3,"63":1,"64":3,"65":1,"66":1},"J":{"2":1,"3":1,"4":1,"5":1,"6":1,"7":1,"8":1,"9":1,"10":1,"11":1,"12":1,"13":2,"14":3,"15":1,"16":3,"17":1,"18":1,"19":1,"20":1,"21":1,"23":2,"24":1,"25":1,"26":1,"27":3,"28":1,"29":1,"30":1,"31":3,"32":1,"33":1,"34":3,"35":1,"36":1,"37":1,"38":1,"40":3,"41":1,"42":1,"43":3,"44":2,"45":1,"46":1,"47":1,"48":1,"49":1,"50":1,"51":1,"52":3,"53":1,"54":3,"55":1,"57":1,"58":1,"59":1,"60":1,"61":1,"62":1,"63":1,"64":1,"65":2,"66":3,"67":1,"68":1,"69":1,"70":1,"71":1,"72":1,"74":3,"75":1,"76":1,"77":2,"78":1,"79":1,"80":3,"81":1},"K":{"2":3,"3":1,"4":1,"5":1,"6":2,"7":3,"8":1,"9":1,"10":1,"11":1,"12":1,"13":1,"14":3,"15":1,"16":3,"17":1,"18":1,"19":3,"20":3,"21":1,"23":1,"24":3,"25":1,"26":1,"27":2,"28":1,"29":3,"30":3,"31":1,"32":1,"33":1,"34":2,"35":1,"36":1,"37":1,"38":3,"40":1,"41":1,"42":1,"43":1,"44":1,"45":1,"46":1,"47":1,"48":3,"49":1,"50":1,"51":3,"52":1,"53":1,"54":1,"55":3,"57":1,"58":1,"59":1,"60":1,"61":3,"62":1,"63":2,"64":1,"65":1,"66":3,"67":3,"68":1,"69":1,"70":1,"71":1,"72":3,"74":1,"75":1,"76":1,"77":1,"78":1,"79":3,"80":3,"81":1}};
+  for (const [al, cages] of Object.entries(RESTORED_DATA)) {
+    const key = 'semenceSG:' + RESTORED_DATE + ':' + al;
+    if (!localStorage.getItem(key)) {
+      try { localStorage.setItem(key, JSON.stringify(cages)); } catch(e) {}
+    }
+  }
+})();
+// ============================================================
+
+// ============================================================
+//  ⚙️  CONFIGURATION FIREBASE — à remplir une seule fois
+// ============================================================
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyCSw10bFLStcem4A_CO4IXmKeQbLH9NXsM",
+  authDomain:        "afr-nt2.firebaseapp.com",
+  databaseURL:       "https://afr-nt2-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:         "afr-nt2",
+  storageBucket:     "afr-nt2.firebasestorage.app",
+  messagingSenderId: "169851474976",
+  appId:             "1:169851474976:web:be14c24366b0af024f9845",
+  measurementId:     "G-HYBY42TVJZ"
+};
+// ============================================================
+
+// Init Firebase
+let db = null;
+let firebaseOK = false;
+try {
+  if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+  db = firebase.database();
+  firebaseOK = true;
+} catch(e) {
+  console.warn("Firebase non configuré, mode local activé.", e);
+}
+
+// -------- Constantes --------
+const ALLEES   = ['A','B','C','D','E','F','G','H','I','J','K','L'];
+const NB_CAGES = 72;
+const FEMELLES = new Set([1, 20, 39, 58]);
+const NB_MALES = NB_CAGES - FEMELLES.size;
+
+const ETAT_LABEL = { 0:'—', 1:'✓', 2:'✓', 3:'✗', 4:'VIDE' };
+const ETAT_CLASS = { 0:'', 1:'donne', 2:'donne', 3:'nondonne', 4:'vide' };
+
+let currentAllee = 'A';
+let currentDate  = today();
+let data = {};
+let tubesData = {}; // { allee: valeur (float) }
+let cagesVides = {}; // { allee: Set de numéros de cage } — persistant, indépendant de la date
+
+function today() { return new Date().toISOString().slice(0, 10); }
+function fbPath(date, allee) { return `semenceSG/${date}/${allee}`; }
+function lsKey(date, allee)  { return `semenceSG:${date}:${allee}`; }
+function fbPathTubes(date, allee) { return `tubesSG/${date}/${allee}`; }
+function lsKeyTubes(date, allee)  { return `tubesSG:${date}:${allee}`; }
+function fbPathVides(allee) { return `cagesVidesSG/${allee}`; }
+function lsKeyVides(allee)  { return `cagesVidesSG:${allee}`; }
+
+// -------- Sauvegarde cages vides (persistant) --------
+function saveCagesVides(allee) {
+  const arr = Array.from(cagesVides[allee] || []);
+  try { localStorage.setItem(lsKeyVides(allee), JSON.stringify(arr)); } catch(e) {}
+  if (firebaseOK) {
+    db.ref(fbPathVides(allee)).set(arr).catch(() => {});
+  }
+}
+
+async function loadCagesVides(allee) {
+  if (firebaseOK) {
+    try {
+      const snap = await db.ref(fbPathVides(allee)).get();
+      if (snap.exists()) {
+        const arr = snap.val();
+        cagesVides[allee] = new Set(Array.isArray(arr) ? arr.map(Number) : []);
+        try { localStorage.setItem(lsKeyVides(allee), JSON.stringify(Array.from(cagesVides[allee]))); } catch(e) {}
+        return;
+      }
+    } catch(e) {}
+  }
+  try {
+    const v = localStorage.getItem(lsKeyVides(allee));
+    cagesVides[allee] = v ? new Set(JSON.parse(v).map(Number)) : new Set();
+  } catch(e) { cagesVides[allee] = new Set(); }
+}
+
+async function loadAllCagesVides() {
+  await Promise.all(ALLEES.map(al => loadCagesVides(al)));
+}
+
+function isCageVide(allee, num) {
+  return cagesVides[allee] && cagesVides[allee].has(num);
+}
+
+// Couleur du taux d'utilisation : vert à 75%, rouge en s'éloignant
+function tauxColor(pct) {
+  if (pct === null || isNaN(pct)) return '#4a6a8a';
+  // Distance au taux idéal de 75%
+  const dist = Math.abs(pct - 75);
+  // 0 = parfait (vert), 75 = très éloigné (rouge)
+  const ratio = Math.min(dist / 50, 1); // 0..1
+  const r = Math.round(22 + ratio * 226);  // 22 → 248
+  const g = Math.round(200 - ratio * 130); // 200 → 70
+  const b = Math.round(80 - ratio * 50);   // 80 → 30
+  return `rgb(${r},${g},${b})`;
+}
+
+// Mettre à jour le taux global dans le header
+async function updateTauxGlobal() {
+  await Promise.all(ALLEES.map(al => loadCagesVides(al)));
+  await Promise.all(ALLEES.map(al => loadAllee(currentDate, al)));
+  let totEval = 0, totActifs = 0;
+  ALLEES.forEach(al => {
+    const s = getStats(al);
+    totEval += s.evalues;
+    totActifs += s.malesActifs;
+  });
+  const taux = totActifs > 0 ? Math.round(totEval / totActifs * 100) : 0;
+  const el = document.getElementById('tauxGlobal');
+  el.textContent = `Util. ${taux}%`;
+  el.style.color = tauxColor(taux);
+  el.style.borderColor = tauxColor(taux);
+}
+
+// -------- Sauvegarde --------
+function saveAllee(date, allee) {
+  const payload = data[allee] || {};
+  // Toujours sauvegarder en local (fallback)
+  try { localStorage.setItem(lsKey(date, allee), JSON.stringify(payload)); } catch(e) {}
+  // Sauvegarder sur Firebase si configuré
+  if (firebaseOK) {
+    db.ref(fbPath(date, allee)).set(payload)
+      .then(() => showSaving('☁️ sauvegardé'))
+      .catch(() => showSaving('💾 local'));
+  } else {
+    showSaving('💾 local');
+  }
+}
+
+// -------- Sauvegarde tubes --------
+function saveTubes(date, allee) {
+  const val = tubesData[allee] !== undefined ? tubesData[allee] : '';
+  try { localStorage.setItem(lsKeyTubes(date, allee), String(val)); } catch(e) {}
+  if (firebaseOK) {
+    db.ref(fbPathTubes(date, allee)).set(val).catch(() => {});
+  }
+}
+
+async function loadTubes(date, allee) {
+  if (firebaseOK) {
+    try {
+      const snap = await db.ref(fbPathTubes(date, allee)).get();
+      tubesData[allee] = snap.exists() ? parseFloat(snap.val()) : '';
+      if (!isNaN(tubesData[allee])) try { localStorage.setItem(lsKeyTubes(date, allee), String(tubesData[allee])); } catch(e) {}
+      return;
+    } catch(e) {}
+  }
+  try {
+    const v = localStorage.getItem(lsKeyTubes(date, allee));
+    tubesData[allee] = v !== null ? parseFloat(v) : '';
+  } catch(e) { tubesData[allee] = ''; }
+}
+
+function onTubesChange(val) {
+  const parsed = parseFloat(val);
+  tubesData[currentAllee] = isNaN(parsed) ? '' : parsed;
+  saveTubes(currentDate, currentAllee);
+}
+async function loadAllee(date, allee) {
+  if (firebaseOK) {
+    try {
+      const snap = await db.ref(fbPath(date, allee)).get();
+      data[allee] = snap.exists() ? snap.val() : {};
+      // Mettre à jour le cache local
+      try { localStorage.setItem(lsKey(date, allee), JSON.stringify(data[allee])); } catch(e) {}
+      return;
+    } catch(e) {
+      console.warn("Firebase lecture échouée, fallback local", e);
+    }
+  }
+  // Fallback localStorage
+  try {
+    const v = localStorage.getItem(lsKey(date, allee));
+    data[allee] = v ? JSON.parse(v) : {};
+  } catch(e) { data[allee] = {}; }
+}
+
+function showSaving(msg) {
+  const el = document.getElementById('saving');
+  el.textContent = msg;
+  setTimeout(() => el.textContent = firebaseOK ? '☁️ sync actif' : '📵 mode local', 1500);
+}
+
+// -------- Init --------
+document.addEventListener('DOMContentLoaded', async () => {
+  const dp = document.getElementById('datePicker');
+  dp.value = currentDate;
+  dp.addEventListener('change', async () => {
+    currentDate = dp.value; data = {}; tubesData = {};
+    await loadAllee(currentDate, currentAllee);
+    await loadTubes(currentDate, currentAllee);
+    renderNav(); renderMain();
+  });
+  // Supprimer les journées de test
+  const TEST_DATES_CLEANUP = ['2026-02-24','2026-02-25'];
+  for (const td of TEST_DATES_CLEANUP) {
+    for (const al of ALLEES) {
+      try { localStorage.removeItem(lsKey(td, al)); } catch(e) {}
+      try { localStorage.removeItem(lsKeyTubes(td, al)); } catch(e) {}
+    }
+    if (firebaseOK) {
+      try { await db.ref('semenceSG/' + td).remove(); } catch(e) {}
+      try { await db.ref('tubesSG/' + td).remove(); } catch(e) {}
+    }
+  }
+
+  // Afficher statut Firebase
+  const el = document.getElementById('saving');
+  el.textContent = firebaseOK ? '☁️ sync actif' : '📵 mode local';
+
+  // ── Restauration Firebase données 26/02/2026 ──
+  if (firebaseOK) {
+    const RESTORED_DATE = '2026-02-26';
+    const RESTORED_DATA = {"H":{"2":3,"3":1,"4":1,"5":1,"6":1,"7":1,"8":3,"9":1,"10":3,"11":1,"12":1,"13":1,"14":1,"15":1,"16":1,"17":1,"18":1,"19":3,"20":1,"21":1,"23":3,"24":1,"25":3,"26":1,"27":3,"28":1,"29":1,"30":1,"31":2,"32":1,"33":2,"34":1,"35":1,"36":1,"37":1,"38":1,"40":1,"41":3,"42":3,"43":1,"44":1,"45":1,"46":1,"47":1,"48":1,"49":1,"50":2,"51":1,"52":1,"53":1,"54":3,"55":3,"57":3,"58":1,"59":1,"60":1,"61":3,"62":1,"63":1,"64":1,"65":1,"66":1},"I":{"2":2,"3":1,"4":1,"5":1,"6":1,"7":1,"8":2,"9":3,"10":1,"11":1,"12":1,"13":1,"14":3,"15":3,"16":1,"17":2,"18":2,"19":1,"20":1,"21":1,"23":1,"24":1,"25":3,"26":3,"27":1,"28":1,"29":2,"30":1,"31":1,"32":3,"33":3,"35":1,"36":3,"37":1,"38":1,"40":1,"41":3,"42":1,"43":3,"44":1,"45":3,"46":1,"47":1,"48":1,"50":1,"51":1,"52":2,"53":2,"54":1,"55":1,"57":1,"58":1,"59":1,"60":1,"61":1,"62":3,"63":1,"64":3,"65":1,"66":1},"J":{"2":1,"3":1,"4":1,"5":1,"6":1,"7":1,"8":1,"9":1,"10":1,"11":1,"12":1,"13":2,"14":3,"15":1,"16":3,"17":1,"18":1,"19":1,"20":1,"21":1,"23":2,"24":1,"25":1,"26":1,"27":3,"28":1,"29":1,"30":1,"31":3,"32":1,"33":1,"34":3,"35":1,"36":1,"37":1,"38":1,"40":3,"41":1,"42":1,"43":3,"44":2,"45":1,"46":1,"47":1,"48":1,"49":1,"50":1,"51":1,"52":3,"53":1,"54":3,"55":1,"57":1,"58":1,"59":1,"60":1,"61":1,"62":1,"63":1,"64":1,"65":2,"66":3,"67":1,"68":1,"69":1,"70":1,"71":1,"72":1,"74":3,"75":1,"76":1,"77":2,"78":1,"79":1,"80":3,"81":1},"K":{"2":3,"3":1,"4":1,"5":1,"6":2,"7":3,"8":1,"9":1,"10":1,"11":1,"12":1,"13":1,"14":3,"15":1,"16":3,"17":1,"18":1,"19":3,"20":3,"21":1,"23":1,"24":3,"25":1,"26":1,"27":2,"28":1,"29":3,"30":3,"31":1,"32":1,"33":1,"34":2,"35":1,"36":1,"37":1,"38":3,"40":1,"41":1,"42":1,"43":1,"44":1,"45":1,"46":1,"47":1,"48":3,"49":1,"50":1,"51":3,"52":1,"53":1,"54":1,"55":3,"57":1,"58":1,"59":1,"60":1,"61":3,"62":1,"63":2,"64":1,"65":1,"66":3,"67":3,"68":1,"69":1,"70":1,"71":1,"72":3,"74":1,"75":1,"76":1,"77":1,"78":1,"79":3,"80":3,"81":1}};
+    for (const [al, cages] of Object.entries(RESTORED_DATA)) {
+      try {
+        const snap = await db.ref(fbPath(RESTORED_DATE, al)).get();
+        if (!snap.exists()) {
+          await db.ref(fbPath(RESTORED_DATE, al)).set(cages);
+        }
+      } catch(e) {}
+    }
+  }
+  // ── Fin restauration ──
+
+  await loadAllCagesVides();
+  await loadAllee(currentDate, currentAllee);
+  await loadTubes(currentDate, currentAllee);
+  renderNav(); renderMain();
+});
+
+// -------- Navigation --------
+function renderNav() {
+  const nav = document.getElementById('navAllees');
+  nav.innerHTML = '';
+  ALLEES.forEach(al => {
+    const btn = document.createElement('button');
+    btn.className = 'allee-btn' + (al === currentAllee ? ' active' : '');
+    btn.textContent = al;
+    btn.onclick = () => selectAllee(al);
+    nav.appendChild(btn);
+  });
+}
+
+async function selectAllee(al) {
+  currentAllee = al;
+  await loadCagesVides(currentAllee);
+  await loadAllee(currentDate, currentAllee);
+  await loadTubes(currentDate, currentAllee);
+  renderNav(); renderMain();
+}
+
+// -------- Stats --------
+function getStats(allee) {
+  const d = data[allee] || {};
+  let donne=0, nonDonne=0, nonEnr=0, vide=0;
+  for (let i=1; i<=NB_CAGES; i++) {
+    if (FEMELLES.has(i)) continue;
+    if (isCageVide(allee, i)) { vide++; continue; }
+    const v = d[i] || 0;
+    if      (v===1 || v===2) donne++;
+    else if (v===3)          nonDonne++;
+    else                     nonEnr++;
+  }
+  const malesActifs = NB_MALES - vide;
+  const evalues = donne + nonDonne;
+  const pctD = evalues ? Math.round((donne / evalues) * 100) : 0;
+  const pctND = evalues ? Math.round((nonDonne / evalues) * 100) : 0;
+  return { donne, nonDonne, nonEnr, vide, malesActifs, evalues, pctD, pctND };
+}
+
+// -------- Rendu principal --------
+function renderMain() {
+  const s = getStats(currentAllee);
+  let cagesHtml = '';
+  const cageData = data[currentAllee] || {};
+
+  for (let i=1; i<=NB_CAGES; i++) {
+    if (FEMELLES.has(i)) {
+      cagesHtml += `<div class="cage femelle" title="${currentAllee}${i} — Femelle">
+        <span class="icon">♀</span>
+        <span class="lbl">${currentAllee}${i}</span>
+      </div>`;
+    } else if (isCageVide(currentAllee, i)) {
+      cagesHtml += `<button class="cage vide" onclick="toggleCage(${i})" title="${currentAllee}${i} — VIDE">
+        <span class="icon">VIDE</span>
+        <span class="lbl">${currentAllee}${i}</span>
+      </button>`;
+    } else {
+      const state = cageData[i] || 0;
+      cagesHtml += `<button class="cage ${ETAT_CLASS[state]}" onclick="toggleCage(${i})" title="${currentAllee}${i}">
+        <span class="icon">${ETAT_LABEL[state]}</span>
+        <span class="lbl">${currentAllee}${i}</span>
+      </button>`;
+    }
+  }
+
+  const tauxUtil = s.malesActifs > 0 ? Math.round(s.evalues / s.malesActifs * 100) : 0;
+  const tubesVal = tubesData[currentAllee] !== undefined && tubesData[currentAllee] !== '' ? tubesData[currentAllee] : '';
+
+  document.getElementById('mainContent').innerHTML = `
+    <div class="main-header">
+      <div class="allee-title">Allée <span>${currentAllee}</span></div>
+      <div class="stats">
+        <div class="stat-box"><div class="stat-val" style="color:#4ade80">${s.donne} <span>(${s.pctD}%)</span></div><div class="stat-lbl">Donnés</div></div>
+        <div class="stat-box"><div class="stat-val" style="color:#f87171">${s.nonDonne} <span>(${s.pctND}%)</span></div><div class="stat-lbl">Non donnés</div></div>
+        <div class="stat-box"><div class="stat-val" style="color:#4a6a8a">${s.nonEnr}</div><div class="stat-lbl">Non enr.</div></div>
+        <div class="stat-box"><div class="stat-val" style="color:#6a6a8a">${s.vide}</div><div class="stat-lbl">Vides</div></div>
+        <div class="stat-box"><div class="stat-val" style="color:#3a8cc8">${s.evalues}/${s.malesActifs}</div><div class="stat-lbl">Évalués</div></div>
+        <div class="stat-box"><div class="stat-val" style="color:${tauxColor(tauxUtil)}">${tauxUtil}%</div><div class="stat-lbl">Taux util.</div></div>
+      </div>
+      <div class="tubes-box">
+        <label>🧪 Tubes récoltés (allée ${currentAllee})</label>
+        <input class="tubes-input" type="number" min="0" step="0.1"
+          value="${tubesVal}"
+          oninput="onTubesChange(this.value)"
+          onchange="onTubesChange(this.value)" />
+      </div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-bar" style="width:${s.pctD}%;background:#16a34a"></div>
+      <div class="progress-bar" style="width:${s.pctND}%;background:#dc2626"></div>
+    </div>
+    <div class="legend">
+      <span>APPUYER POUR BASCULER :</span>
+      <span><span class="ldot" style="background:#2a3a4a;border:1px solid #3a4a5a"></span><span style="color:#4a6070">— Non enreg.</span></span>
+      <span><span class="ldot" style="background:#16a34a"></span><span style="color:#4ade80">✓ Donné</span></span>
+      <span><span class="ldot" style="background:#dc2626"></span><span style="color:#f87171">✗ Non donné</span></span>
+      <span><span class="ldot" style="background:#3a3a5a"></span><span style="color:#6a6a8a">VIDE</span></span>
+      <span style="opacity:0.45">| ♀ = femelle verrouillée</span>
+    </div>
+    <div class="grid">${cagesHtml}</div>
+    <div class="quick-actions">
+      <button class="qa-btn" style="background:#0d3d1f;border-color:#16a34a;color:#4ade80" onclick="markAll(1)">Tout ✓ Donné</button>
+      <button class="qa-btn" style="background:#3d0d0d;border-color:#dc2626;color:#f87171" onclick="markAll(3)">Tout ✗ Non donné</button>
+      <button class="qa-btn" style="background:#1a1a2e;border-color:#3a3a5a;color:#6a6a8a" onclick="markAllVide()">Tout VIDE</button>
+      <button class="qa-btn" style="background:#1a2e42;border-color:#2a4a68;color:#4a6a8a" onclick="markAll(0)">Réinitialiser</button>
+    </div>
+  `;
+  updateTauxGlobal(); // Mise à jour non-bloquante du taux global
+}
+
+// -------- Actions cages --------
+function toggleCage(num) {
+  if (FEMELLES.has(num)) return;
+  if (!data[currentAllee]) data[currentAllee] = {};
+  
+  // Si la cage est actuellement VIDE (persistant) → la remettre en service
+  if (isCageVide(currentAllee, num)) {
+    cagesVides[currentAllee].delete(num);
+    saveCagesVides(currentAllee);
+    data[currentAllee][num] = 0;
+    saveAllee(currentDate, currentAllee);
+    renderMain();
+    return;
+  }
+  
+  const cur = data[currentAllee][num] || 0;
+  // Cycle: 0 (non enr.) → 1 (donné) → 3 (non donné) → VIDE (persistant) → 0
+  if (cur === 3) {
+    // Passer en VIDE persistant
+    if (!cagesVides[currentAllee]) cagesVides[currentAllee] = new Set();
+    cagesVides[currentAllee].add(num);
+    saveCagesVides(currentAllee);
+    data[currentAllee][num] = 0; // Nettoyer la donnée du jour
+  } else {
+    data[currentAllee][num] = cur === 0 ? 1 : 3;
+  }
+  saveAllee(currentDate, currentAllee);
+  renderMain();
+}
+
+function markAll(val) {
+  if (!data[currentAllee]) data[currentAllee] = {};
+  if (val === 0) {
+    // Réinitialiser : enlever aussi les cages vides
+    cagesVides[currentAllee] = new Set();
+    saveCagesVides(currentAllee);
+  }
+  for (let i=1; i<=NB_CAGES; i++) {
+    if (!FEMELLES.has(i) && !isCageVide(currentAllee, i)) data[currentAllee][i] = val;
+  }
+  saveAllee(currentDate, currentAllee);
+  renderMain();
+}
+
+function markAllVide() {
+  if (!cagesVides[currentAllee]) cagesVides[currentAllee] = new Set();
+  for (let i=1; i<=NB_CAGES; i++) {
+    if (!FEMELLES.has(i)) cagesVides[currentAllee].add(i);
+  }
+  saveCagesVides(currentAllee);
+  renderMain();
+}
+
+// -------- Bilan global --------
+async function openBilan() {
+  // Charger toutes les allées depuis Firebase
+  await loadAllCagesVides();
+  await Promise.all(ALLEES.map(al => loadAllee(currentDate, al)));
+  await Promise.all(ALLEES.map(al => loadTubes(currentDate, al)));
+  document.getElementById('modalTitle').textContent = `Bilan du ${currentDate}`;
+  let totD=0, totND=0, totNE=0, totV=0, totT=0, totActifs=0, rows='';
+  ALLEES.forEach(al => {
+    const s = getStats(al);
+    const t = tubesData[al] !== undefined && tubesData[al] !== '' ? tubesData[al] : '—';
+    totD+=s.donne; totND+=s.nonDonne; totNE+=s.nonEnr; totV+=s.vide; totActifs+=s.malesActifs;
+    if (typeof t === 'number') totT += t;
+    const taux = s.malesActifs > 0 ? Math.round(s.evalues / s.malesActifs * 100) : 0;
+    rows += `<tr>
+      <td>${al}</td>
+      <td style="color:#4ade80">${s.donne} <span>(${s.pctD}%)</span></td>
+      <td style="color:#f87171">${s.nonDonne} <span>(${s.pctND}%)</span></td>
+      <td style="color:#4a6a8a">${s.nonEnr}</td>
+      <td style="color:#6a6a8a">${s.vide}</td>
+      <td style="color:${tauxColor(taux)};font-weight:700">${taux}%</td>
+      <td style="color:#7ab8e0">${typeof t === 'number' ? t.toFixed(1) : t}</td>
+    </tr>`;
+  });
+  const totEval = totD + totND;
+  const totPctD = totEval ? Math.round((totD/totEval)*100) : 0;
+  const totPctND = totEval ? Math.round((totND/totEval)*100) : 0;
+  const totTaux = totActifs > 0 ? Math.round(totEval / totActifs * 100) : 0;
+  rows += `<tr class="total-row">
+    <td style="color:#e8f4ff">TOTAL</td>
+    <td style="color:#4ade80">${totD} (${totPctD}%)</td>
+    <td style="color:#f87171">${totND} (${totPctND}%)</td>
+    <td style="color:#4a6a8a">${totNE}</td>
+    <td style="color:#6a6a8a">${totV}</td>
+    <td style="color:${tauxColor(totTaux)};font-weight:700">${totTaux}%</td>
+    <td style="color:#7ab8e0">${totT.toFixed(1)}</td>
+  </tr>`;
+  document.getElementById('bilanBody').innerHTML = rows;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function closeBilan() { document.getElementById('modalOverlay').classList.remove('open'); }
+
+// -------- Réinitialisation journée --------
+function resetJournee() {
+  document.getElementById('resetDateLabel').textContent = currentDate;
+  document.getElementById('resetOverlay').classList.add('open');
+}
+function closeReset() { document.getElementById('resetOverlay').classList.remove('open'); }
+
+async function confirmReset() {
+  closeReset();
+  // Réinitialiser en local et Firebase pour toutes les allées
+  for (const al of ALLEES) {
+    // Cages
+    try { localStorage.removeItem(lsKey(currentDate, al)); } catch(e) {}
+    // Tubes
+    try { localStorage.removeItem(lsKeyTubes(currentDate, al)); } catch(e) {}
+    if (firebaseOK) {
+      try { await db.ref(fbPath(currentDate, al)).remove(); } catch(e) {}
+      try { await db.ref(fbPathTubes(currentDate, al)).remove(); } catch(e) {}
+    }
+  }
+  // Vider les données en mémoire
+  data = {};
+  tubesData = {};
+  showSaving('🗑 Journée réinitialisée');
+  renderNav();
+  renderMain();
+}
+
+// -------- Export Excel --------
+async function exportCSV(mode) {
+  await loadAllCagesVides(); // S'assurer que les cages vides sont à jour
+  let dates = [currentDate];
+  if (mode === 'tout' && firebaseOK) {
+    try { const snap = await db.ref('semenceSG').get(); if (snap.exists()) dates = Object.keys(snap.val()).sort(); } catch(e) {}
+  } else if (mode === 'tout') {
+    const keys = Object.keys(localStorage).filter(k => k.startsWith('semenceSG:'));
+    dates = Array.from(new Set(keys.map(k => k.split(':')[1]))).sort();
+    if (!dates.length) dates = [currentDate];
+  }
+
+  // Filtrer les journées de test
+  const TEST_DATES = ['2026-02-24','2026-02-25'];
+  dates = dates.filter(d => !TEST_DATES.includes(d));
+  if (!dates.length) dates = [currentDate];
+
+  // Chargement données
+  const allData = {};
+  const allTubes = {};
+  for (const date of dates) {
+    allData[date] = {};
+    allTubes[date] = {};
+    for (const al of ALLEES) {
+      if (firebaseOK) {
+        try { const s = await db.ref(fbPath(date,al)).get(); allData[date][al] = s.exists() ? s.val() : {}; } catch(e) { allData[date][al] = {}; }
+        try { const s = await db.ref(fbPathTubes(date,al)).get(); allTubes[date][al] = s.exists() ? parseFloat(s.val()) : ''; } catch(e) { allTubes[date][al] = ''; }
+      } else {
+        try { const v=localStorage.getItem(lsKey(date,al)); allData[date][al]=v?JSON.parse(v):{}; } catch(e) { allData[date][al]={}; }
+        try { const v=localStorage.getItem(lsKeyTubes(date,al)); allTubes[date][al]=v!==null?parseFloat(v):''; } catch(e) { allTubes[date][al]=''; }
+      }
+    }
+  }
+
+  // ════════════════════ STYLES ════════════════════
+  const border = (color) => ({ top:{style:"thin",color:{rgb:color}}, bottom:{style:"thin",color:{rgb:color}}, left:{style:"thin",color:{rgb:color}}, right:{style:"thin",color:{rgb:color}} });
+  const borderMedium = (color) => ({ top:{style:"medium",color:{rgb:color}}, bottom:{style:"medium",color:{rgb:color}}, left:{style:"medium",color:{rgb:color}}, right:{style:"medium",color:{rgb:color}} });
+
+  const S = {
+    // Titres
+    mainTitle:  { font:{bold:true,sz:18,color:{rgb:"FFFFFF"},name:"Calibri"}, fill:{fgColor:{rgb:"0A2540"}}, alignment:{horizontal:"center",vertical:"center"}, border:border("1E4060") },
+    mainTitle2: { font:{bold:false,sz:10,color:{rgb:"7AB8E0"},name:"Calibri"}, fill:{fgColor:{rgb:"0A2540"}}, alignment:{horizontal:"center",vertical:"center"} },
+    dateHdr:    { font:{bold:true,sz:12,color:{rgb:"FFFFFF"},name:"Calibri"}, fill:{fgColor:{rgb:"0D4A7A"}}, alignment:{horizontal:"left",vertical:"center"}, border:border("3A8CC8") },
+
+    // En-têtes colonnes
+    colAllee:   { font:{bold:true,sz:10,color:{rgb:"FFFFFF"},name:"Calibri"}, fill:{fgColor:{rgb:"1A3A5C"}}, alignment:{horizontal:"center",vertical:"center"}, border:borderMedium("3A8CC8") },
+    colDonne:   { font:{bold:true,sz:10,color:{rgb:"FFFFFF"},name:"Calibri"}, fill:{fgColor:{rgb:"14532D"}}, alignment:{horizontal:"center",vertical:"center"}, border:borderMedium("16A34A") },
+    colPctD:    { font:{bold:true,sz:9, color:{rgb:"DCFCE7"},name:"Calibri"}, fill:{fgColor:{rgb:"166534"}}, alignment:{horizontal:"center",vertical:"center"}, border:borderMedium("16A34A") },
+    colMoyen:   { font:{bold:true,sz:10,color:{rgb:"FFFFFF"},name:"Calibri"}, fill:{fgColor:{rgb:"78350F"}}, alignment:{horizontal:"center",vertical:"center"}, border:borderMedium("D97706") },
+    colPctM:    { font:{bold:true,sz:9, color:{rgb:"FEF3C7"},name:"Calibri"}, fill:{fgColor:{rgb:"92400E"}}, alignment:{horizontal:"center",vertical:"center"}, border:borderMedium("D97706") },
+    colNonD:    { font:{bold:true,sz:10,color:{rgb:"FFFFFF"},name:"Calibri"}, fill:{fgColor:{rgb:"7F1D1D"}}, alignment:{horizontal:"center",vertical:"center"}, border:borderMedium("DC2626") },
+    colPctND:   { font:{bold:true,sz:9, color:{rgb:"FEE2E2"},name:"Calibri"}, fill:{fgColor:{rgb:"991B1B"}}, alignment:{horizontal:"center",vertical:"center"}, border:borderMedium("DC2626") },
+    colNonE:    { font:{bold:true,sz:10,color:{rgb:"C8D8E8"},name:"Calibri"}, fill:{fgColor:{rgb:"1E3A50"}}, alignment:{horizontal:"center",vertical:"center"}, border:borderMedium("4A6A8A") },
+    colEval:    { font:{bold:true,sz:10,color:{rgb:"FFFFFF"},name:"Calibri"}, fill:{fgColor:{rgb:"1A3A5C"}}, alignment:{horizontal:"center",vertical:"center"}, border:borderMedium("3A8CC8") },
+    colTubes:   { font:{bold:true,sz:10,color:{rgb:"FFFFFF"},name:"Calibri"}, fill:{fgColor:{rgb:"0D4A6A"}}, alignment:{horizontal:"center",vertical:"center"}, border:borderMedium("3A8CC8") },
+
+    // Cellules données — rangs pairs/impairs
+    allee0:     { font:{bold:true,sz:10,color:{rgb:"1D4ED8"},name:"Calibri"}, fill:{fgColor:{rgb:"EFF6FF"}}, alignment:{horizontal:"center",vertical:"center"}, border:border("BFDBFE") },
+    allee1:     { font:{bold:true,sz:10,color:{rgb:"1D4ED8"},name:"Calibri"}, fill:{fgColor:{rgb:"DBEAFE"}}, alignment:{horizontal:"center",vertical:"center"}, border:border("93C5FD") },
+    don0:       { font:{sz:10,color:{rgb:"14532D"},name:"Calibri"}, fill:{fgColor:{rgb:"F0FDF4"}}, alignment:{horizontal:"center",vertical:"center"}, border:border("BBF7D0") },
+    don1:       { font:{sz:10,color:{rgb:"14532D"},name:"Calibri"}, fill:{fgColor:{rgb:"DCFCE7"}}, alignment:{horizontal:"center",vertical:"center"}, border:border("86EFAC") },
+    pctD0:      { font:{bold:true,sz:10,color:{rgb:"166534"},name:"Calibri"}, fill:{fgColor:{rgb:"F0FDF4"}}, alignment:{horizontal:"center",vertical:"center"}, border:border("BBF7D0") },
+    pctD1:      { font:{bold:true,sz:10,color:{rgb:"166534"},name:"Calibri"}, fill:{fgColor:{rgb:"DCFCE7"}}, alignment:{horizontal:"center",vertical:"center"}, border:border("86EFAC") },
+    moy0:       { font:{sz:10,color:{rgb:"78350F"},name:"Calibri"}, fill:{fgColor:{rgb:"FFFBEB"}}, alignment:{horizontal:"center",vertical:"center"}, border:border("FDE68A") },
+    moy1:       { font:{sz:10,color:{rgb:"78350F"},name:"Calibri"}, fill:{fgColor:{rgb:"FEF3C7"}}, alignment:{horizontal:"center",vertical:"center"}, border:border("FCD34D") },
+    pctM0:      { font:{bold:true,sz:10,color:{rgb:"92400E"},name:"Calibri"}, fill:{fgColor:{rgb:"FFFBEB"}}, alignment:{horizontal:"center",vertical:"center"}, border:border("FDE68A") },
+    pctM1:      { font:{bold:true,sz:10,color:{rgb:"92400E"},name:"Calibri"}, fill:{fgColor:{rgb:"FEF3C7"}}, alignment:{horizontal:"center",vertical:"center"}, border:border("FCD34D") },
+    ndon0:      { font:{sz:10,color:{rgb:"7F1D1D"},name:"Calibri"}, fill:{fgColor:{rgb:"FFF5F5"}}, alignment:{horizontal:"center",vertical:"center"}, border:border("FECACA") },
+    ndon1:      { font:{sz:10,color:{rgb:"7F1D1D"},name:"Calibri"}, fill:{fgColor:{rgb:"FEE2E2"}}, alignment:{horizontal:"center",vertical:"center"}, border:border("FCA5A5") },
+    pctND0:     { font:{bold:true,sz:10,color:{rgb:"991B1B"},name:"Calibri"}, fill:{fgColor:{rgb:"FFF5F5"}}, alignment:{horizontal:"center",vertical:"center"}, border:border("FECACA") },
+    pctND1:     { font:{bold:true,sz:10,color:{rgb:"991B1B"},name:"Calibri"}, fill:{fgColor:{rgb:"FEE2E2"}}, alignment:{horizontal:"center",vertical:"center"}, border:border("FCA5A5") },
+    nenr0:      { font:{sz:10,color:{rgb:"475569"},name:"Calibri"}, fill:{fgColor:{rgb:"F8FAFC"}}, alignment:{horizontal:"center",vertical:"center"}, border:border("CBD5E1") },
+    nenr1:      { font:{sz:10,color:{rgb:"475569"},name:"Calibri"}, fill:{fgColor:{rgb:"F1F5F9"}}, alignment:{horizontal:"center",vertical:"center"}, border:border("94A3B8") },
+    eval0:      { font:{sz:10,color:{rgb:"1D4ED8"},name:"Calibri"}, fill:{fgColor:{rgb:"EFF6FF"}}, alignment:{horizontal:"center",vertical:"center"}, border:border("BFDBFE") },
+    eval1:      { font:{sz:10,color:{rgb:"1D4ED8"},name:"Calibri"}, fill:{fgColor:{rgb:"DBEAFE"}}, alignment:{horizontal:"center",vertical:"center"}, border:border("93C5FD") },
+    tubes0:     { font:{bold:true,sz:10,color:{rgb:"0D4A6A"},name:"Calibri"}, fill:{fgColor:{rgb:"E0F2FE"}}, alignment:{horizontal:"center",vertical:"center"}, border:border("7DD3FC") },
+    tubes1:     { font:{bold:true,sz:10,color:{rgb:"0D4A6A"},name:"Calibri"}, fill:{fgColor:{rgb:"BAE6FD"}}, alignment:{horizontal:"center",vertical:"center"}, border:border("38BDF8") },
+    totalTubes: { font:{bold:true,sz:11,color:{rgb:"FFFFFF"},name:"Calibri"}, fill:{fgColor:{rgb:"0D4A6A"}}, alignment:{horizontal:"center",vertical:"center"}, border:borderMedium("3A8CC8") },
+
+    // Ligne total
+    totalLbl:   { font:{bold:true,sz:11,color:{rgb:"FFFFFF"},name:"Calibri"}, fill:{fgColor:{rgb:"0D2137"}}, alignment:{horizontal:"center",vertical:"center"}, border:borderMedium("3A8CC8") },
+    totalD:     { font:{bold:true,sz:11,color:{rgb:"FFFFFF"},name:"Calibri"}, fill:{fgColor:{rgb:"14532D"}}, alignment:{horizontal:"center",vertical:"center"}, border:borderMedium("16A34A") },
+    totalM:     { font:{bold:true,sz:11,color:{rgb:"FFFFFF"},name:"Calibri"}, fill:{fgColor:{rgb:"78350F"}}, alignment:{horizontal:"center",vertical:"center"}, border:borderMedium("D97706") },
+    totalND:    { font:{bold:true,sz:11,color:{rgb:"FFFFFF"},name:"Calibri"}, fill:{fgColor:{rgb:"7F1D1D"}}, alignment:{horizontal:"center",vertical:"center"}, border:borderMedium("DC2626") },
+    totalNE:    { font:{bold:true,sz:11,color:{rgb:"C8D8E8"},name:"Calibri"}, fill:{fgColor:{rgb:"1A2E42"}}, alignment:{horizontal:"center",vertical:"center"}, border:borderMedium("4A6A8A") },
+    spacer:     { fill:{fgColor:{rgb:"0A1520"}} },
+
+    // Détail cages
+    cageNum:    { font:{bold:true,sz:9,color:{rgb:"7AB8E0"},name:"Calibri"}, fill:{fgColor:{rgb:"0D1A28"}}, alignment:{horizontal:"center",vertical:"center"}, border:border("1A3048") },
+    cageF:      { font:{italic:true,sz:9,color:{rgb:"94A3B8"},name:"Calibri"}, fill:{fgColor:{rgb:"E2E8F0"}}, alignment:{horizontal:"center",vertical:"center"}, border:border("CBD5E1") },
+    cageHdr:    { font:{bold:true,sz:10,color:{rgb:"FFFFFF"},name:"Calibri"}, fill:{fgColor:{rgb:"1A3A5C"}}, alignment:{horizontal:"center",vertical:"center"}, border:borderMedium("3A8CC8") },
+    cageDon:    { font:{sz:9,color:{rgb:"14532D"},name:"Calibri"}, fill:{fgColor:{rgb:"DCFCE7"}}, alignment:{horizontal:"center",vertical:"center"}, border:border("86EFAC") },
+    cageMoy:    { font:{sz:9,color:{rgb:"78350F"},name:"Calibri"}, fill:{fgColor:{rgb:"FEF3C7"}}, alignment:{horizontal:"center",vertical:"center"}, border:border("FCD34D") },
+    cageNdon:   { font:{sz:9,color:{rgb:"7F1D1D"},name:"Calibri"}, fill:{fgColor:{rgb:"FEE2E2"}}, alignment:{horizontal:"center",vertical:"center"}, border:border("FCA5A5") },
+    cageNenr:   { font:{sz:9,color:{rgb:"64748B"},name:"Calibri"}, fill:{fgColor:{rgb:"F8FAFC"}}, alignment:{horizontal:"center",vertical:"center"}, border:border("CBD5E1") },
+  };
+
+  const wb = XLSX.utils.book_new();
+
+  // ══════════════════════════════════════════════════
+  //  FEUILLE 1 — RÉCAPITULATIF
+  // ══════════════════════════════════════════════════
+  const recapRows = [];
+  const recapMerges = [];
+  const NC = 8; // nb colonnes (avec taux d'utilisation)
+  let r = 0;
+
+  const blk = (v, s) => ({v, s});
+  const fill = (s) => ({v:"", s});
+  const fillRow = (s) => Array(NC).fill(fill(s));
+  const spRow = () => { recapRows.push(fillRow(S.spacer)); recapMerges.push({s:{r,c:0},e:{r,c:NC-1}}); r++; };
+
+  // Style taux d'utilisation Excel (vert=75%, rouge en s'éloignant)
+  function tauxStyleXL(pct, z) {
+    const dist = Math.abs(pct - 75);
+    const ratio = Math.min(dist / 50, 1);
+    const rr = Math.round(22 + ratio * 226).toString(16).padStart(2,'0');
+    const gg = Math.round(200 - ratio * 130).toString(16).padStart(2,'0');
+    const bb = Math.round(80 - ratio * 50).toString(16).padStart(2,'0');
+    const hex = (rr+gg+bb).toUpperCase();
+    return { font:{bold:true,sz:10,color:{rgb:hex},name:"Calibri"}, fill:{fgColor:{rgb:z?"F1F5F9":"F8FAFC"}}, alignment:{horizontal:"center",vertical:"center"}, border:border(z?"94A3B8":"CBD5E1") };
+  }
+  function tauxStyleTotalXL(pct) {
+    const dist = Math.abs(pct - 75);
+    const ratio = Math.min(dist / 50, 1);
+    const rr = Math.round(22 + ratio * 226).toString(16).padStart(2,'0');
+    const gg = Math.round(200 - ratio * 130).toString(16).padStart(2,'0');
+    const bb = Math.round(80 - ratio * 50).toString(16).padStart(2,'0');
+    const hex = (rr+gg+bb).toUpperCase();
+    return { font:{bold:true,sz:11,color:{rgb:hex},name:"Calibri"}, fill:{fgColor:{rgb:"0D2137"}}, alignment:{horizontal:"center",vertical:"center"}, border:borderMedium("3A8CC8") };
+  }
+
+  // Titre principal
+  recapRows.push([blk("🦆  AFR ÉLEVAGE — SG · Suivi Semence Mâles", S.mainTitle), ...Array(NC-1).fill(fill(S.mainTitle))]);
+  recapMerges.push({s:{r,c:0},e:{r,c:NC-1}}); r++;
+  recapRows.push([blk(`Export généré le ${today()} · Période : ${dates[0]}  →  ${dates[dates.length-1]}  ·  ${dates.length} jour(s)`, S.mainTitle2), ...Array(NC-1).fill(fill(S.mainTitle2))]);
+  recapMerges.push({s:{r,c:0},e:{r,c:NC-1}}); r++;
+  spRow();
+
+  for (const date of dates) {
+    // En-tête date
+    recapRows.push([blk(`📅  ${date}`, S.dateHdr), ...Array(NC-1).fill(fill(S.dateHdr))]);
+    recapMerges.push({s:{r,c:0},e:{r,c:NC-1}}); r++;
+
+    // En-têtes colonnes
+    recapRows.push([
+      blk("Allée", S.colAllee),
+      blk("✓  Donnés", S.colDonne), blk("%", S.colPctD),
+      blk("✗  Non donnés", S.colNonD), blk("%", S.colPctND),
+      blk("—  Non enr.", S.colNonE),
+      blk("% Util.", S.colEval),
+      blk("🧪 Tubes récoltés", S.colTubes),
+    ]); r++;
+
+    let tD=0,tND=0,tNE=0,tT=0,tActifs=0;
+    let rowIdx = 0;
+    for (const al of ALLEES) {
+      const d = allData[date][al] || {};
+      let don=0,ndon=0,nenr=0,nbVide=0;
+      for (let i=1;i<=NB_CAGES;i++){
+        if(FEMELLES.has(i))continue;
+        if(isCageVide(al, i)){nbVide++;continue;}
+        const v=d[i]||0;
+        if(v===1||v===2)don++;else if(v===3)ndon++;else nenr++;
+      }
+      const actifs = NB_MALES - nbVide;
+      const ev=don+ndon;
+      const pD=ev?Math.round(don/ev*100):0;
+      const pND=ev?Math.round(ndon/ev*100):0;
+      const taux=actifs>0?Math.round(ev/actifs*100):0;
+      const tb=allTubes[date][al];
+      const tbVal=typeof tb==='number'&&!isNaN(tb)?tb:'';
+      tD+=don;tND+=ndon;tNE+=nenr;tActifs+=actifs;if(tbVal!=='')tT+=tbVal;
+      const z = rowIdx%2;
+      recapRows.push([
+        blk(al,          z?S.allee1:S.allee0),
+        blk(don,         z?S.don1:S.don0),   blk(pD+"%",  z?S.pctD1:S.pctD0),
+        blk(ndon,        z?S.ndon1:S.ndon0),  blk(pND+"%", z?S.pctND1:S.pctND0),
+        blk(nenr,        z?S.nenr1:S.nenr0),
+        blk(taux+"%",   tauxStyleXL(taux, z)),
+        blk(tbVal!==''?tbVal.toFixed(1):'—', z?S.tubes1:S.tubes0),
+      ]); r++; rowIdx++;
+    }
+
+    // Total
+    const tEv=tD+tND;
+    const tpD=tEv?Math.round(tD/tEv*100):0;
+    const tpND=tEv?Math.round(tND/tEv*100):0;
+    const tTaux=tActifs>0?Math.round(tEv/tActifs*100):0;
+    recapRows.push([
+      blk("TOTAL", S.totalLbl),
+      blk(tD, S.totalD), blk(tpD+"%", S.totalD),
+      blk(tND, S.totalND), blk(tpND+"%", S.totalND),
+      blk(tNE, S.totalNE),
+      blk(tTaux+"%", tauxStyleTotalXL(tTaux)),
+      blk(tT.toFixed(1), S.totalTubes),
+    ]); r++;
+    spRow();
+  }
+
+  const wsRecap = XLSX.utils.aoa_to_sheet(recapRows);
+  wsRecap['!merges'] = recapMerges;
+  wsRecap['!cols'] = [{wch:9},{wch:12},{wch:7},{wch:15},{wch:7},{wch:12},{wch:9},{wch:16}];
+  // Hauteurs : titre 36px, sous-titre 20px
+  const rowHeights = [{hpt:36},{hpt:20},{hpt:8}];
+  wsRecap['!rows'] = rowHeights;
+  XLSX.utils.book_append_sheet(wb, wsRecap, "📊 Récapitulatif");
+
+  // ══════════════════════════════════════════════════
+  //  FEUILLE 2 — SUIVI MÂLES (par allée + par cage)
+  // ══════════════════════════════════════════════════
+  {
+    const dateHdrStyle = { font:{bold:true,sz:8,color:{rgb:"FFFFFF"},name:"Calibri"}, fill:{fgColor:{rgb:"0D4A7A"}}, alignment:{horizontal:"center",vertical:"center",wrapText:true}, border:border("3A8CC8") };
+    const dateHdrStyleAlt = { font:{bold:true,sz:8,color:{rgb:"FFFFFF"},name:"Calibri"}, fill:{fgColor:{rgb:"0D3A5C"}}, alignment:{horizontal:"center",vertical:"center",wrapText:true}, border:border("3A8CC8") };
+
+    // ─── SECTION A : SUIVI PAR ALLÉE ───────────────
+    const NC_AL = 4 + dates.length;  // Allée | Don total | ND total | % Don | <dates>
+    const NC_TB = 1 + dates.length * 3; // Allée | <tubes|males|ratio> par date
+    const NC_MAX = Math.max(NC_AL, NC_TB, 5 + dates.length);
+    const alRows = [];
+    const alMerges = [];
+    let ar = 0;
+    const padRow = (cell, nc) => [cell, ...Array(nc-1).fill({v:"", s:cell.s})];
+    const spacerRow = () => { alRows.push(Array(NC_MAX).fill(fill(S.spacer))); alMerges.push({s:{r:ar,c:0},e:{r:ar,c:NC_MAX-1}}); ar++; };
+
+    alRows.push(padRow(blk("🦆  AFR ÉLEVAGE — SG · Suivi Mâles — VUE PAR ALLÉE", S.mainTitle), NC_MAX));
+    alMerges.push({s:{r:ar,c:0},e:{r:ar,c:NC_MAX-1}}); ar++;
+    alRows.push(padRow(blk(`Export ${today()} · ${dates.length} jour(s) · % Don = sur mâles évalués`, S.mainTitle2), NC_MAX));
+    alMerges.push({s:{r:ar,c:0},e:{r:ar,c:NC_MAX-1}}); ar++;
+    spacerRow();
+
+    // En-têtes colonnes
+    const alHdr = [
+      blk("Allée",      S.cageHdr),
+      blk("✓ Donnés",   S.colDonne),
+      blk("✗ Non don.", S.colNonD),
+      blk("% Don",      S.colPctD),
+    ];
+    dates.forEach((d,di) => {
+      const p = d.split('-');
+      alHdr.push(blk(`${p[2]}/${p[1]}`, di%2===0 ? dateHdrStyle : dateHdrStyleAlt));
+    });
+    alRows.push(alHdr); ar++;
+
+    // Totaux par date (pour ligne TOTAL bas)
+    const totByDate = dates.map(() => ({d:0, nd:0}));
+
+    let alRowIdx = 0;
+    for (const al of ALLEES) {
+      let totalD=0, totalND=0;
+      const dayPcts = [];
+      dates.forEach((date, di) => {
+        const d2 = allData[date][al] || {};
+        let d=0, nd=0;
+        for (let i=1;i<=NB_CAGES;i++) {
+          if(FEMELLES.has(i)) continue;
+          if(isCageVide(al, i)) continue;
+          const v=d2[i]||0;
+          if(v===1||v===2) d++; else if(v===3) nd++;
+        }
+        totalD+=d; totalND+=nd;
+        totByDate[di].d+=d; totByDate[di].nd+=nd;
+        const ev=d+nd;
+        dayPcts.push(ev ? Math.round(d/ev*100) : null);
+      });
+      const ev = totalD+totalND;
+      const pct = ev ? Math.round(totalD/ev*100) : null;
+      const z = alRowIdx%2;
+      const pctStyle = pct===null ? (z?S.nenr1:S.nenr0) :
+                       pct>=70    ? (z?S.pctD1:S.pctD0)  :
+                       pct>=30    ? (z?S.pctM1:S.pctM0)  :
+                                    (z?S.pctND1:S.pctND0);
+      const row = [
+        blk(al,                         z?S.allee1:S.allee0),
+        blk(totalD,                     z?S.don1:S.don0),
+        blk(totalND,                    z?S.ndon1:S.ndon0),
+        blk(pct!==null ? pct+'%' : '—', pctStyle),
+      ];
+      dayPcts.forEach(p2 => {
+        const ps = p2===null ? (z?S.nenr1:S.nenr0) :
+                   p2>=70   ? (z?S.pctD1:S.pctD0)  :
+                   p2>=30   ? (z?S.pctM1:S.pctM0)  :
+                               (z?S.pctND1:S.pctND0);
+        row.push(blk(p2!==null ? p2+'%' : '—', ps));
+      });
+      alRows.push(row); ar++; alRowIdx++;
+    }
+
+    // Ligne TOTAL
+    const totD = totByDate.reduce((s,v)=>s+v.d,0);
+    const totND = totByDate.reduce((s,v)=>s+v.nd,0);
+    const totEv = totD+totND;
+    const totPct = totEv ? Math.round(totD/totEv*100) : null;
+    const totRow = [
+      blk("TOTAL", S.totalLbl),
+      blk(totD,    S.totalD),
+      blk(totND,   S.totalND),
+      blk(totPct!==null ? totPct+'%' : '—', S.totalD),
+    ];
+    totByDate.forEach(v => {
+      const ev2=v.d+v.nd;
+      const p2=ev2?Math.round(v.d/ev2*100):null;
+      totRow.push(blk(p2!==null ? p2+'%' : '—', S.totalD));
+    });
+    alRows.push(totRow); ar++;
+
+    // ─── SECTION A2 : SUIVI MÂLES / TUBES ──────────
+    spacerRow(); spacerRow();
+
+    // Titre section tubes
+    const tubeTitleStyle = { font:{bold:true,sz:12,color:{rgb:"FFFFFF"},name:"Calibri"}, fill:{fgColor:{rgb:"0D4A6A"}}, alignment:{horizontal:"left",vertical:"center"}, border:borderMedium("3A8CC8") };
+    alRows.push(padRow(blk("🧪  RENDEMENT TUBES — Mâles donneurs par tube (Mâles donneurs ÷ Tubes récoltés)", tubeTitleStyle), NC_MAX));
+    alMerges.push({s:{r:ar,c:0},e:{r:ar,c:NC_MAX-1}}); ar++;
+    alRows.push(padRow(blk("ℹ  Ratio = Mâles donneurs ÷ Tubes récoltés", S.mainTitle2), NC_MAX));
+    alMerges.push({s:{r:ar,c:0},e:{r:ar,c:NC_MAX-1}}); ar++;
+
+    // Styles spécifiques tubes
+    const styTubeHdr   = { font:{bold:true,sz:10,color:{rgb:"FFFFFF"},name:"Calibri"}, fill:{fgColor:{rgb:"0D4A6A"}}, alignment:{horizontal:"center",vertical:"center",wrapText:true}, border:borderMedium("3A8CC8") };
+    const styRatioHdr  = { font:{bold:true,sz:10,color:{rgb:"FFFFFF"},name:"Calibri"}, fill:{fgColor:{rgb:"164E63"}}, alignment:{horizontal:"center",vertical:"center",wrapText:true}, border:borderMedium("0E7490") };
+    const styTube0     = { font:{bold:true,sz:10,color:{rgb:"0D4A6A"},name:"Calibri"}, fill:{fgColor:{rgb:"E0F2FE"}}, alignment:{horizontal:"center",vertical:"center"}, border:border("7DD3FC") };
+    const styTube1     = { font:{bold:true,sz:10,color:{rgb:"0D4A6A"},name:"Calibri"}, fill:{fgColor:{rgb:"BAE6FD"}}, alignment:{horizontal:"center",vertical:"center"}, border:border("38BDF8") };
+    const styRatioGood0= { font:{bold:true,sz:10,color:{rgb:"166534"},name:"Calibri"}, fill:{fgColor:{rgb:"DCFCE7"}}, alignment:{horizontal:"center",vertical:"center"}, border:border("86EFAC") };
+    const styRatioGood1= { font:{bold:true,sz:10,color:{rgb:"166534"},name:"Calibri"}, fill:{fgColor:{rgb:"BBF7D0"}}, alignment:{horizontal:"center",vertical:"center"}, border:border("4ADE80") };
+    const styRatioMid0 = { font:{bold:true,sz:10,color:{rgb:"78350F"},name:"Calibri"}, fill:{fgColor:{rgb:"FEF3C7"}}, alignment:{horizontal:"center",vertical:"center"}, border:border("FCD34D") };
+    const styRatioMid1 = { font:{bold:true,sz:10,color:{rgb:"78350F"},name:"Calibri"}, fill:{fgColor:{rgb:"FDE68A"}}, alignment:{horizontal:"center",vertical:"center"}, border:border("F59E0B") };
+    const styRatioBad0 = { font:{bold:true,sz:10,color:{rgb:"991B1B"},name:"Calibri"}, fill:{fgColor:{rgb:"FEE2E2"}}, alignment:{horizontal:"center",vertical:"center"}, border:border("FCA5A5") };
+    const styRatioBad1 = { font:{bold:true,sz:10,color:{rgb:"991B1B"},name:"Calibri"}, fill:{fgColor:{rgb:"FECACA"}}, alignment:{horizontal:"center",vertical:"center"}, border:border("F87171") };
+    const styNaTube0   = { font:{sz:10,color:{rgb:"475569"},name:"Calibri"}, fill:{fgColor:{rgb:"F8FAFC"}}, alignment:{horizontal:"center",vertical:"center"}, border:border("CBD5E1") };
+    const styNaTube1   = { font:{sz:10,color:{rgb:"475569"},name:"Calibri"}, fill:{fgColor:{rgb:"F1F5F9"}}, alignment:{horizontal:"center",vertical:"center"}, border:border("94A3B8") };
+
+    // Colonnes : Allée | <par date: 🧪 tubes | ♂ donneurs | ♂/tube>
+    const tubeHdr = [ blk("Allée", styTubeHdr) ];
+    dates.forEach((d,di) => {
+      const p = d.split('-');
+      const lbl = `${p[2]}/${p[1]}`;
+      tubeHdr.push(blk(`🧪 ${lbl}`,  di%2===0 ? dateHdrStyle : dateHdrStyleAlt));
+      tubeHdr.push(blk(`♂ ${lbl}`,   styTubeHdr));
+      tubeHdr.push(blk(`♂/tube ${lbl}`, styRatioHdr));
+    });
+    alRows.push(tubeHdr); ar++;
+
+    // Totaux par date pour ligne TOTAL
+    const datesTubesTot = dates.map(() => ({tubes:0, don:0}));
+
+    let tbRowIdx = 0;
+    for (const al of ALLEES) {
+      const z = tbRowIdx % 2;
+      const row = [blk(al, z?S.allee1:S.allee0)];
+
+      dates.forEach((date, di) => {
+        const tb  = allTubes[date][al];
+        const tbVal = (typeof tb === 'number' && !isNaN(tb)) ? tb : null;
+        const d2  = allData[date][al] || {};
+        let don = 0;
+        for (let i=1; i<=NB_CAGES; i++) {
+          if(FEMELLES.has(i)) continue;
+          if(isCageVide(al, i)) continue;
+          const v = d2[i]||0;
+          if(v===1||v===2) don++;
+        }
+        if (tbVal !== null) datesTubesTot[di].tubes += tbVal;
+        datesTubesTot[di].don += don;
+
+        // ratio : mâles donneurs / tubes
+        const ratio = (tbVal !== null && tbVal > 0) ? (don / tbVal) : null;
+        const getRatioSty = (r) => {
+          if (r === null) return z ? styNaTube1 : styNaTube0;
+          if (r < 12)  return z ? styRatioGood1 : styRatioGood0;
+          if (r <= 15) return z ? styRatioMid1  : styRatioMid0;
+          return z ? styRatioBad1 : styRatioBad0;
+        };
+        row.push(blk(tbVal !== null ? tbVal.toFixed(1) : '—', tbVal !== null ? (z?styTube1:styTube0) : (z?styNaTube1:styNaTube0)));
+        row.push(blk(don > 0 ? don : '—',                      z?S.don1:S.don0));
+        row.push(blk(ratio !== null ? ratio.toFixed(1) : '—',  getRatioSty(ratio)));
+      });
+
+      alRows.push(row); ar++; tbRowIdx++;
+    }
+
+    // Ligne TOTAL
+    const totTubeRow = [ blk("TOTAL", S.totalLbl) ];
+    datesTubesTot.forEach(v => {
+      const r = (v.tubes > 0) ? (v.don / v.tubes) : null;
+      totTubeRow.push(blk(v.tubes > 0 ? v.tubes.toFixed(1) : '—', S.totalTubes));
+      totTubeRow.push(blk(v.don > 0 ? v.don : '—',                 S.totalD));
+      totTubeRow.push(blk(r !== null ? r.toFixed(1) : '—',          S.totalTubes));
+    });
+    alRows.push(totTubeRow); ar++;
+
+    // Légende couleur ratio
+    spacerRow();
+    const legendTubeStyle = { font:{sz:9,color:{rgb:"4A8CB0"},name:"Calibri"}, fill:{fgColor:{rgb:"0A1520"}}, alignment:{horizontal:"left",vertical:"center"} };
+    alRows.push(padRow(blk("Ratio ♂/tube :   🟢 < 12 mâles/tube (excellent)   🟡 12 → 15 (correct)   🔴 > 15 (faible rendement collectif)", legendTubeStyle), NC_MAX));
+    alMerges.push({s:{r:ar,c:0},e:{r:ar,c:NC_MAX-1}}); ar++;
+
+    // ─── SECTION A3 : TAUX D'UTILISATION GÉNÉRAL ──────────
+    spacerRow(); spacerRow();
+
+    const utilTitleStyle = { font:{bold:true,sz:12,color:{rgb:"FFFFFF"},name:"Calibri"}, fill:{fgColor:{rgb:"4A2800"}}, alignment:{horizontal:"left",vertical:"center"}, border:borderMedium("D97706") };
+    alRows.push(padRow(blk("📊  TAUX D'UTILISATION — % mâles évalués / mâles actifs (objectif : 75%)", utilTitleStyle), NC_MAX));
+    alMerges.push({s:{r:ar,c:0},e:{r:ar,c:NC_MAX-1}}); ar++;
+
+    // En-têtes : Allée | <dates>
+    const utilHdr = [ blk("Allée", S.cageHdr) ];
+    dates.forEach((d,di) => {
+      const p = d.split('-');
+      utilHdr.push(blk(`${p[2]}/${p[1]}`, di%2===0 ? dateHdrStyle : dateHdrStyleAlt));
+    });
+    alRows.push(utilHdr); ar++;
+
+    // Totaux globaux par date pour ligne TOTAL
+    const utilTotByDate = dates.map(() => ({eval:0, actifs:0}));
+
+    let utilRowIdx = 0;
+    for (const al of ALLEES) {
+      const z = utilRowIdx % 2;
+      const row = [blk(al, z?S.allee1:S.allee0)];
+
+      dates.forEach((date, di) => {
+        const d2 = allData[date][al] || {};
+        let ev=0, nbVide=0;
+        for (let i=1; i<=NB_CAGES; i++) {
+          if(FEMELLES.has(i)) continue;
+          if(isCageVide(al, i)){nbVide++;continue;}
+          const v = d2[i]||0;
+          if(v===1||v===2||v===3) ev++;
+        }
+        const actifs = NB_MALES - nbVide;
+        utilTotByDate[di].eval += ev;
+        utilTotByDate[di].actifs += actifs;
+        const taux = actifs > 0 ? Math.round(ev / actifs * 100) : 0;
+        row.push(blk(taux+'%', tauxStyleXL(taux, z)));
+      });
+
+      alRows.push(row); ar++; utilRowIdx++;
+    }
+
+    // Ligne TOTAL global
+    const utilTotRow = [ blk("TOTAL", S.totalLbl) ];
+    utilTotByDate.forEach(v => {
+      const taux = v.actifs > 0 ? Math.round(v.eval / v.actifs * 100) : 0;
+      utilTotRow.push(blk(taux+'%', tauxStyleTotalXL(taux)));
+    });
+    alRows.push(utilTotRow); ar++;
+
+    // Légende
+    spacerRow();
+    const legendUtilLabel = { font:{bold:true,sz:9,color:{rgb:"D97706"},name:"Calibri"}, fill:{fgColor:{rgb:"0A1520"}}, alignment:{horizontal:"left",vertical:"center"} };
+    const legendUtilGreen = { font:{bold:true,sz:9,color:{rgb:"16A34A"},name:"Calibri"}, fill:{fgColor:{rgb:"0A1520"}}, alignment:{horizontal:"left",vertical:"center"} };
+    const legendUtilRed   = { font:{bold:true,sz:9,color:{rgb:"DC2626"},name:"Calibri"}, fill:{fgColor:{rgb:"0A1520"}}, alignment:{horizontal:"left",vertical:"center"} };
+    const legendFill = fill(S.spacer);
+    const legendRow = [blk("Objectif : 75% —", legendUtilLabel)];
+    // Cellules 1-2 : texte vert mergé
+    legendRow.push(blk("● proche de 75% = bon", legendUtilGreen));
+    legendRow.push({v:"", s:legendUtilGreen});
+    // Cellules 3+ : texte rouge mergé sur le reste
+    legendRow.push(blk("● éloigné de 75% = insuffisant ou sur-sollicitation", legendUtilRed));
+    for(let li=4; li<NC_MAX; li++) legendRow.push({v:"", s:legendUtilRed});
+    alRows.push(legendRow);
+    alMerges.push({s:{r:ar,c:1},e:{r:ar,c:2}});
+    alMerges.push({s:{r:ar,c:3},e:{r:ar,c:NC_MAX-1}});
+    ar++;
+
+    // ─── SECTION B : SUIVI PAR CAGE ────────────────
+    spacerRow(); spacerRow();
+
+    // Titre section B
+    alRows.push(padRow(blk("📋  DÉTAIL PAR CAGE — classé par taux de don (meilleurs donneurs en haut)", S.dateHdr), NC_MAX));
+    alMerges.push({s:{r:ar,c:0},e:{r:ar,c:NC_MAX-1}}); ar++;
+
+    // Colonnes section B : Allée | Cage | Don total | ND total | % Don | <dates>
+    const bHdr = [
+      blk("Allée",      S.cageHdr),
+      blk("Cage",       S.cageHdr),
+      blk("✓ Don.",     S.colDonne),
+      blk("✗ N.Don.",   S.colNonD),
+      blk("% Don",      S.colPctD),
+    ];
+    dates.forEach((d,di) => {
+      const p = d.split('-');
+      bHdr.push(blk(`${p[2]}/${p[1]}`, di%2===0 ? dateHdrStyle : dateHdrStyleAlt));
+    });
+    // On a besoin d'une 6e colonne : insérer en position 5
+    alRows.push(bHdr); ar++;
+
+    for (const al of ALLEES) {
+      const alleeEntries = [];
+      for (let i=1; i<=NB_CAGES; i++) {
+        if (FEMELLES.has(i)) continue;
+        const isVide = isCageVide(al, i);
+        let nbD=0, nbND=0;
+        const dayVals = [];
+        if (isVide) {
+          // Cage vide persistante : toutes les dates = VIDE
+          for (const date of dates) { dayVals.push(4); }
+        } else {
+          for (const date of dates) {
+            const val = (allData[date][al]||{})[i]||0;
+            if(val===1||val===2){ nbD++; dayVals.push(1); }
+            else if(val===3)    { nbND++; dayVals.push(3); }
+            else                { dayVals.push(0); }
+          }
+        }
+        const ev = nbD+nbND;
+        const pct = ev ? Math.round(nbD/ev*100) : null;
+        alleeEntries.push({cage:i, nbD, nbND, pct, dayVals, isVide});
+      }
+      alleeEntries.sort((a,b) => {
+        if(a.pct===null && b.pct===null) return 0;
+        if(a.pct===null) return 1;
+        if(b.pct===null) return -1;
+        return b.pct - a.pct;
+      });
+
+      // Bandeau allée
+      const alleeBandStyle = { font:{bold:true,sz:11,color:{rgb:"FFFFFF"},name:"Calibri"}, fill:{fgColor:{rgb:"1A3A5C"}}, alignment:{horizontal:"left",vertical:"center"}, border:borderMedium("3A8CC8") };
+      alRows.push(padRow(blk(`  Allée ${al}`, alleeBandStyle), NC_MAX));
+      alMerges.push({s:{r:ar,c:0},e:{r:ar,c:NC_MAX-1}}); ar++;
+
+      let rowIdx=0;
+      for (const e of alleeEntries) {
+        const z = rowIdx%2;
+        const pctTxt = e.pct!==null ? e.pct+'%' : '—';
+        const pctStyle = e.pct===null ? (z?S.nenr1:S.nenr0) :
+                         e.pct>=70   ? (z?S.pctD1:S.pctD0)  :
+                         e.pct>=30   ? (z?S.pctM1:S.pctM0)  :
+                                       (z?S.pctND1:S.pctND0);
+        const row = [
+          blk(al,      z?S.allee1:S.allee0),
+          blk(e.cage,  S.cageNum),
+          blk(e.nbD,   z?S.don1:S.don0),
+          blk(e.nbND,  z?S.ndon1:S.ndon0),
+          blk(pctTxt,  pctStyle),
+        ];
+        e.dayVals.forEach(v => {
+          if     (v===1) row.push(blk("✓", S.cageDon));
+          else if(v===3) row.push(blk("✗", S.cageNdon));
+          else if(v===4) row.push(blk("VIDE", S.cageNenr));
+          else           row.push(blk("—", S.cageNenr));
+        });
+        alRows.push(row); ar++; rowIdx++;
+      }
+      spacerRow();
+    }
+
+    const wsMales = XLSX.utils.aoa_to_sheet(alRows);
+    wsMales['!merges'] = alMerges;
+    // Calcul largeur max entre sections (A=4+n, tubes=1+3n, B=5+n)
+    const maxCols = Math.max(4 + dates.length, 1 + dates.length*3, 5 + dates.length);
+    // Largeurs : on génère autant de colonnes que la plus large des sections
+    // Col 0: Allée, Col 1: Don total (ou tubes date1), Col 2: NDon (ou males date1)...
+    // On utilise une largeur adaptative : les 5 premières fixes, puis par date
+    const colWidths = [
+      {wch:9},   // Allée
+      {wch:13},  // ✓ Donnés / 🧪 tubes j1 / Cage
+      {wch:13},  // ✗ Non don / ♂ donneurs j1 / ✓ Don.
+      {wch:10},  // % Don / ♂/tube j1 / ✗ N.Don.
+      {wch:10},  // date1 (section A) / — (section B %Don)
+    ];
+    // Colonnes par date supplémentaires (pour section tubes = 3 cols/date)
+    dates.forEach(() => colWidths.push({wch:10}, {wch:13}, {wch:13}));
+    wsMales['!cols'] = colWidths;
+    wsMales['!rows']   = [{hpt:36},{hpt:18},{hpt:6},{hpt:30}];
+    XLSX.utils.book_append_sheet(wb, wsMales, "📈 Suivi Mâles");
+  }
+
+  // ══════════════════════════════════════════════════
+  //  FEUILLES 3+ — DÉTAIL PAR CAGE (par date)
+  // ══════════════════════════════════════════════════
+  for (const date of dates.slice(0, 8)) {
+    const rows = [];
+    const merges = [];
+    let dr = 0;
+
+    // Titre
+    rows.push([blk(`🦆  SG · Détail par cage · ${date}`, S.mainTitle), ...Array(ALLEES.length).fill(fill(S.mainTitle))]);
+    merges.push({s:{r:dr,c:0},e:{r:dr,c:ALLEES.length}}); dr++;
+
+    // En-têtes allées
+    const hdr = [blk("Cage N°", S.cageHdr)];
+    ALLEES.forEach(al => hdr.push(blk(`Allée ${al}`, S.cageHdr)));
+    rows.push(hdr); dr++;
+
+    for (let i=1; i<=NB_CAGES; i++) {
+      const row = [];
+      if (FEMELLES.has(i)) {
+        row.push(blk(`♀ Cage ${i}`, S.cageF));
+        ALLEES.forEach(() => row.push(blk("♀ Femelle", S.cageF)));
+      } else {
+        row.push(blk(i, S.cageNum));
+        ALLEES.forEach(al => {
+          if (isCageVide(al, i)) {
+            row.push(blk("VIDE", S.cageNenr));
+          } else {
+            const val = (allData[date][al]||{})[i]||0;
+            const labels = {0:"— Non enr.",1:"✓ Donné",2:"✓ Donné",3:"✗ Non donné"};
+            const styles  = {0:S.cageNenr,1:S.cageDon,2:S.cageDon,3:S.cageNdon};
+            row.push(blk(labels[val], styles[val]));
+          }
+        });
+      }
+      rows.push(row); dr++;
+    }
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!merges'] = merges;
+    ws['!cols'] = [{wch:9}, ...ALLEES.map(()=>({wch:13}))];
+    ws['!rows'] = [{hpt:30},{hpt:22}];
+    XLSX.utils.book_append_sheet(wb, ws, `📅 ${date}`);
+  }
+
+
+
+  // Nom du fichier : date en premier, format AAAAMMJJ
+  const fmtDate = (d) => d.replace(/-/g,'');
+  const fname = mode==='tout'
+    ? `${fmtDate(today())}_SG_Semence.xlsx`
+    : `${fmtDate(currentDate)}_SG_Semence.xlsx`;
+  XLSX.writeFile(wb, fname);
+}
+
+</script>
+</body>
+</html>
