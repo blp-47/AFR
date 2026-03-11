@@ -37,37 +37,44 @@
     .logo { max-width: 180px; height: auto; margin-bottom: 10px; }
     h1 { font-size: 1.4rem; color: var(--primary); font-weight: 800; letter-spacing: 1px; }
 
-    .menu { width: 100%; max-width: 500px; display: flex; flex-direction: column; gap: 20px; }
+    .menu { width: 100%; max-width: 500px; display: flex; flex-direction: column; gap: 25px; }
 
-    /* Grille pour mettre 33 et 40 côte à côte */
     .menu-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px;
+      gap: 15px;
+    }
+
+    /* Style des titres centrés au-dessus des boutons */
+    .section-header {
+      text-align: center;
+      margin-bottom: 10px;
     }
 
     .section-title {
       font-size: 0.85rem;
       color: var(--primary);
       font-weight: 700;
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
       text-transform: uppercase;
+      display: inline-block;
+      position: relative;
+      padding-bottom: 4px;
     }
 
-    .section-title::before {
+    .section-title::after {
       content: '';
-      width: 4px;
-      height: 16px;
+      position: absolute;
+      bottom: 0;
+      left: 25%;
+      width: 50%;
+      height: 3px;
       background: var(--accent);
       border-radius: 2px;
     }
 
     .menu-btn {
       display: flex;
-      flex-direction: column; /* Texte sous le logo pour la grille */
+      flex-direction: column;
       align-items: center;
       text-align: center;
       gap: 12px;
@@ -79,13 +86,7 @@
       color: var(--text);
       box-shadow: var(--shadow);
       transition: all 0.2s ease;
-    }
-
-    /* Bouton du bas (Signalements) garde un format large */
-    .menu-btn.wide {
-      flex-direction: row;
-      text-align: left;
-      padding: 15px;
+      height: 100%;
     }
 
     .menu-btn:hover {
@@ -94,7 +95,7 @@
     }
 
     .btn-logo {
-      width: 100px;  /* Logos bien grands */
+      width: 100px;
       height: 100px;
       object-fit: contain;
       background: #ffffff;
@@ -107,7 +108,7 @@
       font-size: 1rem;
       font-weight: 700;
       color: var(--primary);
-      margin-bottom: 4px;
+      margin-bottom: 2px;
     }
 
     .btn-desc {
@@ -125,7 +126,6 @@
     .footer { margin-top: auto; padding: 30px 0; text-align: center; color: var(--text-light); font-size: 0.8rem; }
     .version { margin-top: 5px; opacity: 0.7; }
 
-    /* Animations */
     .animate { opacity: 0; transform: translateY(20px); animation: slideIn 0.4s ease forwards; }
     .delay-1 { animation-delay: 0.1s; }
     .delay-2 { animation-delay: 0.2s; }
@@ -144,7 +144,9 @@
   
   <div class="menu-grid animate">
     <div class="grid-item">
-      <div class="section-title">Gironde</div>
+      <div class="section-header">
+        <div class="section-title">Gironde</div>
+      </div>
       <a href="Controles%20AFR.html" class="menu-btn">
         <img src="logo_controles33.png" alt="33" class="btn-logo">
         <div class="btn-title">AFR 33</div>
@@ -153,7 +155,9 @@
     </div>
 
     <div class="grid-item">
-      <div class="section-title">Landes</div>
+      <div class="section-header">
+        <div class="section-title">Landes</div>
+      </div>
       <a href="ControlesSG.html" class="menu-btn">
         <img src="logo_controles40.png" alt="40" class="btn-logo">
         <div class="btn-title">AFR 40</div>
@@ -165,14 +169,15 @@
   <div class="separator animate delay-1"></div>
 
   <div class="menu-section animate delay-2">
-    <div class="section-title">AFR - Tous les sites</div>
-    <a href="Signalements.html" class="menu-btn wide">
+    <div class="section-header">
+      <div class="section-title">AFR - Tous les sites</div>
+    </div>
+    <a href="Signalements.html" class="menu-btn">
       <img src="logo_signalements.png" alt="Signalements" class="btn-logo">
       <div class="btn-content">
         <div class="btn-title">Signalements</div>
         <div class="btn-desc">Pannes, incidents, maintenance</div>
       </div>
-      <div style="font-size: 1.5rem; color: #cbd5e0;">›</div>
     </a>
   </div>
 
@@ -180,7 +185,7 @@
 
 <div class="footer">
   <div>AFR Élevage © 2025</div>
-  <div class="version">v1.1</div>
+  <div class="version">v1.2</div>
 </div>
 
 </body>
