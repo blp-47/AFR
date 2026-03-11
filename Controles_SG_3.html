@@ -774,9 +774,33 @@ border-radius:10px;
 height:50px;
 }
 
+    .home-button {
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    width: 48px;
+    height: 48px;
+    background: white;
+    border: 2px solid #ddd;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    text-decoration: none;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    z-index: 9999;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .home-button:hover {
+    transform: scale(1.08);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.22);
+  }
 </style>
 </head>
 <body>
+  <a href="https://blp-47.github.io/AFR/index.html" class="home-button" title="Retour à l'accueil">🏠</a>
 
 <!-- ====== SCREEN 1 : ACCUEIL ====== -->
 <div id="screen-home" class="screen active">
