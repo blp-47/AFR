@@ -419,13 +419,15 @@
     db.child(newId).set(item);
     
     // Envoi notification push via ntfy.sh (gratuit)
-    sendNotification(type, farm, priority, author);
-    
-    // Ouverture du Mail pré-rempli avec destinataires selon le département
-    const destinataires = getDestinataires(farm);
-    const sujet = encodeURIComponent(`Nouveau Signalement AFR : ${type} à ${farm}`);
-    const corps = encodeURIComponent(`Un nouveau signalement a été déclaré sur l'application.\n\n📍 Lieu : ${group} - ${farm}\n📋 Type : ${type}\n🔴 Priorité : ${priority}\n👤 Déclarant : ${author}\n\n📝 Description :\n${description}\n\n(Note: Les photos éventuelles sont disponibles sur l'application web)`);
-    window.location.href = `mailto:${destinataires}?subject=${sujet}&body=${corps}`;
+sendNotification(type, farm, priority, author);
+
+// Attendre 1 seconde que la notification parte avant d'ouvrir le mail
+setTimeout(function() {
+  const destinataires = getDestinataires(farm);
+  const sujet = encodeURIComponent('Nouveau Signalement AFR : ' + type + ' a ' + farm);
+  const corps = encodeURIComponent('Un nouveau signalement a ete declare sur l application.\n\nLieu : ' + group + ' - ' + farm + '\nType : ' + type + '\nPriorite : ' + priority + '\nDeclarant : ' + author + '\n\nDescription :\n' + description + '\n\n(Note: Les photos eventuelles sont disponibles sur l application web)');
+  window.location.href = 'mailto:' + destinataires + '?subject=' + sujet + '&body=' + corps;
+}, 1000);
 
     document.getElementById("description").value = "";
     document.getElementById("previews").innerHTML = "";
