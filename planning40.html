@@ -1,0 +1,2837 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Planning AFR 40</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📋</text></svg>">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+        
+        .container { max-width: 1200px; margin: 0 auto; padding: 15px; }
+        
+        .home-btn {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 1000;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            padding: 10px 14px;
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
+        .home-btn:hover { background: rgba(255,255,255,0.2); }
+        
+        .index-btn {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 1000;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            padding: 10px 14px;
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
+        .index-btn:hover { background: rgba(255,255,255,0.2); }
+        
+        .sync-indicator {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            z-index: 1000;
+            background: rgba(0,0,0,0.5);
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .sync-indicator.online { color: #22C55E; }
+        .sync-indicator.offline { color: #F59E0B; }
+        
+        /* Page sélection ferme */
+        .page-selection {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 80vh;
+            padding: 20px;
+        }
+        
+        .logo-section {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .logo-img {
+            max-width: 200px;
+            height: auto;
+            margin-bottom: 20px;
+        }
+        
+        .logo-section h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .logo-section p {
+            color: #64748B;
+            font-size: 16px;
+        }
+        
+        .fermes-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            max-width: 700px;
+            width: 100%;
+        }
+        
+        .ferme-card {
+            background: rgba(255,255,255,0.05);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 30px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .ferme-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+        
+        .ferme-card.sgf { border-color: rgba(236, 72, 153, 0.5); }
+        .ferme-card.sgf:hover { background: rgba(236, 72, 153, 0.15); border-color: #EC4899; }
+        .ferme-card.sgm { border-color: rgba(59, 130, 246, 0.5); }
+        .ferme-card.sgm:hover { background: rgba(59, 130, 246, 0.15); border-color: #3B82F6; }
+        .ferme-card.disabled { opacity: 0.4; cursor: not-allowed; }
+        .ferme-card.disabled:hover { transform: none; box-shadow: none; }
+        
+        .ferme-icon {
+            font-size: 50px;
+            margin-bottom: 15px;
+        }
+        
+        .ferme-name {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .ferme-card.sgf .ferme-name { color: #EC4899; }
+        .ferme-card.sgm .ferme-name { color: #3B82F6; }
+        
+        .ferme-subtitle {
+            color: #64748B;
+            font-size: 13px;
+        }
+        
+        /* Page planning */
+        .page-planning { display: none; }
+        .page-planning.visible { display: block; }
+        
+        .header { 
+            text-align: center; 
+            padding: 50px 0 20px; 
+        }
+        
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 5px;
+        }
+        
+        .header-logo {
+            height: 50px;
+            width: auto;
+        }
+        
+        .header h1 { font-size: 26px; }
+        .header p { color: #64748B; font-size: 14px; }
+        
+        /* Onglets */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 20px;
+            background: rgba(255,255,255,0.05);
+            padding: 5px;
+            border-radius: 14px;
+            overflow-x: auto;
+        }
+        
+        .tab {
+            padding: 12px 16px;
+            border: none;
+            border-radius: 10px;
+            background: transparent;
+            color: #94A3B8;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .tab:hover { background: rgba(255,255,255,0.1); color: white; }
+        .tab.active { background: linear-gradient(135deg, #059669 0%, #10B981 100%); color: white; }
+        .tab.config { color: #60A5FA; }
+        .tab.config.active { background: linear-gradient(135deg, #2563EB 0%, #3B82F6 100%); }
+        .tab.equipe { color: #F59E0B; }
+        .tab.equipe.active { background: linear-gradient(135deg, #D97706 0%, #F59E0B 100%); }
+        .tab .lock-icon { font-size: 10px; }
+        
+        /* Navigation semaine */
+        .week-nav {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            background: rgba(255,255,255,0.05);
+            padding: 12px;
+            border-radius: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .week-nav button {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        
+        .week-nav button:hover { background: rgba(255,255,255,0.2); }
+        .week-label { font-size: 16px; font-weight: 600; min-width: 220px; text-align: center; }
+        
+        /* Sections */
+        .page-section { display: none; }
+        .page-section.visible { display: block; }
+        
+        /* Config tâches */
+        .config-intro {
+            color: #94A3B8;
+            font-size: 13px;
+            margin-bottom: 20px;
+            padding: 12px;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 8px;
+            border-left: 3px solid #3B82F6;
+        }
+        
+        .tache-config-list { display: flex; flex-direction: column; gap: 8px; }
+        
+        .tache-config-item {
+            display: grid;
+            grid-template-columns: 35px 1fr auto;
+            gap: 10px;
+            align-items: center;
+            padding: 12px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            border-left: 4px solid;
+        }
+        
+        .tache-config-item.ramasse { border-color: #22C55E; }
+        .tache-config-item.ia { border-color: #A855F7; }
+        .tache-config-item.controle { border-color: #F59E0B; }
+        .tache-config-item.hygiene { border-color: #EC4899; }
+        .tache-config-item.hebdo { border-color: #EF4444; }
+        .tache-config-item.autre { border-color: #64748B; }
+        
+        /* Sections tâches semaine / week-end */
+        .tache-section-title {
+            font-size: 16px;
+            font-weight: 700;
+            padding: 12px 15px;
+            margin: 20px 0 10px 0;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .tache-section-title:first-of-type { margin-top: 0; }
+        
+        .tache-section-title.semaine {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(16, 185, 129, 0.15) 100%);
+            color: #22C55E;
+            border-left: 4px solid #22C55E;
+        }
+        
+        .tache-section-title.weekend {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(234, 88, 12, 0.15) 100%);
+            color: #F59E0B;
+            border-left: 4px solid #F59E0B;
+        }
+        
+        .tache-section-subtitle {
+            font-size: 11px;
+            font-weight: 400;
+            color: #94A3B8;
+        }
+        
+        .tache-we-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: auto;
+        }
+        
+        .tache-we-toggle label {
+            font-size: 11px;
+            color: #94A3B8;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            background: rgba(239, 68, 68, 0.3);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .toggle-switch.active {
+            background: rgba(34, 197, 94, 0.4);
+        }
+        
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 18px;
+            height: 18px;
+            background: #EF4444;
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+        
+        .toggle-switch.active::after {
+            left: 23px;
+            background: #22C55E;
+        }
+        
+        /* Petit toggle pour H1/H2 */
+        .toggle-switch-small {
+            position: relative;
+            width: 32px;
+            height: 18px;
+            background: rgba(239, 68, 68, 0.3);
+            border-radius: 9px;
+            cursor: pointer;
+            transition: background 0.3s;
+            flex-shrink: 0;
+        }
+        
+        .toggle-switch-small.active {
+            background: rgba(34, 197, 94, 0.4);
+        }
+        
+        .toggle-switch-small::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 14px;
+            height: 14px;
+            background: #EF4444;
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+        
+        .toggle-switch-small.active::after {
+            left: 16px;
+            background: #22C55E;
+        }
+        
+        .horaire-disabled {
+            opacity: 0.4;
+        }
+        
+        .horaire-disabled input {
+            cursor: not-allowed;
+        }
+        
+        .tache-config-item.disabled-we {
+            opacity: 0.5;
+            border-style: dashed;
+        }
+        
+        .disabled-we-cell {
+            background: rgba(239, 68, 68, 0.1) !important;
+        }
+        
+        .tache-cat-icon { font-size: 18px; text-align: center; }
+        .tache-config-nom { font-weight: 500; font-size: 13px; }
+        
+        .tache-horaires {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .tache-horaire-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        
+        .tache-config-input {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 6px;
+            padding: 8px;
+            color: white;
+            font-size: 13px;
+            text-align: center;
+            width: 80px;
+        }
+        
+        .tache-config-input.duree { width: 60px; }
+        
+        .tache-config-input.time-input { 
+            width: 70px; 
+            font-family: monospace;
+            letter-spacing: 1px;
+        }
+        
+        .tache-nom-input {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(96, 165, 250, 0.4);
+            border-radius: 6px;
+            padding: 4px 8px;
+            color: white;
+            font-size: 13px;
+            font-weight: 500;
+            width: 150px;
+            margin-right: 5px;
+        }
+        
+        .tache-nom-input:focus {
+            outline: none;
+            border-color: #3B82F6;
+            background: rgba(59, 130, 246, 0.15);
+        }
+        
+        .tache-config-input:focus { outline: none; border-color: #3B82F6; }
+        .tache-fin { color: #64748B; font-size: 12px; }
+        
+        .btn-add-horaire {
+            padding: 4px 8px;
+            border: 1px dashed rgba(59, 130, 246, 0.5);
+            border-radius: 4px;
+            background: rgba(59, 130, 246, 0.1);
+            color: #60A5FA;
+            font-size: 10px;
+            cursor: pointer;
+        }
+        
+        .btn-add-horaire:hover { background: rgba(59, 130, 246, 0.2); }
+        
+        .btn-remove-horaire {
+            padding: 2px 6px;
+            border: 1px solid rgba(239, 68, 68, 0.5);
+            border-radius: 4px;
+            background: rgba(239, 68, 68, 0.2);
+            color: #F87171;
+            font-size: 10px;
+            cursor: pointer;
+        }
+        
+        /* Vue équipe */
+        .equipe-day-selector {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .day-btn {
+            padding: 10px 18px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            background: transparent;
+            color: #94A3B8;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .day-btn:hover { border-color: rgba(255,255,255,0.4); color: white; }
+        .day-btn.active { background: rgba(245, 158, 11, 0.2); border-color: #F59E0B; color: #F59E0B; }
+        .day-btn.today { border-color: #22C55E; }
+        
+        .equipe-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+        }
+        
+        .equipe-column {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .equipe-header {
+            background: rgba(255,255,255,0.1);
+            padding: 12px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .equipe-tasks {
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-height: 250px;
+        }
+        
+        .equipe-task {
+            background: rgba(59, 130, 246, 0.2);
+            border-left: 3px solid #3B82F6;
+            padding: 8px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+        }
+        
+        .equipe-task .eq-time { color: #60A5FA; font-weight: 600; font-size: 10px; }
+        .equipe-task .eq-name { color: #E2E8F0; display: block; margin-top: 2px; }
+        
+        .equipe-task.ia { background: rgba(168, 85, 247, 0.2); border-color: #A855F7; }
+        .equipe-task.ia .eq-time { color: #C084FC; }
+        .equipe-task.ramasse { background: rgba(34, 197, 94, 0.2); border-color: #22C55E; }
+        .equipe-task.ramasse .eq-time { color: #4ADE80; }
+        .equipe-task.controle { background: rgba(245, 158, 11, 0.2); border-color: #F59E0B; }
+        .equipe-task.controle .eq-time { color: #FBBF24; }
+        .equipe-task.hygiene { background: rgba(236, 72, 153, 0.2); border-color: #EC4899; }
+        .equipe-task.hygiene .eq-time { color: #F472B6; }
+        .equipe-task.hebdo { background: rgba(239, 68, 68, 0.2); border-color: #EF4444; }
+        .equipe-task.hebdo .eq-time { color: #F87171; }
+        .equipe-task.aliment { background: rgba(180, 83, 9, 0.2); border-color: #B45309; }
+        .equipe-task.aliment .eq-time { color: #D97706; }
+        .equipe-task.autre { background: rgba(100, 116, 139, 0.2); border-color: #64748B; }
+        .equipe-task.autre .eq-time { color: #94A3B8; }
+        
+        .equipe-no-task { color: #475569; font-size: 11px; text-align: center; padding: 20px; font-style: italic; }
+        
+        /* Toggle vue équipe */
+        .equipe-view-toggle {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .view-btn {
+            padding: 10px 20px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            background: transparent;
+            color: #94A3B8;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .view-btn:hover { border-color: rgba(255,255,255,0.4); color: white; }
+        .view-btn.active { background: rgba(245, 158, 11, 0.2); border-color: #F59E0B; color: #F59E0B; }
+        
+        .btn-print {
+            padding: 10px 20px;
+            border: 2px solid rgba(34, 197, 94, 0.5);
+            border-radius: 10px;
+            background: rgba(34, 197, 94, 0.1);
+            color: #22C55E;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .btn-print:hover { background: rgba(34, 197, 94, 0.2); border-color: #22C55E; }
+        
+        /* Vue semaine équipe */
+        .equipe-week-grid {
+            display: none;
+            overflow-x: auto;
+        }
+        
+        .equipe-week-grid.visible { display: block; }
+        
+        .equipe-week-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 900px;
+        }
+        
+        .equipe-week-table th,
+        .equipe-week-table td {
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 8px 6px;
+            text-align: center;
+            vertical-align: top;
+            font-size: 11px;
+        }
+        
+        .equipe-week-table th {
+            background: rgba(255,255,255,0.1);
+            font-weight: 600;
+            font-size: 12px;
+            position: sticky;
+            top: 0;
+        }
+        
+        .equipe-week-table th.today-col { background: linear-gradient(135deg, #059669 0%, #10B981 100%); }
+        
+        .equipe-week-table td.salarie-name {
+            background: rgba(255,255,255,0.05);
+            font-weight: 600;
+            text-align: left;
+            padding-left: 10px;
+            min-width: 100px;
+        }
+        
+        .equipe-week-table td {
+            min-width: 110px;
+            background: rgba(15, 23, 42, 0.5);
+        }
+        
+        .week-task {
+            background: rgba(59, 130, 246, 0.2);
+            border-left: 3px solid #3B82F6;
+            padding: 4px 6px;
+            border-radius: 4px;
+            margin-bottom: 3px;
+            text-align: left;
+        }
+        
+        .week-task:last-child { margin-bottom: 0; }
+        
+        .week-task .wt-time { color: #60A5FA; font-weight: 600; font-size: 9px; display: block; }
+        .week-task .wt-name { color: #E2E8F0; font-size: 10px; }
+        
+        .week-task.ia { background: rgba(168, 85, 247, 0.2); border-color: #A855F7; }
+        .week-task.ia .wt-time { color: #C084FC; }
+        .week-task.ramasse { background: rgba(34, 197, 94, 0.2); border-color: #22C55E; }
+        .week-task.ramasse .wt-time { color: #4ADE80; }
+        .week-task.controle { background: rgba(245, 158, 11, 0.2); border-color: #F59E0B; }
+        .week-task.controle .wt-time { color: #FBBF24; }
+        .week-task.hygiene { background: rgba(236, 72, 153, 0.2); border-color: #EC4899; }
+        .week-task.hygiene .wt-time { color: #F472B6; }
+        .week-task.hebdo { background: rgba(239, 68, 68, 0.2); border-color: #EF4444; }
+        .week-task.hebdo .wt-time { color: #F87171; }
+        .week-task.aliment { background: rgba(180, 83, 9, 0.2); border-color: #B45309; }
+        .week-task.aliment .wt-time { color: #D97706; }
+        .week-task.autre { background: rgba(100, 116, 139, 0.2); border-color: #64748B; }
+        .week-task.autre .wt-time { color: #94A3B8; }
+        
+        .week-no-task { color: #475569; font-size: 10px; font-style: italic; }
+        
+        /* Ajout tâche / salarié */
+        .add-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px dashed rgba(59, 130, 246, 0.4);
+            border-radius: 12px;
+        }
+        
+        .add-section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #60A5FA;
+            margin-bottom: 12px;
+        }
+        
+        .add-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: flex-end;
+        }
+        
+        .add-form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .add-form-group label {
+            font-size: 11px;
+            color: #94A3B8;
+        }
+        
+        .add-form-group input, .add-form-group select {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 6px;
+            padding: 8px 10px;
+            color: white;
+            font-size: 13px;
+        }
+        
+        .add-form-group input:focus, .add-form-group select:focus {
+            outline: none;
+            border-color: #3B82F6;
+        }
+        
+        .btn-add {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #2563EB 0%, #3B82F6 100%);
+            color: white;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .btn-add:hover { transform: translateY(-1px); }
+        
+        .btn-remove {
+            padding: 4px 8px;
+            border: 1px solid rgba(239, 68, 68, 0.5);
+            border-radius: 4px;
+            background: rgba(239, 68, 68, 0.2);
+            color: #F87171;
+            font-size: 10px;
+            cursor: pointer;
+            margin-left: 8px;
+        }
+        
+        .btn-remove:hover { background: rgba(239, 68, 68, 0.4); }
+        
+        /* Section copie planning */
+        .copy-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(168, 85, 247, 0.1);
+            border: 1px dashed rgba(168, 85, 247, 0.4);
+            border-radius: 12px;
+        }
+        
+        .copy-section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #C084FC;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .copy-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .btn-copy {
+            padding: 10px 16px;
+            border: 2px solid rgba(168, 85, 247, 0.5);
+            border-radius: 8px;
+            background: rgba(168, 85, 247, 0.1);
+            color: #C084FC;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .btn-copy:hover { background: rgba(168, 85, 247, 0.25); border-color: #A855F7; }
+        
+        /* Styles d'impression - UNE SEULE PAGE en paysage */
+        @media print {
+            @page { 
+                size: landscape;
+                margin: 8mm;
+            }
+            
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            
+            html, body {
+                background: white !important;
+                color: black !important;
+                width: 100% !important;
+                height: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                overflow: visible !important;
+            }
+            
+            /* Masquer TOUT sauf le tableau */
+            .home-btn, .index-btn, .sync-indicator, .tabs, 
+            .week-nav button, .equipe-view-toggle, .btn-print, 
+            .equipe-day-selector, .equipe-grid, .header,
+            .page-selection, .page-config, .page-salarie,
+            .add-section, .modal-overlay, .toast, .copy-section,
+            .print-modal { 
+                display: none !important; 
+            }
+            
+            .container { 
+                max-width: 100% !important; 
+                padding: 0 !important; 
+                margin: 0 !important;
+                width: 100% !important;
+            }
+            .page-planning { display: block !important; }
+            .page-section#page-equipe { display: block !important; padding: 0 !important; }
+            
+            /* Titre impression - compact */
+            .week-nav { 
+                display: block !important;
+                background: transparent !important; 
+                padding: 0 0 5px 0 !important;
+                margin: 0 0 5px 0 !important;
+                text-align: center;
+            }
+            .week-label { 
+                color: black !important; 
+                font-size: 14px !important; 
+                font-weight: bold !important;
+            }
+            
+            /* Forcer affichage tableau semaine */
+            .equipe-week-grid { 
+                display: block !important; 
+                overflow: visible !important;
+            }
+            
+            .equipe-week-table { 
+                min-width: auto !important; 
+                width: 100% !important;
+                page-break-inside: avoid !important;
+                table-layout: fixed !important;
+            }
+            
+            .equipe-week-table th,
+            .equipe-week-table td {
+                border: 1px solid #999 !important;
+                padding: 2px 2px !important;
+                font-size: 7px !important;
+                line-height: 1.1 !important;
+            }
+            
+            .equipe-week-table th { 
+                background: #e0e0e0 !important; 
+                color: black !important;
+                padding: 3px 2px !important;
+            }
+            
+            .equipe-week-table th small { font-size: 6px !important; }
+            
+            .equipe-week-table td.salarie-name { 
+                background: #f5f5f5 !important; 
+                color: black !important;
+                width: 70px !important;
+                font-size: 8px !important;
+            }
+            .equipe-week-table td { background: white !important; }
+            
+            /* MODE NOIR ET BLANC (par défaut) */
+            .week-task {
+                background: #f0f0f0 !important;
+                border-left: 2px solid #666 !important;
+                padding: 1px 2px !important;
+                margin-bottom: 1px !important;
+            }
+            
+            .week-task .wt-time { color: black !important; font-size: 6px !important; display: block !important; }
+            .week-task .wt-name { color: black !important; font-size: 6px !important; }
+            .week-no-task { color: #999 !important; font-size: 6px !important; }
+            
+            /* MODE COULEUR */
+            body.print-color .week-task.ramasse { background: #dcfce7 !important; border-left: 2px solid #22C55E !important; }
+            body.print-color .week-task.ramasse .wt-time { color: #15803d !important; }
+            
+            body.print-color .week-task.ia { background: #f3e8ff !important; border-left: 2px solid #A855F7 !important; }
+            body.print-color .week-task.ia .wt-time { color: #7e22ce !important; }
+            
+            body.print-color .week-task.controle { background: #fef3c7 !important; border-left: 2px solid #F59E0B !important; }
+            body.print-color .week-task.controle .wt-time { color: #b45309 !important; }
+            
+            body.print-color .week-task.hygiene { background: #fce7f3 !important; border-left: 2px solid #EC4899 !important; }
+            body.print-color .week-task.hygiene .wt-time { color: #be185d !important; }
+            
+            body.print-color .week-task.hebdo { background: #fee2e2 !important; border-left: 2px solid #EF4444 !important; }
+            body.print-color .week-task.hebdo .wt-time { color: #b91c1c !important; }
+            
+            body.print-color .week-task.aliment { background: #fef3c7 !important; border-left: 2px solid #B45309 !important; }
+            body.print-color .week-task.aliment .wt-time { color: #92400e !important; }
+            
+            body.print-color .week-task.autre { background: #f1f5f9 !important; border-left: 2px solid #64748B !important; }
+            body.print-color .week-task.autre .wt-time { color: #475569 !important; }
+            
+            body.print-color .equipe-week-table th.today-col { background: #d1fae5 !important; }
+        }
+        
+        /* Modal d'impression */
+        .print-modal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .print-modal.visible { display: flex; }
+        
+        .print-modal-content {
+            background: #1e293b;
+            border-radius: 16px;
+            padding: 25px;
+            max-width: 350px;
+            width: 90%;
+            text-align: center;
+        }
+        
+        .print-modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: white;
+        }
+        
+        .print-options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .print-option {
+            padding: 15px 20px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 12px;
+            background: rgba(255,255,255,0.05);
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.2s;
+        }
+        
+        .print-option:hover { border-color: rgba(255,255,255,0.4); background: rgba(255,255,255,0.1); }
+        
+        .print-option.color { border-color: rgba(34, 197, 94, 0.5); }
+        .print-option.color:hover { border-color: #22C55E; background: rgba(34, 197, 94, 0.15); }
+        
+        .print-option.bw { border-color: rgba(148, 163, 184, 0.5); }
+        .print-option.bw:hover { border-color: #94A3B8; background: rgba(148, 163, 184, 0.15); }
+        
+        .print-cancel {
+            margin-top: 15px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(239, 68, 68, 0.2);
+            color: #F87171;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        
+        .print-cancel:hover { background: rgba(239, 68, 68, 0.3); }
+        
+        /* Grille semaine salarié */
+        .week-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+        }
+        
+        .day-column {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .day-header {
+            background: rgba(255,255,255,0.1);
+            padding: 10px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 13px;
+        }
+        
+        .day-header.today { background: linear-gradient(135deg, #059669 0%, #10B981 100%); }
+        .day-header small { display: block; font-size: 10px; font-weight: 400; color: #94A3B8; margin-top: 2px; }
+        .day-header.today small { color: #D1FAE5; }
+        
+        .day-tasks { padding: 8px; display: flex; flex-direction: column; gap: 5px; min-height: 200px; }
+        
+        .task-chip {
+            background: rgba(59, 130, 246, 0.2);
+            border-left: 3px solid #3B82F6;
+            padding: 6px 8px;
+            border-radius: 6px;
+        }
+        
+        .task-chip.ia { background: rgba(168, 85, 247, 0.2); border-color: #A855F7; }
+        .task-chip.ramasse { background: rgba(34, 197, 94, 0.2); border-color: #22C55E; }
+        .task-chip.controle { background: rgba(245, 158, 11, 0.2); border-color: #F59E0B; }
+        .task-chip.hygiene { background: rgba(236, 72, 153, 0.2); border-color: #EC4899; }
+        .task-chip.hebdo { background: rgba(239, 68, 68, 0.2); border-color: #EF4444; }
+        .task-chip.aliment { background: rgba(180, 83, 9, 0.2); border-color: #B45309; }
+        .task-chip.autre { background: rgba(100, 116, 139, 0.2); border-color: #64748B; }
+        
+        .task-time {
+            font-size: 10px;
+            font-weight: 600;
+            color: #60A5FA;
+            display: block;
+        }
+        
+        .task-chip.ia .task-time { color: #C084FC; }
+        .task-chip.ramasse .task-time { color: #4ADE80; }
+        .task-chip.controle .task-time { color: #FBBF24; }
+        .task-chip.hygiene .task-time { color: #F472B6; }
+        .task-chip.hebdo .task-time { color: #F87171; }
+        .task-chip.aliment .task-time { color: #D97706; }
+        .task-chip.autre .task-time { color: #94A3B8; }
+        
+        .task-name { font-size: 11px; color: #E2E8F0; }
+        
+        .no-tasks { color: #475569; font-size: 11px; text-align: center; padding: 15px; font-style: italic; }
+        
+        /* Mode édition */
+        .mode-toggle {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .mode-btn {
+            padding: 10px 20px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            background: transparent;
+            color: #94A3B8;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .mode-btn:hover { border-color: rgba(255,255,255,0.4); color: white; }
+        .mode-btn.active { background: rgba(16, 185, 129, 0.2); border-color: #10B981; color: #10B981; }
+        
+        .edit-section { display: none; }
+        .edit-section.visible { display: block; }
+        
+        .edit-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .edit-header h3 { font-size: 16px; font-weight: 600; }
+        
+        .btn-save {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #059669 0%, #10B981 100%);
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .btn-save:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); }
+        
+        .btn-clear {
+            padding: 8px 14px;
+            border: 1px solid rgba(239, 68, 68, 0.5);
+            border-radius: 8px;
+            background: rgba(239, 68, 68, 0.1);
+            color: #F87171;
+            font-size: 12px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        
+        .btn-clear:hover { background: rgba(239, 68, 68, 0.2); }
+        
+        .edit-grid {
+            display: grid;
+            grid-template-columns: 1.5fr repeat(7, 1fr);
+            gap: 2px;
+            background: rgba(255,255,255,0.1);
+            padding: 2px;
+            border-radius: 10px;
+            overflow-x: auto;
+        }
+        
+        /* Nouveau layout : deux grilles côte à côte */
+        .edit-grids-container {
+            display: flex;
+            gap: 20px;
+            overflow-x: auto;
+        }
+        
+        .edit-grid-section {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .edit-grid-section.semaine {
+            flex: 2.5;
+        }
+        
+        .edit-grid-section.weekend {
+            flex: 1;
+        }
+        
+        .edit-grid-title {
+            font-size: 14px;
+            font-weight: 600;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .edit-grid-title.semaine {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(16, 185, 129, 0.15) 100%);
+            color: #22C55E;
+            border-left: 3px solid #22C55E;
+        }
+        
+        .edit-grid-title.weekend {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(234, 88, 12, 0.15) 100%);
+            color: #F59E0B;
+            border-left: 3px solid #F59E0B;
+        }
+        
+        .edit-grid-semaine {
+            display: grid;
+            grid-template-columns: 1.5fr repeat(5, 1fr);
+            gap: 2px;
+            background: rgba(255,255,255,0.1);
+            padding: 2px;
+            border-radius: 10px;
+        }
+        
+        .edit-grid-weekend {
+            display: grid;
+            grid-template-columns: 1.5fr repeat(2, 1fr);
+            gap: 2px;
+            background: rgba(245, 158, 11, 0.15);
+            padding: 2px;
+            border-radius: 10px;
+        }
+        
+        .edit-cell {
+            background: rgba(15, 23, 42, 0.8);
+            padding: 8px;
+            text-align: center;
+            font-size: 11px;
+        }
+        
+        .edit-cell.header {
+            background: rgba(255,255,255,0.1);
+            font-weight: 600;
+            font-size: 12px;
+        }
+        
+        .edit-cell.task-label {
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .task-color {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        
+        .task-hours { color: #64748B; font-size: 10px; margin-left: auto; }
+        
+        .edit-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        
+        .edit-cell.warning { background: rgba(245, 158, 11, 0.15); }
+        .warning-icon { 
+            color: #F59E0B; 
+            font-size: 12px; 
+            margin-left: 2px;
+            cursor: help;
+        }
+        
+        /* Indicateur horaire ajusté */
+        .adjusted-time {
+            color: #F59E0B !important;
+            font-style: italic;
+        }
+        
+        /* Boutons effacer jours */
+        .clear-days-row {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .btn-clear-day {
+            padding: 6px 12px;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 6px;
+            background: rgba(239, 68, 68, 0.1);
+            color: #F87171;
+            font-size: 10px;
+            cursor: pointer;
+        }
+        
+        .btn-clear-day:hover { background: rgba(239, 68, 68, 0.2); }
+        
+        /* Modal code */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        
+        .modal-overlay.visible { display: flex; }
+        
+        .modal-box {
+            background: #1E293B;
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 350px;
+            width: 90%;
+            text-align: center;
+        }
+        
+        .modal-box h3 { margin-bottom: 20px; }
+        
+        .modal-box input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            background: rgba(255,255,255,0.05);
+            color: white;
+            font-size: 18px;
+            text-align: center;
+            letter-spacing: 4px;
+            margin-bottom: 15px;
+        }
+        
+        .modal-box input:focus { outline: none; border-color: #3B82F6; }
+        
+        .modal-error {
+            color: #EF4444;
+            font-size: 13px;
+            margin-bottom: 15px;
+            display: none;
+        }
+        
+        .modal-error.visible { display: block; }
+        
+        .modal-buttons { display: flex; gap: 10px; justify-content: center; }
+        
+        .modal-btn {
+            padding: 10px 25px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .modal-btn.cancel {
+            background: rgba(255,255,255,0.1);
+            color: #94A3B8;
+        }
+        
+        .modal-btn.confirm {
+            background: linear-gradient(135deg, #059669 0%, #10B981 100%);
+            color: white;
+        }
+        
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #1E293B;
+            border: 1px solid #334155;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-size: 14px;
+            z-index: 3000;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+        
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+        .toast.error { border-color: #EF4444; color: #F87171; }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .fermes-grid { grid-template-columns: 1fr; max-width: 300px; }
+            .week-grid { grid-template-columns: 1fr; }
+            .edit-grid { font-size: 10px; }
+            .edit-cell { padding: 6px 4px; }
+            .tache-config-item { grid-template-columns: 30px 1fr; }
+            .tache-horaires { margin-top: 8px; grid-column: 1 / -1; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Page de sélection -->
+    <div class="page-selection" id="page-selection">
+        <div class="logo-section">
+            <h1>📋 Planning AFR 40</h1>
+            <p>Gestion des tâches hebdomadaires • Site 40</p>
+        </div>
+        
+        <div class="fermes-grid" style="grid-template-columns: repeat(2, 1fr);">
+            <div class="ferme-card sgf" onclick="selectFerme('SGF')">
+                <div class="ferme-icon">
+                    <img src="https://blp-47.github.io/AFR/logo_SGF.png" alt="SG♀" style="width:90px;">
+                </div>
+                <div class="ferme-name">SG♀</div>
+                <div class="ferme-subtitle">Fermes SG1 & SG2</div>
+            </div>
+            <div class="ferme-card sgm" onclick="selectFerme('SGM')">
+                <div class="ferme-icon">
+                    <img src="https://blp-47.github.io/AFR/logo_SGM.png" alt="SG♂" style="width:90px;">
+                </div>
+                <div class="ferme-name">SG♂</div>
+                <div class="ferme-subtitle">Ferme SG3</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Page planning -->
+    <div class="page-planning" id="page-planning">
+        <button class="home-btn" onclick="goHome()">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+            Accueil
+        </button>
+        
+        <div class="sync-indicator" id="sync-indicator">
+            <span id="sync-icon">⏳</span>
+            <span id="sync-text">Connexion...</span>
+        </div>
+        
+        <div class="container">
+            <div class="header">
+                <div class="header-content">
+                    <h1 id="planning-title">📋 Planning</h1>
+                </div>
+                <p>Gestion des affectations hebdomadaires</p>
+            </div>
+            
+            <div class="tabs" id="tabs"></div>
+            
+            <!-- Config tâches -->
+            <div class="page-section" id="page-config">
+                <div class="config-intro">
+                    ⚙️ Configurez les horaires et durées des tâches. Les modifications s'appliquent pour tous les salariés.
+                </div>
+                
+                <div class="tache-config-list" id="tache-config-list"></div>
+                
+                <div class="add-section">
+                    <div class="add-section-title">➕ Ajouter une tâche</div>
+                    <div class="add-form">
+                        <div class="add-form-group">
+                            <label>Nom</label>
+                            <input type="text" id="new-tache-nom" placeholder="Ex: Nettoyage">
+                        </div>
+                        <div class="add-form-group">
+                            <label>Catégorie</label>
+                            <select id="new-tache-cat">
+                                <option value="ramasse">🥚 Ramasse</option>
+                                <option value="ia">💉 I.A.</option>
+                                <option value="controle">📊 Contrôle</option>
+                                <option value="hygiene">🧹 Hygiène</option>
+                                <option value="hebdo">🚿 Hebdo</option>
+                                <option value="aliment">🌾 Aliment</option>
+                                <option value="autre">📌 Autre</option>
+                            </select>
+                        </div>
+                        <div class="add-form-group">
+                            <label>Début</label>
+                            <input type="time" id="new-tache-debut" value="08:00">
+                        </div>
+                        <div class="add-form-group">
+                            <label>Durée (min)</label>
+                            <input type="number" id="new-tache-duree" value="60" min="5" step="5" style="width: 70px;">
+                        </div>
+                        <div class="add-form-group">
+                            <label>Mercredi seul ?</label>
+                            <select id="new-tache-mercredi">
+                                <option value="false">Non</option>
+                                <option value="true">Oui</option>
+                            </select>
+                        </div>
+                        <button class="btn-add" onclick="addTache()">Ajouter</button>
+                    </div>
+                </div>
+                
+                <div class="add-section" style="margin-top: 20px;">
+                    <div class="add-section-title">👥 Équipe - Salariés</div>
+                    <div id="salaries-list" style="margin-bottom: 15px;"></div>
+                    <div class="add-form">
+                        <div class="add-form-group">
+                            <label>Prénom</label>
+                            <input type="text" id="new-salarie-nom" placeholder="Ex: Marie">
+                        </div>
+                        <button class="btn-add" onclick="addSalarie()">Ajouter</button>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 20px; text-align: center;">
+                    <button class="btn-save" onclick="saveConfig()">💾 Enregistrer la configuration</button>
+                </div>
+            </div>
+            
+            <!-- Vue équipe -->
+            <div class="page-section" id="page-equipe">
+                <div class="week-nav">
+                    <button onclick="changeWeek(-1)">◀</button>
+                    <span class="week-label" id="week-label-equipe"></span>
+                    <button onclick="changeWeek(1)">▶</button>
+                    <button onclick="goToToday()" style="width: auto; padding: 0 15px; font-size: 13px;">Aujourd'hui</button>
+                </div>
+                
+                <div class="equipe-view-toggle">
+                    <button class="view-btn active" id="view-day" onclick="setEquipeView('day')">📅 Vue jour</button>
+                    <button class="view-btn" id="view-week" onclick="setEquipeView('week')">📊 Vue semaine</button>
+                    <button class="btn-print" onclick="printEquipeWeek()">🖨️ Imprimer</button>
+                </div>
+                
+                <div class="equipe-day-selector" id="equipe-day-selector"></div>
+                <div class="equipe-grid" id="equipe-grid"></div>
+                <div class="equipe-week-grid" id="equipe-week-grid"></div>
+            </div>
+            
+            <!-- Vue salarié -->
+            <div class="page-section" id="page-salarie">
+                <div class="week-nav">
+                    <button onclick="changeWeek(-1)">◀</button>
+                    <span class="week-label" id="week-label-salarie"></span>
+                    <button onclick="changeWeek(1)">▶</button>
+                    <button onclick="goToToday()" style="width: auto; padding: 0 15px; font-size: 13px;">Aujourd'hui</button>
+                </div>
+                
+                <div class="mode-toggle">
+                    <button class="mode-btn active" id="mode-view" onclick="setMode('view')">👁️ Voir</button>
+                    <button class="mode-btn" id="mode-edit" onclick="handleEditClick()">✏️ Modifier</button>
+                </div>
+                
+                <div class="week-grid" id="week-grid"></div>
+                
+                <div class="edit-section" id="edit-section">
+                    <div class="edit-header">
+                        <h3>✏️ Modifier les tâches de <span id="edit-salarie-name"></span></h3>
+                        <div>
+                            <button class="btn-save" onclick="saveAssignments()">💾 Enregistrer</button>
+                            <button class="btn-clear" onclick="clearWeek()">🗑️ Vider la semaine</button>
+                        </div>
+                    </div>
+                    
+                    <div class="edit-grids-container">
+                        <!-- Grille Semaine -->
+                        <div class="edit-grid-section semaine">
+                            <div class="edit-grid-title semaine">📅 Semaine</div>
+                            <div class="edit-grid-semaine" id="edit-grid-semaine"></div>
+                        </div>
+                        
+                        <!-- Grille Week-end -->
+                        <div class="edit-grid-section weekend">
+                            <div class="edit-grid-title weekend">🌅 Week-end</div>
+                            <div class="edit-grid-weekend" id="edit-grid-weekend"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="clear-days-row">
+                        <span style="color: #64748B; font-size: 11px; margin-right: 10px;">Vider un jour :</span>
+                        <button class="btn-clear-day" onclick="clearDay(0)">Lun</button>
+                        <button class="btn-clear-day" onclick="clearDay(1)">Mar</button>
+                        <button class="btn-clear-day" onclick="clearDay(2)">Mer</button>
+                        <button class="btn-clear-day" onclick="clearDay(3)">Jeu</button>
+                        <button class="btn-clear-day" onclick="clearDay(4)">Ven</button>
+                        <button class="btn-clear-day" onclick="clearDay(5)">Sam</button>
+                        <button class="btn-clear-day" onclick="clearDay(6)">Dim</button>
+                    </div>
+                    
+                    <!-- Section copie de planning -->
+                    <div class="copy-section" id="copy-section" style="display: none;">
+                        <div class="copy-section-title">📋 Copier ce planning vers un autre salarié</div>
+                        <div class="copy-buttons" id="copy-buttons"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal code -->
+    <div class="modal-overlay" id="modal-code">
+        <div class="modal-box">
+            <h3>🔒 Accès manager</h3>
+            <p style="color: #94A3B8; font-size: 13px; margin-bottom: 15px;">Entrez le code pour modifier</p>
+            <input type="password" id="input-code" maxlength="6" placeholder="••••••" onkeyup="handleCodeKeyup(event)">
+            <div class="modal-error" id="modal-error">❌ Code incorrect</div>
+            <div class="modal-buttons">
+                <button class="modal-btn cancel" onclick="closeCodeModal()">Annuler</button>
+                <button class="modal-btn confirm" onclick="validateCode()">Valider</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="toast" id="toast"></div>
+    
+    <!-- Modal choix impression -->
+    <div class="print-modal" id="print-modal">
+        <div class="print-modal-content">
+            <div class="print-modal-title">🖨️ Impression du planning</div>
+            <div class="print-options">
+                <button class="print-option color" onclick="doPrint(true)">
+                    🎨 En couleur
+                </button>
+                <button class="print-option bw" onclick="doPrint(false)">
+                    ⬛ Noir et blanc
+                </button>
+            </div>
+            <button class="print-cancel" onclick="closePrintModal()">Annuler</button>
+        </div>
+    </div>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script>
+        // Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyD0JWfYQVshuZb5YSqnrSiRBjak26xt-fc",
+            authDomain: "afr-nt2.firebaseapp.com",
+            databaseURL: "https://afr-nt2-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "afr-nt2",
+            storageBucket: "afr-nt2.firebasestorage.app",
+            messagingSenderId: "150aborrar758757095",
+            appId: "1:150758757095:web:bff1a4b27e90a3d08ed52a"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        let firebaseOK = false;
+        let isManager = false;
+        let pendingAction = null;
+        const MANAGER_CODE = 'AFR40';
+        
+        // Configuration des fermes avec salariés liés pour copie
+        const FERMES_DATA = {
+            SGF: {
+                nom: 'SG♀',
+                titre: 'Planning SG♀',
+                couleur: '#EC4899',
+                salaries: ['Christophe D', 'Laura'],
+                copyLinks: [],
+                taches: [
+                    { id: 'ramasse_matin', nom: 'Ramasse œufs (matin)', debut: '07:00', dureeMin: 60, cat: 'ramasse', icon: '🥚' },
+                    { id: 'nids_equipe', nom: 'Nids équipe', debut: '07:00', dureeMin: 60, cat: 'ramasse', icon: '🪺' },
+                    { id: 'nids_resp', nom: 'Nids responsable', debut: '08:00', dureeMin: 60, cat: 'ramasse', icon: '🪺' },
+                    { id: 'ia', nom: 'Insémination (I.A.)', debut: '08:30', dureeMin: 180, cat: 'ia', icon: '💉', pasInsemination: true },
+                    { id: 'oac_lavage', nom: 'OAC Lavage', debut: '09:00', dureeMin: 60, cat: 'controle', icon: '🧼' },
+                    { id: 'ramasse_midi', nom: 'Ramasse œufs (midi)', debut: '12:00', dureeMin: 30, cat: 'ramasse', icon: '🥚' },
+                    { id: 'controles_releves', nom: 'Contrôles Relevés', debut: '12:00', dureeMin: 30, cat: 'controle', icon: '📊' },
+                    { id: 'hygiene', nom: 'Hygiène (habits/SAS)', debut: '13:00', dureeMin: 30, cat: 'hygiene', icon: '🧹' },
+                    { id: 'controle_visuel', nom: 'Contrôle visuel', debut: '13:30', dureeMin: 15, cat: 'controle', icon: '👁️' },
+                    { id: 'lavage_nids', nom: 'Lavage fonds nids', debut: '16:00', dureeMin: 120, cat: 'hebdo', icon: '🚿', mercrediOnly: true },
+                    { id: 'controle_soir', nom: 'Contrôle soir', debut: '18:00', dureeMin: 15, cat: 'controle', icon: '👁️' }
+                ]
+            },
+            SGM: {
+                nom: 'SG♂',
+                titre: 'Planning SG♂',
+                couleur: '#3B82F6',
+                salaries: ['Christelle', 'Johanna'],
+                copyLinks: [],
+                taches: [
+                    { id: 'ramasse_matin', nom: 'Ramasse œufs (matin)', debut: '07:00', dureeMin: 60, cat: 'ramasse', icon: '🥚' },
+                    { id: 'nids_equipe', nom: 'Nids équipe', debut: '07:00', dureeMin: 60, cat: 'ramasse', icon: '🪺' },
+                    { id: 'nids_resp', nom: 'Nids responsable', debut: '08:00', dureeMin: 60, cat: 'ramasse', icon: '🪺' },
+                    { id: 'semence', nom: 'Récolte semence', debut: '08:00', dureeMin: 120, cat: 'ia', icon: '💉' },
+                    { id: 'oac_lavage', nom: 'OAC Lavage', debut: '09:00', dureeMin: 60, cat: 'controle', icon: '🧼' },
+                    { id: 'ramasse_midi', nom: 'Ramasse œufs (midi)', debut: '12:00', dureeMin: 30, cat: 'ramasse', icon: '🥚' },
+                    { id: 'controles_releves', nom: 'Contrôles Relevés', debut: '12:00', dureeMin: 30, cat: 'controle', icon: '📊' },
+                    { id: 'hygiene', nom: 'Hygiène (habits/SAS)', debut: '13:00', dureeMin: 30, cat: 'hygiene', icon: '🧹' },
+                    { id: 'controle_visuel', nom: 'Contrôle visuel', debut: '13:30', dureeMin: 15, cat: 'controle', icon: '👁️' },
+                    { id: 'lavage_nids', nom: 'Lavage fonds nids', debut: '16:00', dureeMin: 120, cat: 'hebdo', icon: '🚿', mercrediOnly: true },
+                    { id: 'controle_soir', nom: 'Contrôle soir', debut: '18:00', dureeMin: 15, cat: 'controle', icon: '👁️' }
+                ]
+            }
+        };
+        
+        const JOURS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+        const CAT_ICONS = { ramasse: '🥚', ia: '💉', controle: '📊', hygiene: '🧹', hebdo: '🚿', aliment: '🌾', autre: '📌' };
+        
+        // État
+        let currentFerme = null;
+        let taches = [];
+        let salaries = [];
+        let customTaches = [];
+        let customSalaries = [];
+        let selectedTab = 'equipe';
+        let selectedSalarie = null;
+        let selectedEquipeDay = 0;
+        let currentWeekStart = getMonday(new Date());
+        let assignments = {};
+        let mode = 'view';
+        let equipeViewMode = 'day';
+        
+        // Init
+        document.addEventListener('DOMContentLoaded', function() {
+            testFirebase();
+        });
+        
+        function getMonday(d) {
+            const date = new Date(d);
+            const day = date.getDay();
+            const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+            return new Date(date.setDate(diff));
+        }
+        
+        function testFirebase() {
+            db.ref('.info/connected').on('value', snap => {
+                firebaseOK = snap.val() === true;
+                updateSyncIndicator(firebaseOK ? 'online' : 'offline');
+            });
+        }
+        
+        function updateSyncIndicator(status) {
+            const indicator = document.getElementById('sync-indicator');
+            if (!indicator) return;
+            indicator.className = 'sync-indicator ' + status;
+            document.getElementById('sync-icon').textContent = status === 'online' ? '☁️' : '⚠️';
+            document.getElementById('sync-text').textContent = status === 'online' ? 'Connecté' : 'Hors-ligne';
+        }
+        
+        // Navigation ferme
+        function selectFerme(ferme) {
+            if (!FERMES_DATA[ferme]) return;
+            
+            currentFerme = ferme;
+            const data = FERMES_DATA[ferme];
+            taches = JSON.parse(JSON.stringify(data.taches));
+            salaries = [...data.salaries];
+            isManager = false;
+            
+            document.getElementById('planning-title').textContent = '📋 ' + data.titre;
+            document.getElementById('page-selection').style.display = 'none';
+            document.getElementById('page-planning').classList.add('visible');
+            
+            initTabs();
+            updateWeekLabels();
+            loadData();
+            selectTab('equipe');
+            renderCopyButtons();
+        }
+        
+        function goHome() {
+            document.getElementById('page-selection').style.display = 'flex';
+            document.getElementById('page-planning').classList.remove('visible');
+            currentFerme = null;
+            isManager = false;
+        }
+        
+        // Afficher les boutons de copie si le salarié sélectionné peut copier vers d'autres
+        function renderCopyButtonsForSalarie() {
+            const copySection = document.getElementById('copy-section');
+            const copyButtons = document.getElementById('copy-buttons');
+            const fermeData = FERMES_DATA[currentFerme];
+            
+            if (!fermeData.copyLinks || fermeData.copyLinks.length === 0) {
+                copySection.style.display = 'none';
+                return;
+            }
+            
+            // Trouver les liens de copie où le salarié sélectionné est la source
+            const linksForSalarie = fermeData.copyLinks.filter(link => link.source === selectedSalarie);
+            
+            if (linksForSalarie.length === 0) {
+                copySection.style.display = 'none';
+                return;
+            }
+            
+            copySection.style.display = 'block';
+            
+            let html = '';
+            linksForSalarie.forEach(link => {
+                link.targets.forEach(target => {
+                    html += `<button class="btn-copy" onclick="copyPlanning('${link.source}', '${target}')">
+                        📋 Copier vers ${target}
+                    </button>`;
+                });
+            });
+            
+            copyButtons.innerHTML = html;
+        }
+        
+        function copyPlanning(source, target) {
+            requireManagerCode(() => {
+                if (!confirm(`Copier le planning de ${source} vers ${target} ?\nCela remplacera toutes les tâches de ${target}.`)) return;
+                
+                const sourceAssignments = assignments[source] || {};
+                assignments[target] = JSON.parse(JSON.stringify(sourceAssignments));
+                
+                // Sauvegarder immédiatement
+                saveAssignments();
+                
+                // Rafraîchir les vues
+                if (equipeViewMode === 'week') {
+                    renderEquipeWeekGrid();
+                } else {
+                    renderEquipeGrid();
+                }
+                
+                showToast(`✅ Planning copié de ${source} vers ${target}`);
+            });
+        }
+        
+        // Code manager
+        function requireManagerCode(action) {
+            if (isManager) {
+                action();
+                return;
+            }
+            pendingAction = action;
+            document.getElementById('input-code').value = '';
+            document.getElementById('modal-error').classList.remove('visible');
+            document.getElementById('modal-code').classList.add('visible');
+            document.getElementById('input-code').focus();
+        }
+        
+        function closeCodeModal() {
+            document.getElementById('modal-code').classList.remove('visible');
+            pendingAction = null;
+        }
+        
+        function handleCodeKeyup(e) {
+            if (e.key === 'Enter') validateCode();
+            if (e.key === 'Escape') closeCodeModal();
+        }
+        
+        function validateCode() {
+            const code = document.getElementById('input-code').value.toUpperCase();
+            if (code === MANAGER_CODE) {
+                isManager = true;
+                closeCodeModal();
+                if (pendingAction) {
+                    pendingAction();
+                    pendingAction = null;
+                }
+                showToast('✅ Accès manager activé');
+            } else {
+                document.getElementById('modal-error').classList.add('visible');
+                document.getElementById('input-code').value = '';
+                document.getElementById('input-code').focus();
+            }
+        }
+        
+        // Onglets
+        function initTabs() {
+            const tabs = document.getElementById('tabs');
+            let html = `
+                <button class="tab config ${selectedTab === 'config' ? 'active' : ''}" onclick="handleTabClick('config')">
+                    ⚙️ Tâches <span class="lock-icon">🔒</span>
+                </button>
+                <button class="tab equipe ${selectedTab === 'equipe' ? 'active' : ''}" onclick="handleTabClick('equipe')">
+                    👥 Équipe
+                </button>
+            `;
+            salaries.forEach(s => {
+                html += `<button class="tab ${selectedTab === s ? 'active' : ''}" onclick="handleTabClick('${s}')">
+                    ${s}
+                </button>`;
+            });
+            tabs.innerHTML = html;
+        }
+        
+        function handleTabClick(tab) {
+            if (tab === 'config') {
+                requireManagerCode(() => selectTab(tab));
+            } else {
+                selectTab(tab);
+            }
+        }
+        
+        function selectTab(tab) {
+            selectedTab = tab;
+            initTabs();
+            
+            document.getElementById('page-config').classList.remove('visible');
+            document.getElementById('page-equipe').classList.remove('visible');
+            document.getElementById('page-salarie').classList.remove('visible');
+            
+            if (tab === 'config') {
+                document.getElementById('page-config').classList.add('visible');
+                renderConfigList();
+            } else if (tab === 'equipe') {
+                document.getElementById('page-equipe').classList.add('visible');
+                renderEquipeDaySelector();
+                renderEquipeGrid();
+            } else {
+                selectedSalarie = tab;
+                document.getElementById('page-salarie').classList.add('visible');
+                mode = 'view';
+                document.getElementById('mode-view').classList.add('active');
+                document.getElementById('mode-edit').classList.remove('active');
+                document.getElementById('week-grid').style.display = 'grid';
+                document.getElementById('edit-section').classList.remove('visible');
+                renderWeekGrid();
+            }
+        }
+        
+        function handleEditClick() {
+            requireManagerCode(() => setMode('edit'));
+        }
+        
+        // Utilitaires
+        function timeToMin(time) {
+            const [h, m] = time.split(':').map(Number);
+            return h * 60 + m;
+        }
+        
+        function minToTime(minutes) {
+            const h = Math.floor(minutes / 60);
+            const m = minutes % 60;
+            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        }
+        
+        function calcFin(debut, dureeMin) {
+            const totalMin = timeToMin(debut) + parseInt(dureeMin);
+            const finH = Math.floor(totalMin / 60);
+            const finM = totalMin % 60;
+            return `${String(finH).padStart(2, '0')}:${String(finM).padStart(2, '0')}`;
+        }
+        
+        function formatHeure(time) { return time.replace(':', 'h'); }
+        
+        // Vérifie le chevauchement entre deux tâches (utilise displayDebut/displayDuree si disponibles)
+        function tasksOverlap(t1, t2) {
+            const start1 = timeToMin(t1.displayDebut || t1.debut);
+            const end1 = start1 + (t1.displayDuree || t1.dureeMin);
+            const start2 = timeToMin(t2.displayDebut || t2.debut);
+            const end2 = start2 + (t2.displayDuree || t2.dureeMin);
+            return start1 < end2 && start2 < end1;
+        }
+        
+        // Tri des tâches par heure de début
+        function sortTachesByTime() {
+            taches.sort((a, b) => a.debut.localeCompare(b.debut));
+        }
+        
+        // Développer les tâches avec double horaire en instances séparées pour l'affichage
+        // Prend en compte un index de jour pour appliquer les horaires week-end si nécessaire
+        function getExpandedTasks(dayIndex = null) {
+            const expanded = [];
+            const isWeekend = dayIndex !== null && (dayIndex === 5 || dayIndex === 6);
+            
+            taches.forEach(t => {
+                // Sélectionner les horaires selon semaine ou week-end
+                const debut = isWeekend && t.debutWE ? t.debutWE : t.debut;
+                const duree = isWeekend && t.dureeMinWE ? t.dureeMinWE : t.dureeMin;
+                
+                // Instance principale (horaire 1) - vérifier si actif le WE
+                const isH1Active = !isWeekend || t.activeH1WE !== false;
+                if (isH1Active) {
+                    expanded.push({
+                        ...t,
+                        displayDebut: debut,
+                        displayDuree: duree,
+                        isSecondSlot: false
+                    });
+                }
+                
+                // Instance secondaire (horaire 2) si définie - vérifier si actif le WE
+                if (t.debut2 && t.dureeMin2) {
+                    const isH2Active = !isWeekend || t.activeH2WE !== false;
+                    if (isH2Active) {
+                        const debut2 = isWeekend && t.debut2WE ? t.debut2WE : t.debut2;
+                        const duree2 = isWeekend && t.dureeMin2WE ? t.dureeMin2WE : (t.dureeMin2 || 60);
+                        
+                        expanded.push({
+                            ...t,
+                            displayDebut: debut2,
+                            displayDuree: duree2,
+                            isSecondSlot: true
+                        });
+                    }
+                }
+            });
+            return expanded.sort((a, b) => a.displayDebut.localeCompare(b.displayDebut));
+        }
+        
+        // Version sans filtre jour (pour compatibilité)
+        function getExpandedTasksAll() {
+            const expanded = [];
+            taches.forEach(t => {
+                expanded.push({
+                    ...t,
+                    displayDebut: t.debut,
+                    displayDuree: t.dureeMin,
+                    isSecondSlot: false
+                });
+                
+                if (t.debut2 && t.dureeMin2) {
+                    expanded.push({
+                        ...t,
+                        displayDebut: t.debut2,
+                        displayDuree: t.dureeMin2,
+                        isSecondSlot: true
+                    });
+                }
+            });
+            return expanded.sort((a, b) => a.displayDebut.localeCompare(b.displayDebut));
+        }
+        
+        // Ajuster les horaires des tâches qui se chevauchent pour un jour donné
+        // Les tâches s'enchaînent : la première avance sa fin, la seconde retarde son début
+        function getAdjustedTasksForDay(dayTasks) {
+            if (dayTasks.length === 0) return [];
+            
+            // Copier les tâches et ajouter les propriétés adjusted
+            const adjusted = dayTasks.map(t => ({
+                ...t,
+                adjustedDebut: t.displayDebut,
+                adjustedFin: calcFin(t.displayDebut, t.displayDuree),
+                adjustedDuree: t.displayDuree,
+                isAdjusted: false
+            }));
+            
+            if (adjusted.length === 1) return adjusted;
+            
+            // Trier par heure de début
+            adjusted.sort((a, b) => a.adjustedDebut.localeCompare(b.adjustedDebut));
+            
+            // Pour chaque paire de tâches consécutives, vérifier le chevauchement
+            for (let i = 0; i < adjusted.length - 1; i++) {
+                const current = adjusted[i];
+                const next = adjusted[i + 1];
+                
+                const currentStart = timeToMin(current.adjustedDebut);
+                const currentEnd = timeToMin(current.adjustedFin);
+                const nextStart = timeToMin(next.adjustedDebut);
+                const nextEnd = timeToMin(next.adjustedFin);
+                
+                // Si chevauchement
+                if (currentEnd > nextStart) {
+                    const overlap = currentEnd - nextStart;
+                    const halfOverlap = Math.ceil(overlap / 2);
+                    
+                    // Réduire la fin de la tâche courante
+                    const newCurrentEnd = currentEnd - halfOverlap;
+                    current.adjustedFin = minToTime(newCurrentEnd);
+                    current.adjustedDuree = newCurrentEnd - currentStart;
+                    current.isAdjusted = true;
+                    
+                    // Retarder le début de la tâche suivante
+                    const newNextStart = nextStart + halfOverlap;
+                    next.adjustedDebut = minToTime(newNextStart);
+                    next.adjustedDuree = nextEnd - newNextStart;
+                    next.isAdjusted = true;
+                }
+            }
+            
+            return adjusted;
+        }
+        
+        // Config
+        function renderConfigList() {
+            sortTachesByTime();
+            
+            // Filtrer les tâches qui s'appliquent à la semaine (exclure mercrediOnly et pasInsemination)
+            // et celles qui s'appliquent au week-end
+            const semaineTaches = taches.filter(t => !t.mercrediOnly); // Toutes sauf mercredi only
+            const weekendTaches = taches.filter(t => !t.mercrediOnly && !t.pasInsemination); // Pas d'IA le week-end
+            
+            let html = '';
+            
+            // Section SEMAINE
+            html += `<div class="tache-section-title semaine">
+                📅 Tâches Semaine <span class="tache-section-subtitle">(Lundi → Vendredi)</span>
+            </div>`;
+            
+            html += taches.map(t => `
+                <div class="tache-config-item ${t.cat}">
+                    <div class="tache-cat-icon">${t.icon}</div>
+                    <div class="tache-config-nom">
+                        <input type="text" class="tache-nom-input" value="${t.nom}" onblur="updateTacheName('${t.id}', this.value)" onkeypress="if(event.key==='Enter'){this.blur();}" placeholder="Nom de la tâche">
+                        ${t.mercrediOnly ? ' <span style="color:#EF4444;font-size:10px;">(Mer.)</span>' : ''}
+                        ${t.pasInsemination ? ' <span style="color:#A855F7;font-size:10px;">(sauf Mer/Sam/Dim)</span>' : ''}
+                        ${t.custom ? '<span style="color:#60A5FA;font-size:10px;margin-left:5px;">(perso)</span>' : ''}
+                        ${t.custom ? `<button class="btn-remove" onclick="removeTache('${t.id}')">✕</button>` : ''}
+                    </div>
+                    <div class="tache-horaires">
+                        <div class="tache-horaire-row">
+                            <span style="color:#64748B;font-size:10px;width:20px;">H1:</span>
+                            <input type="text" class="tache-config-input time-input" value="${t.debut}" onblur="updateTacheTime('${t.id}', 'debut', this.value)" onkeypress="if(event.key==='Enter'){this.blur();}" maxlength="5" placeholder="HH:MM">
+                            <input type="number" class="tache-config-input duree" value="${t.dureeMin}" min="5" step="5" onblur="updateTache('${t.id}', 'dureeMin', this.value)" title="Durée semaine">
+                            <span class="tache-fin">→ ${calcFin(t.debut, t.dureeMin)}</span>
+                        </div>
+                        ${t.debut2 ? `
+                        <div class="tache-horaire-row">
+                            <span style="color:#60A5FA;font-size:10px;width:20px;">H2:</span>
+                            <input type="text" class="tache-config-input time-input" value="${t.debut2}" onblur="updateTacheTime('${t.id}', 'debut2', this.value)" onkeypress="if(event.key==='Enter'){this.blur();}" maxlength="5" placeholder="HH:MM">
+                            <input type="number" class="tache-config-input duree" value="${t.dureeMin2 || 60}" min="5" step="5" onblur="updateTache('${t.id}', 'dureeMin2', this.value)">
+                            <span class="tache-fin">→ ${calcFin(t.debut2, t.dureeMin2 || 60)}</span>
+                            <button class="btn-remove-horaire" onclick="removeSecondSlot('${t.id}')">✕</button>
+                        </div>
+                        ` : `
+                        <div class="tache-horaire-row">
+                            <button class="btn-add-horaire" onclick="addSecondSlot('${t.id}')">+ Ajouter 2ème horaire</button>
+                        </div>
+                        `}
+                    </div>
+                </div>
+            `).join('');
+            
+            // Section WEEK-END
+            html += `<div class="tache-section-title weekend">
+                🌅 Tâches Week-end <span class="tache-section-subtitle">(Samedi & Dimanche) - Activez/désactivez chaque horaire</span>
+            </div>`;
+            
+            // Afficher uniquement les tâches applicables au week-end
+            html += weekendTaches.map(t => {
+                const isActiveH1WE = t.activeH1WE !== false; // Par défaut actif
+                const isActiveH2WE = t.activeH2WE !== false; // Par défaut actif
+                const hasH2 = t.debut2 && t.dureeMin2;
+                
+                // La tâche globale est inactive si les deux horaires sont inactifs
+                const isFullyInactive = !isActiveH1WE && (!hasH2 || !isActiveH2WE);
+                
+                return `
+                <div class="tache-config-item ${t.cat} ${isFullyInactive ? 'disabled-we' : ''}">
+                    <div class="tache-cat-icon">${t.icon}</div>
+                    <div class="tache-config-nom">
+                        <input type="text" class="tache-nom-input" value="${t.nom}" onblur="updateTacheName('${t.id}', this.value)" onkeypress="if(event.key==='Enter'){this.blur();}" placeholder="Nom de la tâche">
+                        ${t.custom ? '<span style="color:#60A5FA;font-size:10px;">(perso)</span>' : ''}
+                    </div>
+                    <div class="tache-horaires">
+                        <div class="tache-horaire-row ${!isActiveH1WE ? 'horaire-disabled' : ''}">
+                            <div class="toggle-switch-small ${isActiveH1WE ? 'active' : ''}" onclick="toggleWeekendSlot('${t.id}', 'H1')" title="${isActiveH1WE ? 'Désactiver H1 le WE' : 'Activer H1 le WE'}"></div>
+                            <span style="color:#F59E0B;font-size:10px;width:30px;">${hasH2 ? 'H1:' : 'WE:'}</span>
+                            <input type="text" class="tache-config-input time-input" value="${t.debutWE || t.debut}" onblur="updateTacheTime('${t.id}', 'debutWE', this.value)" onkeypress="if(event.key==='Enter'){this.blur();}" maxlength="5" placeholder="HH:MM" ${!isActiveH1WE ? 'disabled' : ''}>
+                            <input type="number" class="tache-config-input duree" value="${t.dureeMinWE || t.dureeMin}" min="5" step="5" onblur="updateTache('${t.id}', 'dureeMinWE', this.value)" ${!isActiveH1WE ? 'disabled' : ''}>
+                            <span class="tache-fin">→ ${calcFin(t.debutWE || t.debut, t.dureeMinWE || t.dureeMin)}</span>
+                        </div>
+                        ${hasH2 ? `
+                        <div class="tache-horaire-row ${!isActiveH2WE ? 'horaire-disabled' : ''}">
+                            <div class="toggle-switch-small ${isActiveH2WE ? 'active' : ''}" onclick="toggleWeekendSlot('${t.id}', 'H2')" title="${isActiveH2WE ? 'Désactiver H2 le WE' : 'Activer H2 le WE'}"></div>
+                            <span style="color:#F59E0B;font-size:10px;width:30px;">H2:</span>
+                            <input type="text" class="tache-config-input time-input" value="${t.debut2WE || t.debut2}" onblur="updateTacheTime('${t.id}', 'debut2WE', this.value)" onkeypress="if(event.key==='Enter'){this.blur();}" maxlength="5" placeholder="HH:MM" ${!isActiveH2WE ? 'disabled' : ''}>
+                            <input type="number" class="tache-config-input duree" value="${t.dureeMin2WE || t.dureeMin2 || 60}" min="5" step="5" onblur="updateTache('${t.id}', 'dureeMin2WE', this.value)" ${!isActiveH2WE ? 'disabled' : ''}>
+                            <span class="tache-fin">→ ${calcFin(t.debut2WE || t.debut2, t.dureeMin2WE || t.dureeMin2 || 60)}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `}).join('');
+            
+            document.getElementById('tache-config-list').innerHTML = html;
+            
+            renderSalariesList();
+        }
+        
+        function addSecondSlot(id) {
+            const t = taches.find(x => x.id === id);
+            if (t) {
+                // Proposer un horaire par défaut décalé de 4h
+                const newTime = timeToMin(t.debut) + 240;
+                const h = Math.floor(newTime / 60);
+                const m = newTime % 60;
+                t.debut2 = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                t.dureeMin2 = t.dureeMin;
+                renderConfigList();
+            }
+        }
+        
+        function removeSecondSlot(id) {
+            const t = taches.find(x => x.id === id);
+            if (t) {
+                delete t.debut2;
+                delete t.dureeMin2;
+                renderConfigList();
+            }
+        }
+        
+        function updateTache(id, field, value) {
+            const t = taches.find(x => x.id === id);
+            if (t) {
+                if (field === 'dureeMin' || field === 'dureeMin2' || field === 'dureeMinWE' || field === 'dureeMin2WE') {
+                    t[field] = parseInt(value) || 15;
+                } else {
+                    t[field] = value;
+                }
+                renderConfigList();
+            }
+        }
+        
+        function updateTacheName(id, value) {
+            const t = taches.find(x => x.id === id);
+            if (t) {
+                const newName = value.trim();
+                if (newName && newName !== t.nom) {
+                    t.nom = newName;
+                    showToast('✏️ Nom modifié');
+                    // Ne pas re-render pour garder le focus
+                }
+            }
+        }
+        
+        function updateTacheTime(id, field, value) {
+            const t = taches.find(x => x.id === id);
+            if (t) {
+                // Valider et formater l'heure (format HH:MM)
+                let formattedTime = value.trim();
+                
+                // Si l'utilisateur tape sans ":", essayer de parser
+                if (formattedTime.length === 4 && !formattedTime.includes(':')) {
+                    formattedTime = formattedTime.slice(0, 2) + ':' + formattedTime.slice(2);
+                } else if (formattedTime.length === 3 && !formattedTime.includes(':')) {
+                    formattedTime = '0' + formattedTime.slice(0, 1) + ':' + formattedTime.slice(1);
+                }
+                
+                // Valider le format HH:MM
+                const timeRegex = /^([0-1]?[0-9]|2[0-3]):([0-5][0-9])$/;
+                if (timeRegex.test(formattedTime)) {
+                    // Normaliser au format HH:MM
+                    const parts = formattedTime.split(':');
+                    formattedTime = parts[0].padStart(2, '0') + ':' + parts[1];
+                    t[field] = formattedTime;
+                    renderConfigList();
+                } else {
+                    // Si invalide, remettre l'ancienne valeur
+                    showToast('⚠️ Format invalide (HH:MM)', true);
+                    renderConfigList();
+                }
+            }
+        }
+        
+        function toggleWeekendSlot(id, slot) {
+            const t = taches.find(x => x.id === id);
+            if (t) {
+                if (slot === 'H1') {
+                    t.activeH1WE = t.activeH1WE === false ? true : false;
+                } else if (slot === 'H2') {
+                    t.activeH2WE = t.activeH2WE === false ? true : false;
+                }
+                renderConfigList();
+            }
+        }
+        
+        async function loadData() {
+            if (!firebaseOK || !currentFerme) return;
+            try {
+                const snapConfig = await db.ref(`planning_${currentFerme.toLowerCase()}/config/taches`).get();
+                if (snapConfig.exists()) {
+                    const saved = snapConfig.val();
+                    const defaultTaches = FERMES_DATA[currentFerme].taches;
+                    // Charger les tâches par défaut avec leurs modifications
+                    taches = defaultTaches.map(def => {
+                        const s = saved.find(x => x.id === def.id);
+                        if (s) {
+                            return { 
+                                ...def, 
+                                // Charger le nom personnalisé s'il existe
+                                nom: s.nom || def.nom,
+                                debut: s.debut, 
+                                dureeMin: s.dureeMin,
+                                // Charger le 2ème horaire s'il existe
+                                ...(s.debut2 ? { debut2: s.debut2, dureeMin2: s.dureeMin2 } : {}),
+                                // Charger les horaires week-end s'ils existent
+                                ...(s.debutWE ? { debutWE: s.debutWE } : {}),
+                                ...(s.dureeMinWE ? { dureeMinWE: s.dureeMinWE } : {}),
+                                ...(s.debut2WE ? { debut2WE: s.debut2WE } : {}),
+                                ...(s.dureeMin2WE ? { dureeMin2WE: s.dureeMin2WE } : {}),
+                                // Charger l'état actif week-end par slot
+                                ...(s.activeH1WE === false ? { activeH1WE: false } : {}),
+                                ...(s.activeH2WE === false ? { activeH2WE: false } : {})
+                            };
+                        }
+                        return def;
+                    });
+                    // Ajouter les tâches personnalisées
+                    const customOnes = saved.filter(s => s.custom);
+                    customOnes.forEach(c => {
+                        taches.push({ 
+                            ...c, 
+                            icon: CAT_ICONS[c.cat] || '📌',
+                            ...(c.debut2 ? { debut2: c.debut2, dureeMin2: c.dureeMin2 } : {}),
+                            ...(c.debutWE ? { debutWE: c.debutWE } : {}),
+                            ...(c.dureeMinWE ? { dureeMinWE: c.dureeMinWE } : {}),
+                            ...(c.debut2WE ? { debut2WE: c.debut2WE } : {}),
+                            ...(c.dureeMin2WE ? { dureeMin2WE: c.dureeMin2WE } : {}),
+                            ...(c.activeH1WE === false ? { activeH1WE: false } : {}),
+                            ...(c.activeH2WE === false ? { activeH2WE: false } : {})
+                        });
+                    });
+                    // Trier par heure de début
+                    sortTachesByTime();
+                }
+                
+                // Charger les salariés personnalisés
+                const snapSalaries = await db.ref(`planning_${currentFerme.toLowerCase()}/config/salaries`).get();
+                if (snapSalaries.exists()) {
+                    const savedSalaries = snapSalaries.val();
+                    const defaultSalaries = FERMES_DATA[currentFerme].salaries;
+                    salaries = [...defaultSalaries, ...savedSalaries.filter(s => !defaultSalaries.includes(s))];
+                }
+                
+                const snapAssign = await db.ref(`planning_${currentFerme.toLowerCase()}/assignments`).get();
+                if (snapAssign.exists()) {
+                    assignments = snapAssign.val();
+                } else {
+                    assignments = {};
+                }
+                
+                initTabs();
+                renderView();
+            } catch (e) { console.error(e); }
+        }
+        
+        async function saveConfig() {
+            if (!firebaseOK || !currentFerme) { showToast('Pas de connexion', true); return; }
+            try {
+                // Sauvegarder les tâches (modifiées + personnalisées) avec double horaire et durées week-end
+                await db.ref(`planning_${currentFerme.toLowerCase()}/config/taches`).set(
+                    taches.map(t => ({ 
+                        id: t.id,
+                        nom: t.nom, // Sauvegarder le nom de toutes les tâches
+                        debut: t.debut, 
+                        dureeMin: t.dureeMin,
+                        // Sauvegarder le 2ème horaire s'il existe
+                        ...(t.debut2 ? { debut2: t.debut2, dureeMin2: t.dureeMin2 } : {}),
+                        // Sauvegarder les horaires week-end s'ils existent
+                        ...(t.debutWE ? { debutWE: t.debutWE } : {}),
+                        ...(t.dureeMinWE ? { dureeMinWE: t.dureeMinWE } : {}),
+                        ...(t.debut2WE ? { debut2WE: t.debut2WE } : {}),
+                        ...(t.dureeMin2WE ? { dureeMin2WE: t.dureeMin2WE } : {}),
+                        // Sauvegarder l'état actif week-end par slot (seulement si désactivé)
+                        ...(t.activeH1WE === false ? { activeH1WE: false } : {}),
+                        ...(t.activeH2WE === false ? { activeH2WE: false } : {}),
+                        ...(t.custom ? { cat: t.cat, mercrediOnly: t.mercrediOnly || false, custom: true } : {})
+                    }))
+                );
+                
+                // Sauvegarder les salariés personnalisés
+                const defaultSalaries = FERMES_DATA[currentFerme].salaries;
+                const customSalaries = salaries.filter(s => !defaultSalaries.includes(s));
+                await db.ref(`planning_${currentFerme.toLowerCase()}/config/salaries`).set(customSalaries);
+                
+                showToast('✅ Configuration enregistrée !');
+            } catch (e) { showToast('Erreur', true); console.error(e); }
+        }
+        
+        // Semaine
+        function changeWeek(delta) {
+            currentWeekStart.setDate(currentWeekStart.getDate() + (delta * 7));
+            updateWeekLabels();
+            if (selectedTab === 'equipe') {
+                renderEquipeDaySelector();
+                renderEquipeGrid();
+                if (equipeViewMode === 'week') {
+                    renderEquipeWeekGrid();
+                }
+            } else if (selectedSalarie) {
+                renderView();
+            }
+        }
+        
+        function goToToday() {
+            currentWeekStart = getMonday(new Date());
+            const today = new Date().getDay();
+            selectedEquipeDay = today === 0 ? 6 : today - 1;
+            updateWeekLabels();
+            if (selectedTab === 'equipe') {
+                renderEquipeDaySelector();
+                renderEquipeGrid();
+                if (equipeViewMode === 'week') {
+                    renderEquipeWeekGrid();
+                }
+            } else if (selectedSalarie) {
+                renderView();
+            }
+        }
+        
+        function updateWeekLabels() {
+            const start = new Date(currentWeekStart);
+            const end = new Date(currentWeekStart);
+            end.setDate(end.getDate() + 6);
+            const opts = { day: 'numeric', month: 'short' };
+            const weekNum = getWeekNumber(start);
+            const label = `Semaine ${weekNum} : ${start.toLocaleDateString('fr-FR', opts)} - ${end.toLocaleDateString('fr-FR', opts)}`;
+            const el1 = document.getElementById('week-label-equipe');
+            const el2 = document.getElementById('week-label-salarie');
+            if (el1) el1.textContent = label;
+            if (el2) el2.textContent = label;
+        }
+        
+        function getWeekNumber(d) {
+            const date = new Date(d);
+            date.setHours(0, 0, 0, 0);
+            date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
+            const week1 = new Date(date.getFullYear(), 0, 4);
+            return 1 + Math.round(((date - week1) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+        }
+        
+        // Vue Équipe
+        function renderEquipeDaySelector() {
+            const today = new Date().toDateString();
+            document.getElementById('equipe-day-selector').innerHTML = JOURS.map((j, idx) => {
+                const date = new Date(currentWeekStart);
+                date.setDate(date.getDate() + idx);
+                const isToday = date.toDateString() === today;
+                const dateStr = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+                return `<button class="day-btn ${selectedEquipeDay === idx ? 'active' : ''} ${isToday ? 'today' : ''}" 
+                        onclick="selectEquipeDay(${idx})">${j} ${dateStr}</button>`;
+            }).join('');
+        }
+        
+        function selectEquipeDay(idx) {
+            selectedEquipeDay = idx;
+            renderEquipeDaySelector();
+            renderEquipeGrid();
+        }
+        
+        function renderEquipeGrid() {
+            const grid = document.getElementById('equipe-grid');
+            // Utiliser les tâches avec les bonnes durées selon le jour sélectionné
+            const expandedTasks = getExpandedTasks(selectedEquipeDay);
+            
+            grid.innerHTML = salaries.map(salarie => {
+                const salarieAssignments = assignments[salarie] || {};
+                
+                // Filtrer les tâches développées pour ce jour
+                const dayTasks = expandedTasks.filter(t => {
+                    if (t.mercrediOnly && selectedEquipeDay !== 2) return false;
+                    if (t.pasInsemination && [2, 5, 6].includes(selectedEquipeDay)) return false;
+                    return (salarieAssignments[t.id] || []).includes(selectedEquipeDay);
+                });
+                
+                // Ajuster les horaires en cas de chevauchement
+                const adjustedTasks = getAdjustedTasksForDay(dayTasks);
+                
+                return `
+                    <div class="equipe-column">
+                        <div class="equipe-header">${salarie}</div>
+                        <div class="equipe-tasks">
+                            ${adjustedTasks.length > 0 ? adjustedTasks.map(t => `
+                                <div class="equipe-task ${t.cat}">
+                                    <span class="eq-time ${t.isAdjusted ? 'adjusted-time' : ''}">${formatHeure(t.adjustedDebut)} - ${formatHeure(t.adjustedFin)}${t.isAdjusted ? ' ⚡' : ''}</span>
+                                    <span class="eq-name">${t.nom}${t.isSecondSlot ? ' (H2)' : ''}</span>
+                                </div>
+                            `).join('') : '<div class="equipe-no-task">Pas de tâche</div>'}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // Vue semaine équipe
+        function setEquipeView(view) {
+            equipeViewMode = view;
+            document.getElementById('view-day').classList.toggle('active', view === 'day');
+            document.getElementById('view-week').classList.toggle('active', view === 'week');
+            
+            document.getElementById('equipe-day-selector').style.display = view === 'day' ? 'flex' : 'none';
+            document.getElementById('equipe-grid').style.display = view === 'day' ? 'grid' : 'none';
+            document.getElementById('equipe-week-grid').classList.toggle('visible', view === 'week');
+            
+            if (view === 'week') {
+                renderEquipeWeekGrid();
+            }
+        }
+        
+        function renderEquipeWeekGrid() {
+            const today = new Date().toDateString();
+            const container = document.getElementById('equipe-week-grid');
+            
+            let html = '<table class="equipe-week-table"><thead><tr><th>Salarié</th>';
+            
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(currentWeekStart);
+                date.setDate(date.getDate() + i);
+                const isToday = date.toDateString() === today;
+                const dateStr = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+                html += `<th class="${isToday ? 'today-col' : ''}">${JOURS[i]}<br><small>${dateStr}</small></th>`;
+            }
+            html += '</tr></thead><tbody>';
+            
+            salaries.forEach(salarie => {
+                html += `<tr><td class="salarie-name">${salarie}</td>`;
+                const salarieAssignments = assignments[salarie] || {};
+                
+                for (let dayIdx = 0; dayIdx < 7; dayIdx++) {
+                    // Utiliser les tâches avec les bonnes durées pour ce jour
+                    const expandedTasks = getExpandedTasks(dayIdx);
+                    
+                    const dayTasks = expandedTasks.filter(t => {
+                        if (t.mercrediOnly && dayIdx !== 2) return false;
+                        if (t.pasInsemination && [2, 5, 6].includes(dayIdx)) return false;
+                        return (salarieAssignments[t.id] || []).includes(dayIdx);
+                    });
+                    
+                    // Ajuster les horaires en cas de chevauchement
+                    const adjustedTasks = getAdjustedTasksForDay(dayTasks);
+                    
+                    html += '<td>';
+                    if (adjustedTasks.length > 0) {
+                        adjustedTasks.forEach(t => {
+                            html += `<div class="week-task ${t.cat}">
+                                <span class="wt-time ${t.isAdjusted ? 'adjusted-time' : ''}">${formatHeure(t.adjustedDebut)}-${formatHeure(t.adjustedFin)}${t.isAdjusted ? '⚡' : ''}</span>
+                                <span class="wt-name">${t.nom}${t.isSecondSlot ? ' (H2)' : ''}</span>
+                            </div>`;
+                        });
+                    } else {
+                        html += '<span class="week-no-task">—</span>';
+                    }
+                    html += '</td>';
+                }
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+        
+        function printEquipeWeek() {
+            // Afficher le modal de choix
+            document.getElementById('print-modal').classList.add('visible');
+        }
+        
+        function closePrintModal() {
+            document.getElementById('print-modal').classList.remove('visible');
+        }
+        
+        function doPrint(withColor) {
+            closePrintModal();
+            
+            // Appliquer ou retirer la classe couleur
+            if (withColor) {
+                document.body.classList.add('print-color');
+            } else {
+                document.body.classList.remove('print-color');
+            }
+            
+            // S'assurer que la vue semaine est générée
+            renderEquipeWeekGrid();
+            setTimeout(() => {
+                window.print();
+                // Nettoyer après impression
+                setTimeout(() => document.body.classList.remove('print-color'), 500);
+            }, 100);
+        }
+        
+        // Gestion des tâches
+        
+        function addTache() {
+            const nom = document.getElementById('new-tache-nom').value.trim();
+            if (!nom) { showToast('Entrez un nom de tâche', true); return; }
+            
+            const id = 'custom_' + Date.now();
+            const debut = document.getElementById('new-tache-debut').value;
+            const dureeMin = parseInt(document.getElementById('new-tache-duree').value) || 60;
+            const cat = document.getElementById('new-tache-cat').value;
+            const mercrediOnly = document.getElementById('new-tache-mercredi').value === 'true';
+            
+            const newTache = { 
+                id, nom, debut, dureeMin, cat, 
+                icon: CAT_ICONS[cat], 
+                mercrediOnly, 
+                custom: true 
+            };
+            
+            taches.push(newTache);
+            
+            // Trier les tâches par heure de début
+            sortTachesByTime();
+            
+            document.getElementById('new-tache-nom').value = '';
+            renderConfigList();
+            showToast('✅ Tâche ajoutée');
+        }
+        
+        function removeTache(id) {
+            if (!confirm('Supprimer cette tâche ?')) return;
+            taches = taches.filter(t => t.id !== id);
+            // Supprimer aussi des assignments
+            Object.keys(assignments).forEach(sal => {
+                if (assignments[sal][id]) delete assignments[sal][id];
+            });
+            renderConfigList();
+            initTabs();
+            showToast('🗑️ Tâche supprimée');
+        }
+        
+        // Gestion des salariés
+        function renderSalariesList() {
+            const container = document.getElementById('salaries-list');
+            const defaultSalaries = FERMES_DATA[currentFerme]?.salaries || [];
+            
+            container.innerHTML = salaries.map(s => {
+                const isCustom = !defaultSalaries.includes(s);
+                return `<span style="display: inline-flex; align-items: center; background: rgba(255,255,255,0.1); padding: 6px 12px; border-radius: 20px; margin: 4px; font-size: 13px;">
+                    ${isCustom ? `<input type="text" value="${s}" onchange="renameSalarie('${s}', this.value)" 
+                        style="background: transparent; border: none; color: white; width: 80px; font-size: 13px;">` : s}
+                    ${isCustom ? `<button class="btn-remove" onclick="removeSalarie('${s}')">✕</button>` : ''}
+                </span>`;
+            }).join('');
+        }
+        
+        function addSalarie() {
+            const nom = document.getElementById('new-salarie-nom').value.trim();
+            if (!nom) { showToast('Entrez un prénom', true); return; }
+            if (salaries.includes(nom)) { showToast('Ce salarié existe déjà', true); return; }
+            
+            salaries.push(nom);
+            document.getElementById('new-salarie-nom').value = '';
+            renderSalariesList();
+            initTabs();
+            showToast('✅ Salarié ajouté');
+        }
+        
+        function removeSalarie(nom) {
+            if (!confirm(`Supprimer ${nom} ?`)) return;
+            salaries = salaries.filter(s => s !== nom);
+            if (assignments[nom]) delete assignments[nom];
+            renderSalariesList();
+            initTabs();
+            showToast('🗑️ Salarié supprimé');
+        }
+        
+        function renameSalarie(oldName, newName) {
+            newName = newName.trim();
+            if (!newName || salaries.includes(newName)) return;
+            
+            const idx = salaries.indexOf(oldName);
+            if (idx > -1) {
+                salaries[idx] = newName;
+                if (assignments[oldName]) {
+                    assignments[newName] = assignments[oldName];
+                    delete assignments[oldName];
+                }
+                if (selectedSalarie === oldName) selectedSalarie = newName;
+                initTabs();
+            }
+        }
+        
+        // Vue Salarié
+        function setMode(newMode) {
+            mode = newMode;
+            document.getElementById('mode-view').classList.toggle('active', mode === 'view');
+            document.getElementById('mode-edit').classList.toggle('active', mode === 'edit');
+            document.getElementById('week-grid').style.display = mode === 'view' ? 'grid' : 'none';
+            document.getElementById('edit-section').classList.toggle('visible', mode === 'edit');
+            
+            if (mode === 'edit') {
+                renderEditGrid();
+                renderCopyButtonsForSalarie();
+            } else {
+                renderWeekGrid();
+            }
+        }
+        
+        function renderView() {
+            if (mode === 'view') renderWeekGrid();
+            else renderEditGrid();
+        }
+        
+        function renderWeekGrid() {
+            const grid = document.getElementById('week-grid');
+            const today = new Date().toDateString();
+            const salarieAssignments = assignments[selectedSalarie] || {};
+            
+            grid.innerHTML = JOURS.map((jour, idx) => {
+                const date = new Date(currentWeekStart);
+                date.setDate(date.getDate() + idx);
+                const isToday = date.toDateString() === today;
+                const dateStr = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+                
+                // Utiliser les tâches avec les bonnes durées selon le jour
+                const expandedTasks = getExpandedTasks(idx);
+                
+                const dayTasks = expandedTasks.filter(t => {
+                    if (t.mercrediOnly && idx !== 2) return false;
+                    if (t.pasInsemination && [2, 5, 6].includes(idx)) return false;
+                    return (salarieAssignments[t.id] || []).includes(idx);
+                });
+                
+                // Ajuster les horaires en cas de chevauchement
+                const adjustedTasks = getAdjustedTasksForDay(dayTasks);
+                
+                return `
+                    <div class="day-column">
+                        <div class="day-header ${isToday ? 'today' : ''}">${jour}<small>${dateStr}</small></div>
+                        <div class="day-tasks">
+                            ${adjustedTasks.length > 0 ? adjustedTasks.map(t => `
+                                <div class="task-chip ${t.cat}">
+                                    <span class="task-time ${t.isAdjusted ? 'adjusted-time' : ''}">${formatHeure(t.adjustedDebut)}-${formatHeure(t.adjustedFin)}${t.isAdjusted ? ' ⚡' : ''}</span>
+                                    <span class="task-name">${t.nom}${t.isSecondSlot ? ' (H2)' : ''}</span>
+                                </div>
+                            `).join('') : '<div class="no-tasks">Pas de tâche</div>'}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function renderEditGrid() {
+            document.getElementById('edit-salarie-name').textContent = selectedSalarie;
+            const gridSemaine = document.getElementById('edit-grid-semaine');
+            const gridWeekend = document.getElementById('edit-grid-weekend');
+            const salarieAssignments = assignments[selectedSalarie] || {};
+            const catColors = { ramasse: '#22C55E', ia: '#A855F7', controle: '#F59E0B', hygiene: '#EC4899', hebdo: '#EF4444', aliment: '#B45309', autre: '#64748B' };
+            
+            // Tâches pour la semaine (toutes les tâches)
+            const expandedTasksSemaine = getExpandedTasksAll();
+            
+            // Tâches pour le week-end (uniquement celles actives le WE)
+            const expandedTasksWeekend = getExpandedTasks(5).filter(t => !t.mercrediOnly && !t.pasInsemination);
+            
+            // ===== GRILLE SEMAINE (Lun-Ven) =====
+            const joursSemaine = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven'];
+            let htmlSemaine = '<div class="edit-cell header">Tâche</div>';
+            joursSemaine.forEach(j => htmlSemaine += `<div class="edit-cell header">${j}</div>`);
+            
+            expandedTasksSemaine.forEach(t => {
+                const fin = calcFin(t.displayDebut, t.displayDuree);
+                const slotLabel = t.isSecondSlot ? ' <span style="color:#60A5FA;">(H2)</span>' : (t.debut2 ? ' <span style="color:#94A3B8;">(H1)</span>' : '');
+                
+                htmlSemaine += `<div class="edit-cell task-label">
+                    <span class="task-color" style="background: ${catColors[t.cat] || '#64748B'}"></span>
+                    ${t.nom}${slotLabel}
+                    <span class="task-hours">(${formatHeure(t.displayDebut)}-${formatHeure(fin)})</span>
+                </div>`;
+                
+                const taskDays = salarieAssignments[t.id] || [];
+                // Jours 0-4 (Lun-Ven)
+                for (let d = 0; d < 5; d++) {
+                    const disabledMercredi = t.mercrediOnly && d !== 2;
+                    const disabledIA = t.pasInsemination && d === 2; // Mercredi pour IA
+                    const checked = taskDays.includes(d);
+                    
+                    let hasOverlap = false;
+                    if (!checked && !disabledMercredi && !disabledIA) {
+                        hasOverlap = isLockedByOtherTask(t, d, salarieAssignments);
+                    }
+                    
+                    const disabled = disabledMercredi || disabledIA;
+                    
+                    htmlSemaine += `<div class="edit-cell ${hasOverlap ? 'warning' : ''}">
+                        <input type="checkbox" class="edit-checkbox" 
+                               ${checked ? 'checked' : ''} ${disabled ? 'disabled' : ''}
+                               onchange="toggleAssignment('${t.id}', ${d}, this.checked)">
+                        ${hasOverlap ? '<span class="warning-icon" title="Chevauchement">⚠️</span>' : ''}
+                    </div>`;
+                }
+            });
+            
+            gridSemaine.innerHTML = htmlSemaine;
+            
+            // ===== GRILLE WEEK-END (Sam-Dim) =====
+            const joursWeekend = ['Sam', 'Dim'];
+            let htmlWeekend = '<div class="edit-cell header">Tâche</div>';
+            joursWeekend.forEach(j => htmlWeekend += `<div class="edit-cell header">${j}</div>`);
+            
+            if (expandedTasksWeekend.length === 0) {
+                htmlWeekend += '<div class="edit-cell" style="grid-column: span 3; text-align: center; color: #64748B; font-style: italic; padding: 20px;">Aucune tâche active le week-end</div>';
+            } else {
+                expandedTasksWeekend.forEach(t => {
+                    // Utiliser displayDebut/displayDuree qui sont déjà calculés avec les horaires WE
+                    const finWE = calcFin(t.displayDebut, t.displayDuree);
+                    const slotLabel = t.isSecondSlot ? ' <span style="color:#60A5FA;">(H2)</span>' : (t.debut2 ? ' <span style="color:#94A3B8;">(H1)</span>' : '');
+                    
+                    htmlWeekend += `<div class="edit-cell task-label">
+                        <span class="task-color" style="background: ${catColors[t.cat] || '#64748B'}"></span>
+                        ${t.nom}${slotLabel}
+                        <span class="task-hours">(${formatHeure(t.displayDebut)}-${formatHeure(finWE)})</span>
+                    </div>`;
+                    
+                    const taskDays = salarieAssignments[t.id] || [];
+                    // Jours 5-6 (Sam-Dim)
+                    for (let d = 5; d <= 6; d++) {
+                        const checked = taskDays.includes(d);
+                        
+                        let hasOverlap = false;
+                        if (!checked) {
+                            hasOverlap = isLockedByOtherTask(t, d, salarieAssignments);
+                        }
+                        
+                        // Indicateur durée différente du WE
+                        const dureeInfo = t.dureeMinWE && t.dureeMinWE != t.dureeMin 
+                            ? `<span style="font-size:8px;color:#F59E0B;" title="Durée WE: ${t.dureeMinWE}min">⏱</span>` 
+                            : '';
+                        
+                        htmlWeekend += `<div class="edit-cell ${hasOverlap ? 'warning' : ''}">
+                            <input type="checkbox" class="edit-checkbox" 
+                                   ${checked ? 'checked' : ''}
+                                   onchange="toggleAssignment('${t.id}', ${d}, this.checked)">
+                            ${dureeInfo}
+                            ${hasOverlap ? '<span class="warning-icon" title="Chevauchement">⚠️</span>' : ''}
+                        </div>`;
+                    }
+                });
+            }
+            
+            gridWeekend.innerHTML = htmlWeekend;
+        }
+        
+        function isLockedByOtherTask(tache, day, salarieAssignments) {
+            // Utiliser les tâches développées pour vérifier les chevauchements avec H1 et H2
+            const expandedTasks = getExpandedTasks(day);
+            for (const t of expandedTasks) {
+                if (t.id === tache.id) continue;
+                if (t.mercrediOnly && day !== 2) continue;
+                if (t.pasInsemination && [2, 5, 6].includes(day)) continue;
+                const taskDays = salarieAssignments[t.id] || [];
+                if (taskDays.includes(day) && tasksOverlap(t, tache)) return true;
+            }
+            return false;
+        }
+        
+        function toggleAssignment(taskId, day, checked) {
+            if (!assignments[selectedSalarie]) assignments[selectedSalarie] = {};
+            if (!assignments[selectedSalarie][taskId]) assignments[selectedSalarie][taskId] = [];
+            
+            const days = assignments[selectedSalarie][taskId];
+            if (checked && !days.includes(day)) {
+                days.push(day);
+                days.sort((a, b) => a - b);
+            } else if (!checked) {
+                const idx = days.indexOf(day);
+                if (idx > -1) days.splice(idx, 1);
+            }
+            renderEditGrid();
+        }
+        
+        function clearWeek() {
+            if (!confirm(`Supprimer TOUTES les tâches de ${selectedSalarie} pour cette semaine ?`)) return;
+            
+            if (!assignments[selectedSalarie]) assignments[selectedSalarie] = {};
+            
+            taches.forEach(t => {
+                assignments[selectedSalarie][t.id] = [];
+            });
+            
+            renderEditGrid();
+            showToast('🗑️ Semaine vidée');
+        }
+        
+        function clearDay(dayIndex) {
+            const jourNom = JOURS[dayIndex];
+            if (!confirm(`Supprimer toutes les tâches de ${selectedSalarie} pour ${jourNom} ?`)) return;
+            
+            if (!assignments[selectedSalarie]) assignments[selectedSalarie] = {};
+            
+            taches.forEach(t => {
+                if (assignments[selectedSalarie][t.id]) {
+                    const days = assignments[selectedSalarie][t.id];
+                    const idx = days.indexOf(dayIndex);
+                    if (idx > -1) days.splice(idx, 1);
+                }
+            });
+            
+            renderEditGrid();
+            showToast(`🗑️ ${jourNom} vidé`);
+        }
+        
+        async function saveAssignments() {
+            if (!firebaseOK || !currentFerme) { showToast('Pas de connexion', true); return; }
+            try {
+                await db.ref(`planning_${currentFerme.toLowerCase()}/assignments`).set(assignments);
+                showToast('✅ Tâches enregistrées !');
+            } catch (e) { showToast('Erreur', true); }
+        }
+        
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast' + (isError ? ' error' : '');
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+    </script>
+</body>
+</html>
