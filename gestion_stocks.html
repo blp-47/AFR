@@ -788,19 +788,28 @@
             });
         }
         
-        // Mode switching
-        function setMode(mode) {
-            currentMode = mode;
-            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
-            
-            document.getElementById('mode-salarie').classList.toggle('hidden', mode !== 'salarie');
-            document.getElementById('mode-admin').classList.toggle('hidden', mode !== 'admin');
-            
-            if (mode === 'salarie') {
-                resetSalarieFlow();
-            }
+     // Mode switching
+function setMode(mode) {
+    // Protection mot de passe pour le mode Admin
+    if (mode === 'admin') {
+        const mdp = prompt('Mot de passe Admin :');
+        if (mdp !== 'afrstock') {
+            alert('Mot de passe incorrect');
+            return;
         }
+    }
+    
+    currentMode = mode;
+    document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    document.getElementById('mode-salarie').classList.toggle('hidden', mode !== 'salarie');
+    document.getElementById('mode-admin').classList.toggle('hidden', mode !== 'admin');
+    
+    if (mode === 'salarie') {
+        resetSalarieFlow();
+    }
+}
         
         // Tab switching
         function showTab(tabId) {
