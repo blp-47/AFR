@@ -1089,24 +1089,24 @@ const CONTROLES_STANDARD = [
   { name: "Pad cooling",         etat: "Vérification (temps chaud)",      type: "report" },
 ];
 
-// ── Liste Ponte SG3 / SG1 / SG2 (base sans morts) ────────────────
+// ── Liste Ponte  SG1 / SG2 (base sans morts) ────────────────
 const CONTROLES_PONTE_BASE = [
   { name: "Compteur eau Nid",    etat: "Relevé",                          type: "value",  placeholder: "Ex : 1234 m³" },
   { name: "Compteur eau Sol",    etat: "Relevé",                          type: "value",  placeholder: "Ex : 1234 m³" },
   { name: "Pipettes sol",        etat: "Test eau",                        type: "toggle" },
   { name: "Pipettes caillebotis",etat: "Test eau",                        type: "toggle" },
   { name: "Bac vert + pression", etat: "Bac plein — Pression > 1 bar",   type: "toggle" },
-  { name: "Barrières",           etat: "Position Haut",                   type: "toggle" },
-  { name: "Nids",                etat: "OUVERT",                          type: "toggle" },
-  { name: "Assiettes",           etat: "Position Bas / présence aliment", type: "toggle" },
+  { name: "Barrières relevées",  etat: "Position Haut",                   type: "toggle" },
+  { name: "Nids ouverts",        etat: "OUVERT",                          type: "toggle" },
+  { name: "Assiettes remplies",  etat: "Position Bas / présence aliment", type: "toggle" },
   { name: "T° Bâtiment",        etat: "Relevé T° mini/maxi",             type: "temp" },
   { name: "T° Salle œufs",      etat: "Relevé T° mini/maxi",             type: "temp" },
   { name: "Compteur aliment",    etat: "Relevé",                          type: "value",  placeholder: "Ex : 5678 kg" },
-  { name: "Ventilation",         etat: "Signaler problème",               type: "report" },
-  { name: "Échangeur",           etat: "Signaler problème",               type: "report" },
+  { name: "Ventilation fonctionnelle",   etat: "Signaler problème",               type: "report" },
+  { name: "Échangeurs fonctionnels",     etat: "Signaler problème",               type: "report" },
   { name: "Lumière",             etat: "Signaler problème",               type: "report" },
-  { name: "Canon chaleur",       etat: "Fonctionnement (temps froid)",    type: "report" },
-  { name: "Pad cooling",         etat: "Vérification (temps chaud)",      type: "report" },
+  { name: "Canons à chaleur fonctionnels",   etat: "Fonctionnement (temps froid)",    type: "report" },
+  { name: "Pad cooling fonctionnel",         etat: "Vérification (temps chaud)",      type: "report" },
 ];
 
 // ── Liste spécifique SG3 ──────────────────────────────────────────
@@ -1117,10 +1117,10 @@ const CONTROLES_NT2 = [
   { name: "Morts",            etat: "Aucun — sinon noter nombre + N° cage", type: "morts" },
   { name: "Aliment présent",  etat: "Vérification présence aliment",   type: "toggle" },
   { name: "Bac vert + pression", etat: "Bac plein — Pression > 1 bar", type: "toggle" },
-  { name: "Ventilation",      etat: "Signaler problème",               type: "report" },
-  { name: "Échangeurs",       etat: "Signaler problème",               type: "report" },
-  { name: "Canon à chaleur",  etat: "Fonctionnement (temps froid)",    type: "report" },
-  { name: "Cooling",          etat: "Vérification (temps chaud)",      type: "report" },
+  { name: "Ventilation fonctionnelle",      etat: "Signaler problème",               type: "report" },
+  { name: "Échangeurs fonctionnels",       etat: "Signaler problème",               type: "report" },
+  { name: "Canons à chaleur fonctionnels",  etat: "Fonctionnement (temps froid)",    type: "report" },
+  { name: "Cooling fonctionnel",          etat: "Vérification (temps chaud)",      type: "report" },
 ];
 
 function getControles(bat) {
