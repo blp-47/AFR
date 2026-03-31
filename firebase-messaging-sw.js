@@ -2,7 +2,7 @@ importScripts("https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"
 importScripts("https://www.gstatic.com/firebasejs/9.22.1/firebase-messaging-compat.js");
 
 firebase.initializeApp({
-  apiKey: "AIzaSyDJdHx6xKy43aTPdjoSB8dZjkOIjXyGyh8",
+  apiKey: "AIzaSyCSw10bFLStcem4A_CO4IXmKeQbLH9NXsM",
   authDomain: "afr-nt2.firebaseapp.com",
   databaseURL: "https://afr-nt2-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "afr-nt2",
