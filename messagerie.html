@@ -270,7 +270,7 @@ function renderGroupList(){
 function listenAllGroups(){
   Object.values(listeners).forEach(off=>off());listeners={};
   currentUser.groupes.forEach(gid=>{
-    const ref=db.ref('messagerie/messages/'+gid).orderByChild('ts').limitToLast(50);
+    const ref=db.ref('messagerie/messages/'+gid).orderByChild('ts');
     const cb=ref.on('value',snap=>{
       const msgs=[];snap.forEach(s=>{msgs.push({key:s.key,...s.val()})});
       if(msgs.length>0){const last=msgs[msgs.length-1];
@@ -303,7 +303,7 @@ function openGroup(gid){
     const members=[];snap.forEach(s=>{const u=s.val();if(u.groupes&&u.groupes.includes(gid)&&s.key!=='_admin_')members.push(u.name)});
     document.getElementById('chatGroupMembers').textContent=members.length+' membre'+(members.length>1?'s':'')+' — '+members.join(', ')
   });
-  db.ref('messagerie/messages/'+gid).orderByChild('ts').limitToLast(50).once('value',snap=>{
+  db.ref('messagerie/messages/'+gid).orderByChild('ts').once('value',snap=>{
     const msgs=[];snap.forEach(s=>{msgs.push({key:s.key,...s.val()})});
     if(activeGroup===gid){renderMessages(msgs);markAsRead(gid)}
   });
@@ -346,12 +346,24 @@ async function getOrRegisterSw(){
 
 async function saveCurrentToken(token){
   if(!token || !currentUser || !currentUser.id) throw new Error('Utilisateur non connecté');
+
+  const userTokensRef = db.ref(`messagerie/userTokens/${currentUser.id}`);
+  const snap = await userTokensRef.once('value');
+  const existing = snap.val() || {};
+
+  const updates = {};
+  for (const key of Object.keys(existing)) {
+    updates[key] = null;
+  }
+
   const tokenKey = token.replace(/[.#$/\[\]]/g, '_');
-  await db.ref(`messagerie/userTokens/${currentUser.id}/${tokenKey}`).set({
+  updates[tokenKey] = {
     token,
     groupes: currentUser.groupes || [],
     updatedAt: firebase.database.ServerValue.TIMESTAMP
-  });
+  };
+
+  await userTokensRef.update(updates);
 }
 
 async function enableNotifications() {
