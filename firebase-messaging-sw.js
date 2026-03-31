@@ -2,13 +2,13 @@ importScripts("https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"
 importScripts("https://www.gstatic.com/firebasejs/9.22.1/firebase-messaging-compat.js");
 
 firebase.initializeApp({
-  apiKey: "AIzaSyCSw10bFLStcem4A_CO4IXmKeQbLH9NXsM",
+  apiKey: "AIzaSyDJdHx6xKy43aTPdjoSB8dZjkOIjXyGyh8",
   authDomain: "afr-nt2.firebaseapp.com",
   databaseURL: "https://afr-nt2-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "afr-nt2",
   storageBucket: "afr-nt2.firebasestorage.app",
   messagingSenderId: "169851474976",
-  appId: "1:169851474976:web:be14c24366b0af024f9845"
+  appId: "1:169851474976:web:2032be86439c1b554f9845"
 });
 
 const messaging = firebase.messaging();
