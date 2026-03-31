@@ -13,22 +13,12 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-messaging.onBackgroundMessage((payload) => {
-  const title = payload?.notification?.title || "Nouveau message";
-  const body = payload?.notification?.body || "";
-  const link = payload?.fcmOptions?.link || "https://blp-47.github.io/AFR/messagerie.html";
-
-  self.registration.showNotification(title, {
-    body,
-    icon: "/AFR/icon-192.png",
-    badge: "/AFR/badge-72.png",
-    data: { link }
-  });
-});
-
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const link = event.notification?.data?.link || "https://blp-47.github.io/AFR/messagerie.html";
+  const link =
+    event.notification?.data?.FCM_MSG?.fcmOptions?.link ||
+    event.notification?.data?.link ||
+    "https://blp-47.github.io/AFR/messagerie.html";
 
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
