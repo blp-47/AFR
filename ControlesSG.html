@@ -1080,10 +1080,10 @@ const CONTROLES_STANDARD = [
   { name: "Bac vert + pression", etat: "Bac plein — Pression > 1 bar",   type: "toggle" },
   { name: "Barrières",           etat: "Position Haut",                   type: "toggle" },
   { name: "Nids",                etat: "OUVERT",                          type: "toggle" },
-  { name: "Assiettes",           etat: "Position Bas / présence aliment", type: "toggle" },
+  { name: "Assiettes",           etat: "Position Bas / présence ", type: "toggle" },
   { name: "T° Bâtiment",        etat: "Relevé T° mini/maxi",             type: "temp" },
   { name: "T° Salle œufs",      etat: "Relevé T° mini/maxi",             type: "temp" },
-  { name: "Compteur aliment",    etat: "Relevé",                          type: "value",  placeholder: "Ex : 5678 kg" },
+  { name: "Compteur ",    etat: "Relevé",                          type: "value",  placeholder: "Ex : 5678 kg" },
   { name: "Ventilation",         etat: "Signaler problème",               type: "report" },
   { name: "Échangeur",           etat: "Signaler problème",               type: "report" },
   { name: "Lumière",             etat: "Signaler problème",               type: "report" },
@@ -1100,10 +1100,10 @@ const CONTROLES_PONTE_BASE = [
   { name: "Bac vert + pression", etat: "Bac plein — Pression > 1 bar",   type: "toggle" },
   { name: "Barrières relevées",  etat: "Position Haut",                   type: "toggle" },
   { name: "Nids ouverts",        etat: "OUVERT",                          type: "toggle" },
-  { name: "Assiettes remplies",  etat: "Position Bas / présence aliment", type: "toggle" },
+  { name: "Assiettes remplies",  etat: "Position Bas / présence ", type: "toggle" },
   { name: "T° Bâtiment",        etat: "Relevé T° mini/maxi",             type: "temp" },
   { name: "T° Salle œufs",      etat: "Relevé T° mini/maxi",             type: "temp" },
-  { name: "Compteur aliment",    etat: "Relevé",                          type: "value",  placeholder: "Ex : 5678 kg" },
+  { name: "Compteur ",    etat: "Relevé",                          type: "value",  placeholder: "Ex : 5678 kg" },
   { name: "Ventilation fonctionnelle",   etat: "Signaler problème",               type: "report" },
   { name: "Échangeurs fonctionnels",     etat: "Signaler problème",               type: "report" },
   { name: "Lumière",             etat: "Signaler problème",               type: "report" },
@@ -1117,7 +1117,7 @@ const CONTROLES_NT2 = [
   { name: "Lumière",          etat: "Signaler problème",               type: "report" },
   { name: "Température",      etat: "Relevé T° mini/maxi",             type: "temp" },
   { name: "Morts",            etat: "Aucun — sinon noter nombre + N° cage", type: "morts" },
-  { name: "Aliment présent",  etat: "Vérification présence aliment",   type: "toggle" },
+  { name: " présent",  etat: "Vérification présence ",   type: "toggle" },
   { name: "Bac vert + pression", etat: "Bac plein — Pression > 1 bar", type: "toggle" },
   { name: "Ventilation fonctionnelle",      etat: "Signaler problème",               type: "report" },
   { name: "Échangeurs fonctionnels",       etat: "Signaler problème",               type: "report" },
@@ -1134,12 +1134,12 @@ function getControles(bat) {
       { name: "Compteur eau Nid P41", etat: "Relevé", type: "value", placeholder: "Ex : 1234 m³" },
       { name: "Compteur eau Sol P41", etat: "Relevé", type: "value", placeholder: "Ex : 1234 m³" },
     );
-        // Diviser le relevé "Compteur aliment" en deux (P51 + P52)
-    const idxAlim = base.findIndex(c => c.name === "Compteur aliment");
+        // Diviser le relevé "Compteur " en deux (P51 + P52)
+    const idxAlim = base.findIndex(c => c.name === "Compteur ");
     if (idxAlim !== -1) {
       const alimBase = { ...base[idxAlim] };
-      base[idxAlim] = { ...alimBase, name: "Compteur aliment P40" };
-      base.splice(idxAlim + 1, 0, { ...alimBase, name: "Compteur aliment P41" });
+      base[idxAlim] = { ...alimBase, name: "Compteur aliment P41" };
+      base.splice(idxAlim + 1, 0, { ...alimBase, name: "Compteur aliment P40" });
     }
 
 return [...base,
@@ -1159,8 +1159,8 @@ return [...base,
     const idxAlim = base.findIndex(c => c.name === "Compteur aliment");
     if (idxAlim !== -1) {
       const alimBase = { ...base[idxAlim] };
-      base[idxAlim] = { ...alimBase, name: "Compteur aliment P50" };
-      base.splice(idxAlim + 1, 0, { ...alimBase, name: "Compteur aliment P51" });
+      base[idxAlim] = { ...alimBase, name: "Compteur aliment P51" };
+      base.splice(idxAlim + 1, 0, { ...alimBase, name: "Compteur aliment P50" });
     }
 
     return [...base,
