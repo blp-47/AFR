@@ -1,0 +1,2660 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AFR MO - Gestion Main d'Œuvre</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👷</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <style>
+        :root {
+            --primary: #1B3A5C;
+            --primary-light: #2A5580;
+            --primary-dark: #0F2440;
+            --accent: #E63946;
+            --accent-light: #FF6B6B;
+            --success: #2D936C;
+            --success-light: #3BB78F;
+            --warning: #F4A261;
+            --warning-dark: #E76F51;
+            --bg: #F0F2F5;
+            --card: #FFFFFF;
+            --text: #1A1A2E;
+            --text-light: #6B7280;
+            --border: #E5E7EB;
+            --shadow: 0 2px 8px rgba(27,58,92,0.08);
+            --shadow-lg: 0 8px 32px rgba(27,58,92,0.12);
+            --radius: 12px;
+            --radius-sm: 8px;
+            --transition: 0.2s ease;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ===== LOGIN SCREEN ===== */
+        .login-screen {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 50%, var(--primary-light) 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        .login-screen::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -30%;
+            width: 80%;
+            height: 200%;
+            background: radial-gradient(ellipse, rgba(230,57,70,0.12) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .login-screen::after {
+            content: '';
+            position: absolute;
+            bottom: -20%;
+            left: -20%;
+            width: 60%;
+            height: 60%;
+            background: radial-gradient(circle, rgba(45,147,108,0.1) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .login-container {
+            background: rgba(255,255,255,0.97);
+            border-radius: 20px;
+            padding: 48px 40px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 24px 80px rgba(0,0,0,0.25);
+            position: relative;
+            z-index: 1;
+            animation: slideUp 0.5s ease;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .login-logo {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        .login-logo .logo-afr {
+            font-family: 'Space Mono', monospace;
+            font-size: 42px;
+            font-weight: 700;
+            color: var(--primary);
+            letter-spacing: -2px;
+            line-height: 1;
+        }
+        .login-logo .logo-mo {
+            font-family: 'Space Mono', monospace;
+            font-size: 42px;
+            font-weight: 700;
+            color: var(--accent);
+            letter-spacing: -2px;
+        }
+        .login-logo p {
+            color: var(--text-light);
+            font-size: 14px;
+            margin-top: 8px;
+        }
+
+        .login-tabs {
+            display: flex;
+            gap: 4px;
+            background: var(--bg);
+            border-radius: 10px;
+            padding: 4px;
+            margin-bottom: 28px;
+        }
+        .login-tab {
+            flex: 1;
+            padding: 10px 8px;
+            border: none;
+            background: none;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-light);
+            cursor: pointer;
+            border-radius: 8px;
+            transition: var(--transition);
+        }
+        .login-tab.active {
+            background: var(--card);
+            color: var(--primary);
+            box-shadow: var(--shadow);
+        }
+        .login-tab:hover:not(.active) { color: var(--text); }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 6px;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 12px 14px;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px;
+            color: var(--text);
+            transition: var(--transition);
+            background: var(--card);
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(27,58,92,0.1);
+        }
+        .form-group textarea { resize: vertical; min-height: 80px; }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+        }
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            width: 100%;
+            padding: 14px;
+        }
+        .btn-primary:hover { background: var(--primary-light); transform: translateY(-1px); box-shadow: var(--shadow); }
+        .btn-accent { background: var(--accent); color: white; }
+        .btn-accent:hover { background: var(--accent-light); }
+        .btn-success { background: var(--success); color: white; }
+        .btn-success:hover { background: var(--success-light); }
+        .btn-outline {
+            background: none;
+            border: 2px solid var(--border);
+            color: var(--text);
+        }
+        .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+        .btn-sm { padding: 8px 16px; font-size: 13px; }
+        .btn-icon { padding: 8px; min-width: 36px; }
+        .btn-danger { background: var(--accent); color: white; }
+        .btn-warning { background: var(--warning); color: var(--text); }
+
+        /* ===== MAIN APP SHELL ===== */
+        .app { display: none; min-height: 100vh; }
+        .app.active { display: flex; }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: var(--primary-dark);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            z-index: 100;
+            transition: transform 0.3s ease;
+        }
+        .sidebar-header {
+            padding: 24px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .sidebar-header .logo-afr { font-family: 'Space Mono', monospace; font-size: 28px; font-weight: 700; letter-spacing: -1px; }
+        .sidebar-header .logo-mo { color: var(--accent); }
+        .sidebar-header .role-badge {
+            display: inline-block;
+            margin-top: 8px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .role-admin .role-badge { background: var(--accent); }
+        .role-client .role-badge { background: var(--success); }
+        .role-salarie .role-badge { background: var(--warning); color: var(--text); }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 16px 12px;
+            overflow-y: auto;
+        }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            color: rgba(255,255,255,0.7);
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+        .nav-item:hover { background: rgba(255,255,255,0.1); color: white; }
+        .nav-item.active { background: rgba(255,255,255,0.15); color: white; }
+        .nav-item svg { width: 20px; height: 20px; flex-shrink: 0; }
+        .nav-item .badge {
+            margin-left: auto;
+            background: var(--accent);
+            color: white;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 10px;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        .sidebar-footer {
+            padding: 16px 12px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .sidebar-footer .nav-item { color: rgba(255,255,255,0.5); }
+
+        /* Main content */
+        .main-content {
+            flex: 1;
+            margin-left: 260px;
+            min-height: 100vh;
+        }
+
+        .topbar {
+            background: var(--card);
+            padding: 16px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+        .topbar h1 {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text);
+        }
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+        }
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .page-content {
+            padding: 32px;
+        }
+
+        /* ===== SECTION: Page ===== */
+        .page-section { display: none; }
+        .page-section.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* ===== CARDS ===== */
+        .card {
+            background: var(--card);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .card-header h2 {
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        /* Stats row */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: var(--shadow);
+            border-left: 4px solid var(--primary);
+        }
+        .stat-card.accent { border-left-color: var(--accent); }
+        .stat-card.success { border-left-color: var(--success); }
+        .stat-card.warning { border-left-color: var(--warning); }
+        .stat-value {
+            font-family: 'Space Mono', monospace;
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text);
+        }
+        .stat-label {
+            font-size: 13px;
+            color: var(--text-light);
+            margin-top: 4px;
+        }
+
+        /* Tables */
+        .table-container { overflow-x: auto; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        thead th {
+            background: var(--bg);
+            padding: 12px 16px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-light);
+            text-align: left;
+            border-bottom: 2px solid var(--border);
+        }
+        tbody td {
+            padding: 14px 16px;
+            font-size: 14px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+        tbody tr:hover { background: rgba(27,58,92,0.02); }
+
+        /* Status badges */
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status-pending { background: #FEF3C7; color: #92400E; }
+        .status-confirmed { background: #D1FAE5; color: #065F46; }
+        .status-refused { background: #FEE2E2; color: #991B1B; }
+        .status-ongoing { background: #DBEAFE; color: #1E40AF; }
+        .status-completed { background: #E0E7FF; color: #3730A3; }
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 32px;
+            width: 100%;
+            max-width: 560px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-lg);
+            animation: slideUp 0.3s ease;
+        }
+        .modal h2 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid var(--bg);
+        }
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        /* Pointage section */
+        .pointage-card {
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 32px;
+            text-align: center;
+            box-shadow: var(--shadow);
+        }
+        .pointage-clock {
+            font-family: 'Space Mono', monospace;
+            font-size: 48px;
+            font-weight: 700;
+            color: var(--primary);
+            margin: 16px 0;
+        }
+        .pointage-status {
+            font-size: 15px;
+            color: var(--text-light);
+            margin-bottom: 24px;
+        }
+        .pointage-btn {
+            padding: 16px 48px;
+            font-size: 16px;
+            border-radius: 50px;
+        }
+        .pointage-btn.embauche { background: var(--success); color: white; }
+        .pointage-btn.embauche:hover { background: var(--success-light); }
+        .pointage-btn.debauche { background: var(--accent); color: white; }
+        .pointage-btn.debauche:hover { background: var(--accent-light); }
+        .pointage-location {
+            margin-top: 16px;
+            font-size: 13px;
+            color: var(--text-light);
+        }
+        .pointage-location svg { vertical-align: middle; margin-right: 4px; }
+
+        /* Planning */
+        .planning-day {
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 16px 20px;
+            margin-bottom: 12px;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .planning-date {
+            min-width: 60px;
+            text-align: center;
+        }
+        .planning-date .day { font-family: 'Space Mono', monospace; font-size: 24px; font-weight: 700; color: var(--primary); }
+        .planning-date .month { font-size: 12px; color: var(--text-light); text-transform: uppercase; }
+        .planning-info { flex: 1; }
+        .planning-info .client-name { font-weight: 600; font-size: 15px; }
+        .planning-info .mission-type { font-size: 13px; color: var(--text-light); }
+        .planning-time {
+            font-family: 'Space Mono', monospace;
+            font-size: 14px;
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--text);
+            color: white;
+            padding: 14px 24px;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: var(--shadow-lg);
+            z-index: 300;
+            animation: toastIn 0.3s ease;
+        }
+        .toast.success { background: var(--success); }
+        .toast.error { background: var(--accent); }
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Responsive */
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--text);
+            cursor: pointer;
+            padding: 8px;
+        }
+        .menu-toggle svg { width: 24px; height: 24px; }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            .sidebar.open { transform: translateX(0); }
+            .main-content { margin-left: 0; }
+            .menu-toggle { display: block; }
+            .page-content { padding: 16px; }
+            .topbar { padding: 12px 16px; }
+            .stats-row { grid-template-columns: 1fr 1fr; }
+            .login-container { margin: 16px; padding: 32px 24px; }
+            .pointage-clock { font-size: 36px; }
+            .modal { padding: 24px; margin: 12px; }
+        }
+
+        /* Form row */
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        @media (max-width: 768px) {
+            .form-row { grid-template-columns: 1fr; }
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 48px 24px;
+            color: var(--text-light);
+        }
+        .empty-state svg { width: 64px; height: 64px; margin-bottom: 16px; opacity: 0.3; }
+        .empty-state p { font-size: 15px; }
+
+        /* Taux utilisation gauge */
+        .gauge-container { text-align: center; margin: 16px 0; }
+        .gauge-svg { width: 160px; height: 100px; }
+        .gauge-value { font-family: 'Space Mono', monospace; font-size: 32px; font-weight: 700; }
+        .gauge-label { font-size: 13px; color: var(--text-light); }
+
+        /* Filter bar */
+        .filter-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .filter-bar select, .filter-bar input {
+            padding: 8px 14px;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            background: var(--card);
+        }
+        .filter-bar select:focus, .filter-bar input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+
+<!-- ============ LOGIN SCREEN ============ -->
+<div id="loginScreen" class="login-screen">
+    <div class="login-container">
+        <div class="login-logo">
+            <div>
+                <span class="logo-afr">AFR</span><span class="logo-mo"> MO</span>
+            </div>
+            <p>Gestion de Main d'Œuvre Agricole</p>
+        </div>
+
+        <div class="login-tabs">
+            <button class="login-tab active" onclick="switchLoginTab('admin')">Admin</button>
+            <button class="login-tab" onclick="switchLoginTab('client')">Client</button>
+            <button class="login-tab" onclick="switchLoginTab('salarie')">Salarié</button>
+        </div>
+
+        <!-- Admin login -->
+        <div id="loginAdmin" class="login-form">
+            <div class="form-group">
+                <label>Identifiant</label>
+                <input type="text" id="adminUser" placeholder="admin@afr33.fr">
+            </div>
+            <div class="form-group">
+                <label>Mot de passe</label>
+                <input type="password" id="adminPass" placeholder="••••••••">
+            </div>
+            <button class="btn btn-primary" onclick="loginAdmin()">Connexion Admin</button>
+        </div>
+
+        <!-- Client login -->
+        <div id="loginClient" class="login-form" style="display:none">
+            <div class="form-group">
+                <label>Identifiant client</label>
+                <input type="text" id="clientUser" placeholder="votre-identifiant">
+            </div>
+            <div class="form-group">
+                <label>Mot de passe</label>
+                <input type="password" id="clientPass" placeholder="••••••••">
+            </div>
+            <button class="btn btn-primary" onclick="loginClient()">Connexion Client</button>
+        </div>
+
+        <!-- Salarié login -->
+        <div id="loginSalarie" class="login-form" style="display:none">
+            <div class="form-group">
+                <label>Code salarié</label>
+                <input type="text" id="salarieCode" placeholder="Votre code personnel">
+            </div>
+            <button class="btn btn-primary" onclick="loginSalarie()">Connexion Salarié</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============ ADMIN APP ============ -->
+<div id="appAdmin" class="app">
+    <aside class="sidebar role-admin">
+        <div class="sidebar-header">
+            <div><span class="logo-afr" style="color:white">AFR</span><span class="logo-mo"> MO</span></div>
+            <span class="role-badge">Administration</span>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-item active" onclick="showSection('admin','dashboard')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                Tableau de bord
+            </div>
+            <div class="nav-item" onclick="showSection('admin','demandes')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+                Demandes
+                <span class="badge" id="pendingBadge" style="display:none">0</span>
+            </div>
+            <div class="nav-item" onclick="showSection('admin','planning')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                Planning
+            </div>
+            <div class="nav-item" onclick="showSection('admin','pointages')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+                Pointages
+            </div>
+            <div class="nav-item" onclick="showSection('admin','salaries')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                Salariés
+            </div>
+            <div class="nav-item" onclick="showSection('admin','clients')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+                Clients
+            </div>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="nav-item" onclick="logout()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Déconnexion
+            </div>
+        </div>
+    </aside>
+
+    <div class="main-content">
+        <div class="topbar">
+            <div style="display:flex;align-items:center;gap:12px">
+                <button class="menu-toggle" onclick="toggleSidebar()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+                <h1 id="adminPageTitle">Tableau de bord</h1>
+            </div>
+            <div class="topbar-right">
+                <div class="user-info">
+                    <span id="adminUserName">Admin</span>
+                    <div class="user-avatar" id="adminAvatar">A</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ADMIN: Dashboard -->
+        <div class="page-content">
+            <div id="adminDashboard" class="page-section active">
+                <div class="stats-row">
+                    <div class="stat-card">
+                        <div class="stat-value" id="statDemandes">0</div>
+                        <div class="stat-label">Demandes en attente</div>
+                    </div>
+                    <div class="stat-card accent">
+                        <div class="stat-value" id="statMissions">0</div>
+                        <div class="stat-label">Missions cette semaine</div>
+                    </div>
+                    <div class="stat-card success">
+                        <div class="stat-value" id="statOperateurs">0</div>
+                        <div class="stat-label">Opérateurs actifs</div>
+                    </div>
+                    <div class="stat-card warning">
+                        <div class="stat-value" id="statTaux">--%</div>
+                        <div class="stat-label">Taux d'utilisation</div>
+                    </div>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Dernières demandes</h2>
+                        </div>
+                        <div id="dashRecentDemandes">
+                            <div class="empty-state"><p>Aucune demande pour l'instant</p></div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Pointages du jour</h2>
+                        </div>
+                        <div id="dashTodayPointages">
+                            <div class="empty-state"><p>Aucun pointage aujourd'hui</p></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ADMIN: Demandes -->
+            <div id="adminDemandes" class="page-section">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Demandes de personnel</h2>
+                        <div class="filter-bar">
+                            <select id="filterDemandeStatus" onchange="renderDemandes()">
+                                <option value="">Tous les statuts</option>
+                                <option value="pending">En attente</option>
+                                <option value="confirmed">Confirmée</option>
+                                <option value="refused">Refusée</option>
+                                <option value="completed">Terminée</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Client</th>
+                                    <th>Prestation</th>
+                                    <th>Nb pers.</th>
+                                    <th>Dates mission</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="demandesTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ADMIN: Planning -->
+            <div id="adminPlanning" class="page-section">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Planning des opérateurs</h2>
+                        <div class="filter-bar">
+                            <input type="week" id="planningWeek" onchange="renderPlanning()">
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Opérateur</th>
+                                    <th>Lun</th>
+                                    <th>Mar</th>
+                                    <th>Mer</th>
+                                    <th>Jeu</th>
+                                    <th>Ven</th>
+                                    <th>Sam</th>
+                                    <th>Heures</th>
+                                </tr>
+                            </thead>
+                            <tbody id="planningTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ADMIN: Pointages -->
+            <div id="adminPointages" class="page-section">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Historique des pointages</h2>
+                        <div class="filter-bar">
+                            <input type="date" id="filterPointageDate" onchange="renderPointages()">
+                            <select id="filterPointageSalarie" onchange="renderPointages()">
+                                <option value="">Tous les salariés</option>
+                            </select>
+                            <button class="btn btn-outline btn-sm" onclick="exportPointages()">📊 Export Excel</button>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Salarié</th>
+                                    <th>Date</th>
+                                    <th>Embauche</th>
+                                    <th>Débauche</th>
+                                    <th>Durée</th>
+                                    <th>Lieu</th>
+                                    <th>Client</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pointagesTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ADMIN: Salariés -->
+            <div id="adminSalaries" class="page-section">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Gestion des salariés</h2>
+                        <button class="btn btn-primary btn-sm" onclick="openModal('addSalarie')">+ Ajouter</button>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nom</th>
+                                    <th>Code</th>
+                                    <th>Téléphone</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="salariesTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ADMIN: Clients -->
+            <div id="adminClients" class="page-section">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Gestion des clients</h2>
+                        <button class="btn btn-primary btn-sm" onclick="openModal('addClient')">+ Ajouter client</button>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Entreprise</th>
+                                    <th>Contact</th>
+                                    <th>Email</th>
+                                    <th>Secteur</th>
+                                    <th>Identifiant</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="clientsTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============ CLIENT APP ============ -->
+<div id="appClient" class="app">
+    <aside class="sidebar role-client">
+        <div class="sidebar-header">
+            <div><span class="logo-afr" style="color:white">AFR</span><span class="logo-mo"> MO</span></div>
+            <span class="role-badge">Client</span>
+            <div style="margin-top:8px;font-size:13px;opacity:0.8" id="clientName">-</div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-item active" onclick="showSection('client','newDemande')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                Nouvelle demande
+            </div>
+            <div class="nav-item" onclick="showSection('client','mesDemandes')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+                Mes demandes
+            </div>
+            <div class="nav-item" onclick="showSection('client','historique')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+                Historique
+            </div>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="nav-item" onclick="logout()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Déconnexion
+            </div>
+        </div>
+    </aside>
+
+    <div class="main-content">
+        <div class="topbar">
+            <div style="display:flex;align-items:center;gap:12px">
+                <button class="menu-toggle" onclick="toggleSidebar()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+                <h1 id="clientPageTitle">Nouvelle demande</h1>
+            </div>
+        </div>
+
+        <div class="page-content">
+            <!-- CLIENT: Nouvelle demande -->
+            <div id="clientNewDemande" class="page-section active">
+                <div class="card" style="max-width:700px">
+                    <h2 style="margin-bottom:24px">Réserver du personnel</h2>
+                    <div class="form-group">
+                        <label>Type de prestation</label>
+                        <select id="demandeType">
+                            <option value="">-- Choisir --</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="demandeAutreGroup" style="display:none">
+                        <label>Précisez la prestation</label>
+                        <input type="text" id="demandeAutre" placeholder="Description de la prestation">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Date de début</label>
+                            <input type="date" id="demandeStart">
+                        </div>
+                        <div class="form-group">
+                            <label>Date de fin</label>
+                            <input type="date" id="demandeEnd">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Heure de début</label>
+                            <input type="time" id="demandeTimeStart" value="07:00">
+                        </div>
+                        <div class="form-group">
+                            <label>Heure de fin</label>
+                            <input type="time" id="demandeTimeEnd" value="16:00">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nombre de personnes</label>
+                            <input type="number" id="demandeNb" min="1" max="30" value="1">
+                        </div>
+                        <div class="form-group">
+                            <label>Lieu d'intervention</label>
+                            <input type="text" id="demandeLieu" placeholder="Adresse ou nom du site">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Commentaires / Précisions</label>
+                        <textarea id="demandeComment" placeholder="Informations complémentaires, matériel à prévoir, accès au site..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Récurrence</label>
+                        <select id="demandeRecurrence">
+                            <option value="none">Ponctuel</option>
+                            <option value="weekly">Chaque semaine</option>
+                            <option value="biweekly">Toutes les 2 semaines</option>
+                            <option value="monthly">Chaque mois</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="submitDemande()" style="margin-top:12px">
+                        Envoyer la demande
+                    </button>
+                </div>
+            </div>
+
+            <!-- CLIENT: Mes demandes -->
+            <div id="clientMesDemandes" class="page-section">
+                <div class="card">
+                    <div class="card-header"><h2>Mes demandes en cours</h2></div>
+                    <div id="clientDemandesContainer">
+                        <div class="empty-state"><p>Aucune demande en cours</p></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CLIENT: Historique -->
+            <div id="clientHistorique" class="page-section">
+                <div class="card">
+                    <div class="card-header"><h2>Historique des missions</h2></div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Prestation</th>
+                                    <th>Opérateurs</th>
+                                    <th>Heures</th>
+                                    <th>Statut</th>
+                                </tr>
+                            </thead>
+                            <tbody id="clientHistoriqueBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============ SALARIÉ APP ============ -->
+<div id="appSalarie" class="app">
+    <aside class="sidebar role-salarie">
+        <div class="sidebar-header">
+            <div><span class="logo-afr" style="color:white">AFR</span><span class="logo-mo"> MO</span></div>
+            <span class="role-badge">Salarié</span>
+            <div style="margin-top:8px;font-size:13px;opacity:0.8" id="salarieName">-</div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-item active" onclick="showSection('salarie','pointage')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+                Pointage
+            </div>
+            <div class="nav-item" onclick="showSection('salarie','monPlanning')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                Mon planning
+            </div>
+            <div class="nav-item" onclick="showSection('salarie','mesHeures')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                Mes heures
+            </div>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="nav-item" onclick="logout()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Déconnexion
+            </div>
+        </div>
+    </aside>
+
+    <div class="main-content">
+        <div class="topbar">
+            <div style="display:flex;align-items:center;gap:12px">
+                <button class="menu-toggle" onclick="toggleSidebar()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+                <h1 id="salariePageTitle">Pointage</h1>
+            </div>
+        </div>
+
+        <div class="page-content">
+            <!-- SALARIÉ: Pointage -->
+            <div id="salariePointage" class="page-section active">
+                <div class="pointage-card">
+                    <div style="font-size:15px;color:var(--text-light);margin-bottom:8px" id="pointageDate">-</div>
+                    <div class="pointage-clock" id="pointageClock">--:--:--</div>
+                    <div class="pointage-status" id="pointageStatusText">Vous n'êtes pas pointé</div>
+                    <button class="btn pointage-btn embauche" id="btnPointage" onclick="doPointage()">
+                        Pointer l'embauche
+                    </button>
+                    <div class="pointage-location" id="pointageGps">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        Localisation en attente...
+                    </div>
+                    <div id="pointageMissionInfo" style="margin-top:20px;padding:16px;background:var(--bg);border-radius:var(--radius-sm);display:none">
+                        <div style="font-weight:600" id="pointageMissionClient">-</div>
+                        <div style="font-size:13px;color:var(--text-light)" id="pointageMissionType">-</div>
+                    </div>
+                </div>
+
+                <!-- Historique du jour -->
+                <div class="card" style="margin-top:20px">
+                    <div class="card-header"><h2>Pointages du jour</h2></div>
+                    <div id="todayPointagesList">
+                        <div class="empty-state"><p>Aucun pointage aujourd'hui</p></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SALARIÉ: Planning -->
+            <div id="salarieMonPlanning" class="page-section">
+                <div id="salariePlanningList">
+                    <div class="empty-state"><p>Aucune mission planifiée</p></div>
+                </div>
+            </div>
+
+            <!-- SALARIÉ: Mes heures -->
+            <div id="salarieMesHeures" class="page-section">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Récapitulatif des heures</h2>
+                        <div class="filter-bar">
+                            <input type="month" id="filterMesHeuresMois" onchange="renderMesHeures()">
+                        </div>
+                    </div>
+                    <div class="stats-row" style="margin-bottom:20px">
+                        <div class="stat-card">
+                            <div class="stat-value" id="mesHeuresTotal">0h</div>
+                            <div class="stat-label">Heures ce mois</div>
+                        </div>
+                        <div class="stat-card success">
+                            <div class="stat-value" id="mesHeuresJours">0</div>
+                            <div class="stat-label">Jours travaillés</div>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Embauche</th>
+                                    <th>Débauche</th>
+                                    <th>Durée</th>
+                                    <th>Lieu</th>
+                                </tr>
+                            </thead>
+                            <tbody id="mesHeuresBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============ MODALS ============ -->
+<!-- Modal: Traiter une demande -->
+<div class="modal-overlay" id="modalTraiterDemande">
+    <div class="modal">
+        <h2>Traiter la demande</h2>
+        <div id="modalDemandeDetails"></div>
+        <div class="form-group">
+            <label>Opérateurs affectés</label>
+            <div id="modalOperateursList"></div>
+        </div>
+        <div class="form-group">
+            <label>Message au client</label>
+            <textarea id="modalReponseMsg" placeholder="Votre réponse au client..."></textarea>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-outline" onclick="closeModal('modalTraiterDemande')">Annuler</button>
+            <button class="btn btn-danger btn-sm" onclick="traiterDemande('refused')">Refuser</button>
+            <button class="btn btn-success btn-sm" onclick="traiterDemande('confirmed')">Valider</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Ajouter salarié -->
+<div class="modal-overlay" id="modalAddSalarie">
+    <div class="modal">
+        <h2>Ajouter un salarié</h2>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Nom</label>
+                <input type="text" id="newSalarieNom">
+            </div>
+            <div class="form-group">
+                <label>Prénom</label>
+                <input type="text" id="newSalariePrenom">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Téléphone</label>
+            <input type="tel" id="newSalarieTel">
+        </div>
+        <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="newSalarieEmail">
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-outline" onclick="closeModal('modalAddSalarie')">Annuler</button>
+            <button class="btn btn-primary btn-sm" onclick="saveSalarie()">Enregistrer</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Ajouter client -->
+<div class="modal-overlay" id="modalAddClient">
+    <div class="modal">
+        <h2>Ajouter un client</h2>
+        <div class="form-group">
+            <label>Nom de l'entreprise</label>
+            <input type="text" id="newClientEntreprise">
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Nom du contact</label>
+                <input type="text" id="newClientContact">
+            </div>
+            <div class="form-group">
+                <label>Téléphone</label>
+                <input type="tel" id="newClientTel">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="newClientEmail">
+        </div>
+        <div class="form-group">
+            <label>Secteur d'activité</label>
+            <select id="newClientSecteur">
+                <option value="elevage">Élevage</option>
+                <option value="viticulture">Viticulture</option>
+                <option value="arboriculture">Arboriculture</option>
+                <option value="maraichage">Maraîchage</option>
+                <option value="autre">Autre</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Adresse</label>
+            <input type="text" id="newClientAdresse">
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Identifiant de connexion</label>
+                <input type="text" id="newClientLogin">
+            </div>
+            <div class="form-group">
+                <label>Mot de passe</label>
+                <input type="text" id="newClientPassword">
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-outline" onclick="closeModal('modalAddClient')">Annuler</button>
+            <button class="btn btn-primary btn-sm" onclick="saveClient()">Enregistrer</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Modifier demande (client) -->
+<div class="modal-overlay" id="modalEditDemande">
+    <div class="modal">
+        <h2>Modifier la demande</h2>
+        <div class="form-group">
+            <label>Type de prestation</label>
+            <select id="editDemandeType"></select>
+        </div>
+        <div class="form-group" id="editDemandeAutreGroup" style="display:none">
+            <label>Précisez la prestation</label>
+            <input type="text" id="editDemandeAutre">
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Date de début</label>
+                <input type="date" id="editDemandeStart">
+            </div>
+            <div class="form-group">
+                <label>Date de fin</label>
+                <input type="date" id="editDemandeEnd">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Heure de début</label>
+                <input type="time" id="editDemandeTimeStart">
+            </div>
+            <div class="form-group">
+                <label>Heure de fin</label>
+                <input type="time" id="editDemandeTimeEnd">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Nombre de personnes</label>
+                <input type="number" id="editDemandeNb" min="1" max="30">
+            </div>
+            <div class="form-group">
+                <label>Lieu d'intervention</label>
+                <input type="text" id="editDemandeLieu">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Commentaires</label>
+            <textarea id="editDemandeComment"></textarea>
+        </div>
+        <div class="form-group">
+            <label>Récurrence</label>
+            <select id="editDemandeRecurrence">
+                <option value="none">Ponctuel</option>
+                <option value="weekly">Chaque semaine</option>
+                <option value="biweekly">Toutes les 2 semaines</option>
+                <option value="monthly">Chaque mois</option>
+            </select>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-outline" onclick="closeModal('modalEditDemande')">Annuler</button>
+            <button class="btn btn-primary btn-sm" onclick="saveEditDemande()">Enregistrer</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Modifier client (admin) -->
+<div class="modal-overlay" id="modalEditClient">
+    <div class="modal">
+        <h2>Modifier le client</h2>
+        <div class="form-group">
+            <label>Nom de l'entreprise</label>
+            <input type="text" id="editClientEntreprise">
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Nom du contact</label>
+                <input type="text" id="editClientContact">
+            </div>
+            <div class="form-group">
+                <label>Téléphone</label>
+                <input type="tel" id="editClientTel">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="editClientEmail">
+        </div>
+        <div class="form-group">
+            <label>Secteur d'activité</label>
+            <select id="editClientSecteur">
+                <option value="elevage">Élevage</option>
+                <option value="viticulture">Viticulture</option>
+                <option value="arboriculture">Arboriculture</option>
+                <option value="maraichage">Maraîchage</option>
+                <option value="autre">Autre</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Adresse</label>
+            <input type="text" id="editClientAdresse">
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Identifiant de connexion</label>
+                <input type="text" id="editClientLogin">
+            </div>
+            <div class="form-group">
+                <label>Mot de passe</label>
+                <input type="text" id="editClientPassword">
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-outline" onclick="closeModal('modalEditClient')">Annuler</button>
+            <button class="btn btn-primary btn-sm" onclick="saveEditClient()">Enregistrer</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ============ FIREBASE CONFIG ============
+const firebaseConfig = {
+    apiKey: "AIzaSyBN25DHGV1EC1wgUPyFfnm9c_VCngjTJLo",
+    authDomain: "afr-nt2.firebaseapp.com",
+    databaseURL: "https://afr-nt2-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "afr-nt2"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ============ STATE ============
+let currentRole = null;
+let currentUser = null;
+let currentClientId = null;
+let currentSalarieId = null;
+let salarieIsPointed = false;
+let currentPointageKey = null;
+let clockInterval = null;
+
+// ============ HELPERS ============
+function toast(msg, type = '') {
+    const t = document.createElement('div');
+    t.className = 'toast ' + type;
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3500);
+}
+
+function formatDate(d) {
+    if (!d) return '-';
+    const date = new Date(d);
+    return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function formatTime(d) {
+    if (!d) return '-';
+    const date = new Date(d);
+    return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+}
+
+function genCode(len = 6) {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for (let i = 0; i < len; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    return code;
+}
+
+function genId() {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+}
+
+const DEFAULT_SALARIES = [
+    { nom: 'LAKHLOUFI', prenom: 'Samir', tel: '', email: '', code: 'MO001', actif: true },
+    { nom: 'YAHYAOUI', prenom: 'Hacham', tel: '', email: '', code: 'MO002', actif: true },
+    { nom: 'ZANBI', prenom: 'Hicham', tel: '', email: '', code: 'MO003', actif: true },
+    { nom: 'EL DIOUANE', prenom: 'Imad', tel: '', email: '', code: 'MO004', actif: true },
+    { nom: 'IDRISSI', prenom: 'Hamza', tel: '', email: '', code: 'MO005', actif: true },
+    { nom: 'KESSARI', prenom: 'Khalid', tel: '06 02 23 59 44', email: '', code: 'MO006', actif: true },
+    { nom: 'SAT', prenom: 'Hamza', tel: '', email: '', code: 'MO007', actif: true },
+    { nom: 'BENABD', prenom: 'El Mahdi', tel: '', email: '', code: 'MO008', actif: true },
+    { nom: 'SOUSSI', prenom: 'Nizar', tel: '', email: '', code: 'MO009', actif: true },
+    { nom: 'EL FAZAZI', prenom: 'Majide', tel: '', email: '', code: 'MO010', actif: true },
+    { nom: 'HBATA', prenom: 'Oualid', tel: '', email: '', code: 'MO011', actif: true }
+];
+
+const prestationLabels = {
+    insemination: 'Insémination artificielle',
+    vaccination: 'Vaccination',
+    transfert: 'Transfert de cheptels',
+    reforme: 'Réforme de troupeaux',
+    vide_sanitaire: 'Vide sanitaire',
+    vendange: 'Vendange / Travaux viticoles',
+    taille: 'Taille de vigne',
+    epamprage: 'Épamprage',
+    palissage: 'Palissage',
+    effeuillage: 'Effeuillage',
+    plantation: 'Plantation',
+    cueillette: 'Cueillette / Récolte',
+    desherbage: 'Désherbage',
+    conditionnement: 'Conditionnement',
+    manutention: 'Manutention générale',
+    nettoyage: 'Nettoyage / Entretien',
+    autre: 'Autre'
+};
+
+const prestationsBySecteur = {
+    elevage: ['insemination', 'vaccination', 'transfert', 'reforme', 'vide_sanitaire', 'nettoyage', 'manutention', 'autre'],
+    viticulture: ['vendange', 'taille', 'epamprage', 'palissage', 'effeuillage', 'plantation', 'desherbage', 'manutention', 'autre'],
+    arboriculture: ['cueillette', 'taille', 'plantation', 'desherbage', 'effeuillage', 'conditionnement', 'manutention', 'autre'],
+    maraichage: ['cueillette', 'plantation', 'desherbage', 'conditionnement', 'manutention', 'autre'],
+    autre: Object.keys(prestationLabels)
+};
+
+function statusHTML(s) {
+    const map = {
+        pending: ['En attente', 'status-pending'],
+        confirmed: ['Confirmée', 'status-confirmed'],
+        refused: ['Refusée', 'status-refused'],
+        ongoing: ['En cours', 'status-ongoing'],
+        completed: ['Terminée', 'status-completed']
+    };
+    const [label, cls] = map[s] || ['Inconnu', ''];
+    return `<span class="status ${cls}"><span class="status-dot"></span>${label}</span>`;
+}
+
+function calcDuration(start, end) {
+    if (!start || !end) return '-';
+    const diff = new Date(end) - new Date(start);
+    const h = Math.floor(diff / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    return `${h}h${m.toString().padStart(2, '0')}`;
+}
+
+function todayStr() {
+    return new Date().toISOString().split('T')[0];
+}
+
+// ============ LOGIN ============
+function switchLoginTab(role) {
+    document.querySelectorAll('.login-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.login-form').forEach(f => f.style.display = 'none');
+    event.target.classList.add('active');
+    if (role === 'admin') document.getElementById('loginAdmin').style.display = 'block';
+    else if (role === 'client') document.getElementById('loginClient').style.display = 'block';
+    else document.getElementById('loginSalarie').style.display = 'block';
+}
+
+function loginAdmin() {
+    const user = document.getElementById('adminUser').value.trim();
+    const pass = document.getElementById('adminPass').value.trim();
+    // Check admin credentials in Firebase
+    db.ref('afrmo/admins').once('value', snap => {
+        const admins = snap.val() || {};
+        let found = false;
+        Object.values(admins).forEach(a => {
+            if (a.login === user && a.password === pass) {
+                found = true;
+                currentRole = 'admin';
+                currentUser = a;
+            }
+        });
+        if (found || (user === 'admin' && pass === 'afrmo2026')) {
+            currentRole = 'admin';
+            if (!currentUser) currentUser = { nom: 'Administrateur', login: user };
+            document.getElementById('adminUserName').textContent = currentUser.nom || 'Admin';
+            document.getElementById('adminAvatar').textContent = (currentUser.nom || 'A')[0];
+            enterApp('admin');
+        } else {
+            toast('Identifiants incorrects', 'error');
+        }
+    });
+}
+
+function loginClient() {
+    const user = document.getElementById('clientUser').value.trim();
+    const pass = document.getElementById('clientPass').value.trim();
+    db.ref('afrmo/clients').once('value', snap => {
+        const clients = snap.val() || {};
+        let found = false;
+        Object.entries(clients).forEach(([id, c]) => {
+            if (c.login === user && c.password === pass) {
+                found = true;
+                currentRole = 'client';
+                currentUser = c;
+                currentClientId = id;
+            }
+        });
+        if (found) {
+            document.getElementById('clientName').textContent = currentUser.entreprise || user;
+            enterApp('client');
+        } else {
+            toast('Identifiants incorrects', 'error');
+        }
+    });
+}
+
+function loginSalarie() {
+    const code = document.getElementById('salarieCode').value.trim().toUpperCase();
+    db.ref('afrmo/salaries').once('value', snap => {
+        const salaries = snap.val() || {};
+        let found = false;
+        Object.entries(salaries).forEach(([id, s]) => {
+            if (s.code === code) {
+                found = true;
+                currentRole = 'salarie';
+                currentUser = s;
+                currentSalarieId = id;
+            }
+        });
+        if (found) {
+            document.getElementById('salarieName').textContent = `${currentUser.prenom} ${currentUser.nom}`;
+            enterApp('salarie');
+        } else {
+            toast('Code salarié inconnu', 'error');
+        }
+    });
+}
+
+function enterApp(role) {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app' + role.charAt(0).toUpperCase() + role.slice(1)).classList.add('active');
+    if (role === 'admin') initAdmin();
+    else if (role === 'client') initClient();
+    else initSalarie();
+}
+
+function logout() {
+    currentRole = null;
+    currentUser = null;
+    currentClientId = null;
+    currentSalarieId = null;
+    if (clockInterval) clearInterval(clockInterval);
+    document.querySelectorAll('.app').forEach(a => a.classList.remove('active'));
+    document.getElementById('loginScreen').style.display = '';
+}
+
+// ============ NAVIGATION ============
+function showSection(app, section) {
+    const prefix = app === 'admin' ? 'admin' : app === 'client' ? 'client' : 'salarie';
+    const titleEl = document.getElementById(prefix + 'PageTitle');
+    
+    // Hide all sections in the app
+    document.querySelectorAll(`#app${prefix.charAt(0).toUpperCase() + prefix.slice(1)} .page-section`).forEach(s => s.classList.remove('active'));
+    
+    // Show target section
+    const sectionMap = {
+        // Admin
+        dashboard: { id: 'adminDashboard', title: 'Tableau de bord' },
+        demandes: { id: 'adminDemandes', title: 'Demandes de personnel' },
+        planning: { id: 'adminPlanning', title: 'Planning des opérateurs' },
+        pointages: { id: 'adminPointages', title: 'Historique des pointages' },
+        salaries: { id: 'adminSalaries', title: 'Gestion des salariés' },
+        clients: { id: 'adminClients', title: 'Gestion des clients' },
+        // Client
+        newDemande: { id: 'clientNewDemande', title: 'Nouvelle demande' },
+        mesDemandes: { id: 'clientMesDemandes', title: 'Mes demandes' },
+        historique: { id: 'clientHistorique', title: 'Historique' },
+        // Salarié
+        pointage: { id: 'salariePointage', title: 'Pointage' },
+        monPlanning: { id: 'salarieMonPlanning', title: 'Mon planning' },
+        mesHeures: { id: 'salarieMesHeures', title: 'Mes heures' }
+    };
+
+    const s = sectionMap[section];
+    if (s) {
+        document.getElementById(s.id).classList.add('active');
+        if (titleEl) titleEl.textContent = s.title;
+    }
+
+    // Update nav
+    const sidebar = document.querySelector(`#app${prefix.charAt(0).toUpperCase() + prefix.slice(1)} .sidebar-nav`);
+    sidebar.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    event.target.closest('.nav-item')?.classList.add('active');
+
+    // Refresh data
+    if (section === 'demandes') renderDemandes();
+    if (section === 'pointages') renderPointages();
+    if (section === 'salaries') renderSalaries();
+    if (section === 'clients') renderClients();
+    if (section === 'mesDemandes') renderClientDemandes();
+    if (section === 'historique') renderClientHistorique();
+    if (section === 'monPlanning') renderSalariePlanning();
+    if (section === 'mesHeures') renderMesHeures();
+
+    // Close sidebar on mobile
+    document.querySelectorAll('.sidebar').forEach(s => s.classList.remove('open'));
+}
+
+function toggleSidebar() {
+    const app = document.querySelector('.app.active');
+    if (app) app.querySelector('.sidebar').classList.toggle('open');
+}
+
+// ============ MODALS ============
+function openModal(type) {
+    if (type === 'addSalarie') document.getElementById('modalAddSalarie').classList.add('active');
+    if (type === 'addClient') document.getElementById('modalAddClient').classList.add('active');
+}
+
+function closeModal(id) {
+    document.getElementById(id).classList.remove('active');
+}
+
+// ============ ADMIN FUNCTIONS ============
+function initAdmin() {
+    // Seed default admin
+    db.ref('afrmo/admins').once('value', snap => {
+        if (!snap.val()) {
+            db.ref('afrmo/admins').push({
+                nom: 'Administrateur',
+                login: 'admin',
+                password: 'afrmo2026'
+            });
+        }
+    });
+    
+    // Seed AFR Élevage as default client
+    db.ref('afrmo/clients').once('value', snap => {
+        if (!snap.val()) {
+            db.ref('afrmo/clients').push({
+                entreprise: 'AFR ÉLEVAGE',
+                contact: 'Mostafa',
+                email: 'contact@afr33.fr',
+                tel: '',
+                secteur: 'elevage',
+                adresse: 'St Médard de Guizières',
+                login: 'afr-elevage',
+                password: 'afr2026'
+            });
+        }
+    });
+
+    // Seed default salariés list for the admin section
+    db.ref('afrmo/salaries').once('value', snap => {
+        if (!snap.val()) {
+            DEFAULT_SALARIES.forEach(salarie => {
+                db.ref('afrmo/salaries').push({
+                    ...salarie,
+                    createdAt: Date.now()
+                });
+            });
+        }
+    });
+
+    loadDashboard();
+    
+    // Listen for changes
+    db.ref('afrmo/demandes').on('value', () => {
+        if (currentRole === 'admin') loadDashboard();
+    });
+    db.ref('afrmo/pointages').on('value', () => {
+        if (currentRole === 'admin') loadDashboard();
+    });
+}
+
+function loadDashboard() {
+    // Count pending demandes
+    db.ref('afrmo/demandes').once('value', snap => {
+        const all = snap.val() || {};
+        const entries = Object.entries(all);
+        const pending = entries.filter(([_, d]) => d.status === 'pending');
+        const thisWeek = entries.filter(([_, d]) => {
+            const now = new Date();
+            const start = new Date(now);
+            start.setDate(now.getDate() - now.getDay() + 1);
+            const end = new Date(start);
+            end.setDate(start.getDate() + 6);
+            const ds = new Date(d.dateStart);
+            return ds >= start && ds <= end && d.status === 'confirmed';
+        });
+
+        document.getElementById('statDemandes').textContent = pending.length;
+        document.getElementById('statMissions').textContent = thisWeek.length;
+        
+        const badge = document.getElementById('pendingBadge');
+        if (pending.length > 0) {
+            badge.style.display = '';
+            badge.textContent = pending.length;
+        } else {
+            badge.style.display = 'none';
+        }
+
+        // Recent demandes on dashboard
+        const container = document.getElementById('dashRecentDemandes');
+        if (entries.length === 0) {
+            container.innerHTML = '<div class="empty-state"><p>Aucune demande pour l\'instant</p></div>';
+        } else {
+            const recent = entries.sort((a, b) => (b[1].createdAt || 0) - (a[1].createdAt || 0)).slice(0, 5);
+            container.innerHTML = recent.map(([_, d]) => `
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+                    <div>
+                        <div style="font-weight:600;font-size:14px">${d.clientName || '-'}</div>
+                        <div style="font-size:12px;color:var(--text-light)">${prestationLabels[d.type] || d.type} · ${d.nbPersonnes} pers.</div>
+                    </div>
+                    ${statusHTML(d.status)}
+                </div>
+            `).join('');
+        }
+    });
+
+    // Salaries count
+    db.ref('afrmo/salaries').once('value', snap => {
+        const all = snap.val() || {};
+        const active = Object.values(all).filter(s => s.actif !== false);
+        document.getElementById('statOperateurs').textContent = active.length;
+        
+        // Taux utilisation
+        if (active.length > 0) {
+            db.ref('afrmo/pointages').once('value', psnap => {
+                const pointages = psnap.val() || {};
+                const thisMonth = Object.values(pointages).filter(p => {
+                    return p.date && p.date.startsWith(new Date().toISOString().slice(0, 7));
+                });
+                // Simple: jours pointés / jours ouvrés du mois
+                const joursOuvres = 22;
+                const joursPointesSet = new Set();
+                thisMonth.forEach(p => {
+                    joursPointesSet.add(p.salarieId + '_' + p.date);
+                });
+                const taux = active.length > 0 ? Math.round((joursPointesSet.size / (active.length * joursOuvres)) * 100) : 0;
+                document.getElementById('statTaux').textContent = Math.min(taux, 100) + '%';
+            });
+        }
+    });
+
+    // Today pointages
+    db.ref('afrmo/pointages').orderByChild('date').equalTo(todayStr()).once('value', snap => {
+        const all = snap.val() || {};
+        const container = document.getElementById('dashTodayPointages');
+        const entries = Object.entries(all);
+        if (entries.length === 0) {
+            container.innerHTML = '<div class="empty-state"><p>Aucun pointage aujourd\'hui</p></div>';
+        } else {
+            container.innerHTML = entries.map(([_, p]) => `
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+                    <div>
+                        <div style="font-weight:600;font-size:14px">${p.salarieName || '-'}</div>
+                        <div style="font-size:12px;color:var(--text-light)">${p.lieu || '-'}</div>
+                    </div>
+                    <div style="font-family:'Space Mono',monospace;font-size:13px">
+                        ${formatTime(p.embauche)} ${p.debauche ? '→ ' + formatTime(p.debauche) : '<span style="color:var(--success)">● En cours</span>'}
+                    </div>
+                </div>
+            `).join('');
+        }
+    });
+}
+
+// ---- Demandes admin ----
+function renderDemandes() {
+    const filterStatus = document.getElementById('filterDemandeStatus').value;
+    db.ref('afrmo/demandes').once('value', snap => {
+        const all = snap.val() || {};
+        let entries = Object.entries(all);
+        if (filterStatus) entries = entries.filter(([_, d]) => d.status === filterStatus);
+        entries.sort((a, b) => (b[1].createdAt || 0) - (a[1].createdAt || 0));
+
+        const tbody = document.getElementById('demandesTableBody');
+        if (entries.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-light);padding:32px">Aucune demande</td></tr>';
+            return;
+        }
+        tbody.innerHTML = entries.map(([id, d]) => `
+            <tr>
+                <td>${formatDate(d.createdAt)}</td>
+                <td><strong>${d.clientName || '-'}</strong></td>
+                <td>${prestationLabels[d.type] || d.typeAutre || d.type}</td>
+                <td style="text-align:center">${d.nbPersonnes}</td>
+                <td>${formatDate(d.dateStart)}${d.dateEnd && d.dateEnd !== d.dateStart ? ' → ' + formatDate(d.dateEnd) : ''}<br><span style="font-size:12px;color:var(--text-light)">${d.timeStart || ''} - ${d.timeEnd || ''}</span></td>
+                <td>${statusHTML(d.status)}</td>
+                <td>
+                    ${d.status === 'pending' ? `<button class="btn btn-primary btn-sm" onclick="openTraiterDemande('${id}')">Traiter</button>` : ''}
+                    ${d.status === 'confirmed' ? `<button class="btn btn-outline btn-sm" onclick="completeDemande('${id}')">Terminer</button>` : ''}
+                </td>
+            </tr>
+        `).join('');
+    });
+}
+
+function openTraiterDemande(id) {
+    db.ref('afrmo/demandes/' + id).once('value', snap => {
+        const d = snap.val();
+        if (!d) return;
+        
+        const details = document.getElementById('modalDemandeDetails');
+        details.innerHTML = `
+            <div style="background:var(--bg);border-radius:var(--radius-sm);padding:16px;margin-bottom:16px">
+                <div style="font-weight:700;font-size:16px;margin-bottom:8px">${d.clientName}</div>
+                <div><strong>Prestation :</strong> ${prestationLabels[d.type] || d.typeAutre || d.type}</div>
+                <div><strong>Dates :</strong> ${formatDate(d.dateStart)} ${d.dateEnd !== d.dateStart ? '→ ' + formatDate(d.dateEnd) : ''}</div>
+                <div><strong>Horaires :</strong> ${d.timeStart} - ${d.timeEnd}</div>
+                <div><strong>Personnes demandées :</strong> ${d.nbPersonnes}</div>
+                <div><strong>Lieu :</strong> ${d.lieu || '-'}</div>
+                ${d.comment ? `<div><strong>Commentaire :</strong> ${d.comment}</div>` : ''}
+                ${d.recurrence !== 'none' ? `<div><strong>Récurrence :</strong> ${d.recurrence}</div>` : ''}
+            </div>
+        `;
+
+        // Load salaries for assignment
+        db.ref('afrmo/salaries').once('value', ssnap => {
+            const salaries = ssnap.val() || {};
+            const list = document.getElementById('modalOperateursList');
+            const active = Object.entries(salaries).filter(([_, s]) => s.actif !== false);
+            if (active.length === 0) {
+                list.innerHTML = '<p style="color:var(--text-light);font-size:13px">Aucun salarié enregistré</p>';
+            } else {
+                list.innerHTML = active.map(([sid, s]) => `
+                    <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer">
+                        <input type="checkbox" value="${sid}" class="operateur-check">
+                        ${s.prenom} ${s.nom}
+                    </label>
+                `).join('');
+            }
+        });
+
+        document.getElementById('modalTraiterDemande').classList.add('active');
+        document.getElementById('modalTraiterDemande').dataset.demandeId = id;
+    });
+}
+
+function traiterDemande(action) {
+    const id = document.getElementById('modalTraiterDemande').dataset.demandeId;
+    const msg = document.getElementById('modalReponseMsg').value.trim();
+    const operateurs = [];
+    document.querySelectorAll('.operateur-check:checked').forEach(cb => operateurs.push(cb.value));
+
+    const updates = {
+        status: action,
+        reponseMsg: msg,
+        operateurs: operateurs,
+        traiteLe: Date.now()
+    };
+
+    db.ref('afrmo/demandes/' + id).update(updates).then(() => {
+        // Send email notification
+        db.ref('afrmo/demandes/' + id).once('value', snap => {
+            const d = snap.val();
+            sendEmail(
+                d.clientEmail,
+                `AFR MO - Demande ${action === 'confirmed' ? 'confirmée' : 'refusée'} : ${prestationLabels[d.type] || d.type}`,
+                `Bonjour,\n\nVotre demande de ${prestationLabels[d.type] || d.type} du ${formatDate(d.dateStart)} a été ${action === 'confirmed' ? 'CONFIRMÉE' : 'REFUSÉE'}.\n\n${msg ? 'Message : ' + msg : ''}\n\nCordialement,\nAFR MO`
+            );
+        });
+
+        closeModal('modalTraiterDemande');
+        toast(action === 'confirmed' ? 'Demande confirmée ✓' : 'Demande refusée', action === 'confirmed' ? 'success' : 'error');
+        renderDemandes();
+        loadDashboard();
+    });
+}
+
+function completeDemande(id) {
+    if (confirm('Marquer cette mission comme terminée ?')) {
+        db.ref('afrmo/demandes/' + id).update({ status: 'completed', completedAt: Date.now() });
+        toast('Mission terminée ✓', 'success');
+        renderDemandes();
+    }
+}
+
+// ---- Salariés ----
+function renderSalaries() {
+    db.ref('afrmo/salaries').once('value', snap => {
+        const all = snap.val() || {};
+        const entries = Object.entries(all);
+        const tbody = document.getElementById('salariesTableBody');
+        if (entries.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-light);padding:32px">Aucun salarié</td></tr>';
+            return;
+        }
+        tbody.innerHTML = entries.map(([id, s]) => `
+            <tr>
+                <td><strong>${s.prenom} ${s.nom}</strong></td>
+                <td style="font-family:'Space Mono',monospace;font-size:13px">${s.code}</td>
+                <td>${s.tel || '-'}</td>
+                <td>${s.actif !== false ? '<span class="status status-confirmed"><span class="status-dot"></span>Actif</span>' : '<span class="status status-refused"><span class="status-dot"></span>Inactif</span>'}</td>
+                <td>
+                    <button class="btn btn-outline btn-sm" onclick="toggleSalarieStatus('${id}', ${s.actif !== false})">${s.actif !== false ? 'Désactiver' : 'Activer'}</button>
+                </td>
+            </tr>
+        `).join('');
+    });
+}
+
+function saveSalarie() {
+    const nom = document.getElementById('newSalarieNom').value.trim();
+    const prenom = document.getElementById('newSalariePrenom').value.trim();
+    const tel = document.getElementById('newSalarieTel').value.trim();
+    const email = document.getElementById('newSalarieEmail').value.trim();
+    if (!nom || !prenom) return toast('Nom et prénom requis', 'error');
+
+    const code = genCode();
+    db.ref('afrmo/salaries').push({
+        nom, prenom, tel, email, code,
+        actif: true,
+        createdAt: Date.now()
+    }).then(() => {
+        toast(`Salarié ajouté · Code : ${code}`, 'success');
+        closeModal('modalAddSalarie');
+        document.getElementById('newSalarieNom').value = '';
+        document.getElementById('newSalariePrenom').value = '';
+        document.getElementById('newSalarieTel').value = '';
+        document.getElementById('newSalarieEmail').value = '';
+        renderSalaries();
+    });
+}
+
+function toggleSalarieStatus(id, currentlyActive) {
+    db.ref('afrmo/salaries/' + id).update({ actif: !currentlyActive });
+    renderSalaries();
+}
+
+// ---- Clients ----
+function renderClients() {
+    db.ref('afrmo/clients').once('value', snap => {
+        const all = snap.val() || {};
+        const entries = Object.entries(all);
+        const tbody = document.getElementById('clientsTableBody');
+        if (entries.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-light);padding:32px">Aucun client</td></tr>';
+            return;
+        }
+        tbody.innerHTML = entries.map(([id, c]) => `
+            <tr>
+                <td><strong>${c.entreprise}</strong></td>
+                <td>${c.contact || '-'}</td>
+                <td>${c.email || '-'}</td>
+                <td>${c.secteur || '-'}</td>
+                <td style="font-family:'Space Mono',monospace;font-size:12px">${c.login}</td>
+                <td>
+                    <button class="btn btn-outline btn-sm" onclick="openEditClient('${id}')" style="margin-right:4px">Modifier</button>
+                    <button class="btn btn-outline btn-sm" onclick="deleteClient('${id}')" style="color:var(--accent);border-color:var(--accent)">Supprimer</button>
+                </td>
+            </tr>
+        `).join('');
+    });
+}
+
+function saveClient() {
+    const entreprise = document.getElementById('newClientEntreprise').value.trim();
+    const contact = document.getElementById('newClientContact').value.trim();
+    const email = document.getElementById('newClientEmail').value.trim();
+    const tel = document.getElementById('newClientTel').value.trim();
+    const secteur = document.getElementById('newClientSecteur').value;
+    const adresse = document.getElementById('newClientAdresse').value.trim();
+    const login = document.getElementById('newClientLogin').value.trim();
+    const password = document.getElementById('newClientPassword').value.trim();
+
+    if (!entreprise || !login || !password) return toast('Entreprise, identifiant et mot de passe requis', 'error');
+
+    db.ref('afrmo/clients').push({
+        entreprise, contact, email, tel, secteur, adresse, login, password,
+        createdAt: Date.now()
+    }).then(() => {
+        toast('Client ajouté ✓', 'success');
+        closeModal('modalAddClient');
+        // Clear form
+        ['newClientEntreprise','newClientContact','newClientEmail','newClientTel','newClientAdresse','newClientLogin','newClientPassword'].forEach(id => document.getElementById(id).value = '');
+        renderClients();
+    });
+}
+
+function deleteClient(id) {
+    if (confirm('Supprimer ce client ?')) {
+        db.ref('afrmo/clients/' + id).remove();
+        renderClients();
+    }
+}
+
+// ---- Pointages admin ----
+function renderPointages() {
+    const filterDate = document.getElementById('filterPointageDate').value;
+    const filterSalarie = document.getElementById('filterPointageSalarie').value;
+
+    // Populate salarie filter
+    db.ref('afrmo/salaries').once('value', snap => {
+        const sel = document.getElementById('filterPointageSalarie');
+        const current = sel.value;
+        const salaries = snap.val() || {};
+        sel.innerHTML = '<option value="">Tous les salariés</option>';
+        Object.entries(salaries).forEach(([id, s]) => {
+            sel.innerHTML += `<option value="${id}" ${id === current ? 'selected' : ''}>${s.prenom} ${s.nom}</option>`;
+        });
+    });
+
+    db.ref('afrmo/pointages').once('value', snap => {
+        let all = snap.val() || {};
+        let entries = Object.entries(all);
+        if (filterDate) entries = entries.filter(([_, p]) => p.date === filterDate);
+        if (filterSalarie) entries = entries.filter(([_, p]) => p.salarieId === filterSalarie);
+        entries.sort((a, b) => (b[1].embauche || 0) - (a[1].embauche || 0));
+
+        const tbody = document.getElementById('pointagesTableBody');
+        if (entries.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-light);padding:32px">Aucun pointage</td></tr>';
+            return;
+        }
+        tbody.innerHTML = entries.map(([_, p]) => `
+            <tr>
+                <td><strong>${p.salarieName || '-'}</strong></td>
+                <td>${formatDate(p.date)}</td>
+                <td>${formatTime(p.embauche)}</td>
+                <td>${p.debauche ? formatTime(p.debauche) : '<span style="color:var(--success)">● En cours</span>'}</td>
+                <td style="font-family:'Space Mono',monospace">${p.debauche ? calcDuration(p.embauche, p.debauche) : '-'}</td>
+                <td style="font-size:12px">${p.lieu || '-'}</td>
+                <td>${p.clientName || '-'}</td>
+            </tr>
+        `).join('');
+    });
+}
+
+function exportPointages() {
+    toast('Export Excel en cours de développement', '');
+}
+
+// ---- Planning admin ----
+function renderPlanning() {
+    // Placeholder
+    const tbody = document.getElementById('planningTableBody');
+    db.ref('afrmo/salaries').once('value', snap => {
+        const salaries = snap.val() || {};
+        const active = Object.entries(salaries).filter(([_, s]) => s.actif !== false);
+        if (active.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-light);padding:32px">Aucun opérateur</td></tr>';
+            return;
+        }
+        tbody.innerHTML = active.map(([id, s]) => `
+            <tr>
+                <td><strong>${s.prenom} ${s.nom}</strong></td>
+                <td style="text-align:center">-</td>
+                <td style="text-align:center">-</td>
+                <td style="text-align:center">-</td>
+                <td style="text-align:center">-</td>
+                <td style="text-align:center">-</td>
+                <td style="text-align:center">-</td>
+                <td style="font-family:'Space Mono',monospace;text-align:center">0h</td>
+            </tr>
+        `).join('');
+    });
+}
+
+// ============ CLIENT FUNCTIONS ============
+function initClient() {
+    // Populate prestations based on client's secteur
+    const secteur = currentUser.secteur || 'autre';
+    const types = prestationsBySecteur[secteur] || prestationsBySecteur['autre'];
+    const sel = document.getElementById('demandeType');
+    sel.innerHTML = '<option value="">-- Choisir --</option>';
+    types.forEach(t => {
+        sel.innerHTML += `<option value="${t}">${prestationLabels[t] || t}</option>`;
+    });
+
+    // Show/hide autre field
+    sel.addEventListener('change', function() {
+        document.getElementById('demandeAutreGroup').style.display = this.value === 'autre' ? 'block' : 'none';
+    });
+    
+    // Set min dates
+    const today = todayStr();
+    document.getElementById('demandeStart').min = today;
+    document.getElementById('demandeEnd').min = today;
+}
+
+function submitDemande() {
+    const type = document.getElementById('demandeType').value;
+    const typeAutre = document.getElementById('demandeAutre').value.trim();
+    const dateStart = document.getElementById('demandeStart').value;
+    const dateEnd = document.getElementById('demandeEnd').value || dateStart;
+    const timeStart = document.getElementById('demandeTimeStart').value;
+    const timeEnd = document.getElementById('demandeTimeEnd').value;
+    const nbPersonnes = parseInt(document.getElementById('demandeNb').value) || 1;
+    const lieu = document.getElementById('demandeLieu').value.trim();
+    const comment = document.getElementById('demandeComment').value.trim();
+    const recurrence = document.getElementById('demandeRecurrence').value;
+
+    if (!type || !dateStart) return toast('Type et date de début requis', 'error');
+
+    const demande = {
+        clientId: currentClientId,
+        clientName: currentUser.entreprise,
+        clientEmail: currentUser.email,
+        type,
+        typeAutre: type === 'autre' ? typeAutre : '',
+        dateStart,
+        dateEnd,
+        timeStart,
+        timeEnd,
+        nbPersonnes,
+        lieu,
+        comment,
+        recurrence,
+        status: 'pending',
+        createdAt: Date.now()
+    };
+
+    db.ref('afrmo/demandes').push(demande).then(() => {
+        // Send notification email to admin
+        sendEmail(
+            'contact@afr33.fr',
+            `Nouvelle demande - ${currentUser.entreprise} - ${prestationLabels[type] || typeAutre || type}`,
+            `Nouvelle demande de personnel reçue.\n\nClient : ${currentUser.entreprise}\nPrestation : ${prestationLabels[type] || typeAutre}\nDate : ${dateStart}${dateEnd !== dateStart ? ' au ' + dateEnd : ''}\nHoraires : ${timeStart} - ${timeEnd}\nPersonnes : ${nbPersonnes}\nLieu : ${lieu}\n\n${comment ? 'Commentaire : ' + comment : ''}`
+        );
+
+        toast('Demande envoyée ✓', 'success');
+        // Reset form
+        document.getElementById('demandeType').value = '';
+        document.getElementById('demandeStart').value = '';
+        document.getElementById('demandeEnd').value = '';
+        document.getElementById('demandeNb').value = '1';
+        document.getElementById('demandeLieu').value = '';
+        document.getElementById('demandeComment').value = '';
+        document.getElementById('demandeRecurrence').value = 'none';
+    });
+}
+
+function renderClientDemandes() {
+    db.ref('afrmo/demandes').orderByChild('clientId').equalTo(currentClientId).once('value', snap => {
+        const all = snap.val() || {};
+        const entries = Object.entries(all).filter(([_, d]) => d.status !== 'completed');
+        entries.sort((a, b) => (b[1].createdAt || 0) - (a[1].createdAt || 0));
+
+        const container = document.getElementById('clientDemandesContainer');
+        if (entries.length === 0) {
+            container.innerHTML = '<div class="empty-state"><p>Aucune demande en cours</p></div>';
+            return;
+        }
+
+        container.innerHTML = entries.map(([id, d]) => `
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 0;border-bottom:1px solid var(--border)">
+                <div style="flex:1">
+                    <div style="font-weight:600">${prestationLabels[d.type] || d.typeAutre || d.type}</div>
+                    <div style="font-size:13px;color:var(--text-light)">
+                        ${formatDate(d.dateStart)}${d.dateEnd !== d.dateStart ? ' → ' + formatDate(d.dateEnd) : ''} · ${d.timeStart}-${d.timeEnd} · ${d.nbPersonnes} pers.
+                    </div>
+                    <div style="font-size:12px;color:var(--text-light)">${d.lieu || ''}</div>
+                    ${d.reponseMsg ? `<div style="font-size:12px;margin-top:4px;padding:6px 10px;background:var(--bg);border-radius:6px"><strong>Réponse AFR MO :</strong> ${d.reponseMsg}</div>` : ''}
+                </div>
+                <div style="display:flex;align-items:center;gap:10px">
+                    ${d.status === 'pending' ? `<button class="btn btn-outline btn-sm" onclick="openEditDemande('${id}')">Modifier</button><button class="btn btn-sm" style="background:var(--accent);color:white" onclick="cancelDemande('${id}')">Annuler</button>` : ''}
+                    ${statusHTML(d.status)}
+                </div>
+            </div>
+        `).join('');
+    });
+}
+
+function renderClientHistorique() {
+    db.ref('afrmo/demandes').orderByChild('clientId').equalTo(currentClientId).once('value', snap => {
+        const all = snap.val() || {};
+        const entries = Object.entries(all).filter(([_, d]) => d.status === 'completed');
+        entries.sort((a, b) => (b[1].createdAt || 0) - (a[1].createdAt || 0));
+
+        const tbody = document.getElementById('clientHistoriqueBody');
+        if (entries.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-light);padding:32px">Aucune mission terminée</td></tr>';
+            return;
+        }
+        tbody.innerHTML = entries.map(([_, d]) => `
+            <tr>
+                <td>${formatDate(d.dateStart)}</td>
+                <td>${prestationLabels[d.type] || d.typeAutre || d.type}</td>
+                <td>${d.nbPersonnes}</td>
+                <td>${d.timeStart}-${d.timeEnd}</td>
+                <td>${statusHTML(d.status)}</td>
+            </tr>
+        `).join('');
+    });
+}
+
+// ============ SALARIÉ FUNCTIONS ============
+function initSalarie() {
+    // Start clock
+    updateClock();
+    clockInterval = setInterval(updateClock, 1000);
+    
+    // Check if already pointed today
+    checkTodayPointage();
+    
+    // Get GPS
+    getLocation();
+    
+    // Set month filter
+    document.getElementById('filterMesHeuresMois').value = new Date().toISOString().slice(0, 7);
+}
+
+function updateClock() {
+    const now = new Date();
+    document.getElementById('pointageClock').textContent = now.toLocaleTimeString('fr-FR');
+    document.getElementById('pointageDate').textContent = now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+function checkTodayPointage() {
+    db.ref('afrmo/pointages').orderByChild('salarieId').equalTo(currentSalarieId).once('value', snap => {
+        const all = snap.val() || {};
+        const todayEntries = Object.entries(all).filter(([_, p]) => p.date === todayStr());
+        const openEntry = todayEntries.find(([_, p]) => !p.debauche);
+        
+        if (openEntry) {
+            salarieIsPointed = true;
+            currentPointageKey = openEntry[0];
+            const btn = document.getElementById('btnPointage');
+            btn.textContent = 'Pointer la débauche';
+            btn.className = 'btn pointage-btn debauche';
+            document.getElementById('pointageStatusText').textContent = `Embauché depuis ${formatTime(openEntry[1].embauche)}`;
+            document.getElementById('pointageStatusText').style.color = 'var(--success)';
+        } else {
+            salarieIsPointed = false;
+            currentPointageKey = null;
+            const btn = document.getElementById('btnPointage');
+            btn.textContent = "Pointer l'embauche";
+            btn.className = 'btn pointage-btn embauche';
+            document.getElementById('pointageStatusText').textContent = "Vous n'êtes pas pointé";
+            document.getElementById('pointageStatusText').style.color = '';
+        }
+
+        // Show today list
+        renderTodayPointages(todayEntries);
+    });
+}
+
+function renderTodayPointages(entries) {
+    const container = document.getElementById('todayPointagesList');
+    if (!entries || entries.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>Aucun pointage aujourd\'hui</p></div>';
+        return;
+    }
+    container.innerHTML = entries.map(([_, p]) => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)">
+            <div>
+                <span style="font-family:'Space Mono',monospace;font-weight:600">${formatTime(p.embauche)}</span>
+                <span style="color:var(--text-light)"> → </span>
+                <span style="font-family:'Space Mono',monospace;font-weight:600">${p.debauche ? formatTime(p.debauche) : '...'}</span>
+            </div>
+            <div style="text-align:right">
+                <div style="font-size:13px">${p.debauche ? calcDuration(p.embauche, p.debauche) : 'En cours'}</div>
+                <div style="font-size:11px;color:var(--text-light)">${p.lieu || '-'}</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+let currentGps = null;
+let currentLieuName = '';
+
+function getLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            pos => {
+                currentGps = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                currentLieuName = `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`;
+                document.getElementById('pointageGps').innerHTML = `
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    Position : ${currentLieuName}
+                `;
+                // Reverse geocode
+                reverseGeocode(pos.coords.latitude, pos.coords.longitude);
+            },
+            err => {
+                document.getElementById('pointageGps').innerHTML = `
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    GPS non disponible
+                `;
+            },
+            { enableHighAccuracy: true }
+        );
+    }
+}
+
+function reverseGeocode(lat, lng) {
+    // Using nominatim - free
+    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+        .then(r => r.json())
+        .then(data => {
+            if (data && data.display_name) {
+                const parts = data.display_name.split(',');
+                currentLieuName = parts.slice(0, 3).join(',').trim();
+                document.getElementById('pointageGps').innerHTML = `
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    ${currentLieuName}
+                `;
+            }
+        })
+        .catch(() => {});
+}
+
+function doPointage() {
+    if (!salarieIsPointed) {
+        // Embauche
+        const now = Date.now();
+        const entry = {
+            salarieId: currentSalarieId,
+            salarieName: `${currentUser.prenom} ${currentUser.nom}`,
+            date: todayStr(),
+            embauche: now,
+            debauche: null,
+            lieu: currentLieuName,
+            gps: currentGps,
+            clientName: ''
+        };
+
+        db.ref('afrmo/pointages').push(entry).then(ref => {
+            currentPointageKey = ref.key;
+            salarieIsPointed = true;
+            const btn = document.getElementById('btnPointage');
+            btn.textContent = 'Pointer la débauche';
+            btn.className = 'btn pointage-btn debauche';
+            document.getElementById('pointageStatusText').textContent = `Embauché depuis ${formatTime(now)}`;
+            document.getElementById('pointageStatusText').style.color = 'var(--success)';
+            toast('Embauche pointée ✓', 'success');
+            checkTodayPointage();
+        });
+    } else {
+        // Débauche
+        const now = Date.now();
+        db.ref('afrmo/pointages/' + currentPointageKey).update({
+            debauche: now,
+            lieuDebauche: currentLieuName,
+            gpsDebauche: currentGps
+        }).then(() => {
+            salarieIsPointed = false;
+            currentPointageKey = null;
+            const btn = document.getElementById('btnPointage');
+            btn.textContent = "Pointer l'embauche";
+            btn.className = 'btn pointage-btn embauche';
+            document.getElementById('pointageStatusText').textContent = "Débauche enregistrée";
+            document.getElementById('pointageStatusText').style.color = '';
+            toast('Débauche pointée ✓', 'success');
+            checkTodayPointage();
+        });
+    }
+    
+    // Refresh GPS
+    getLocation();
+}
+
+function renderSalariePlanning() {
+    db.ref('afrmo/demandes').once('value', snap => {
+        const all = snap.val() || {};
+        const today = todayStr();
+        const missions = Object.entries(all).filter(([_, d]) => {
+            return d.status === 'confirmed' && d.dateStart >= today && d.operateurs && d.operateurs.includes(currentSalarieId);
+        });
+        missions.sort((a, b) => a[1].dateStart.localeCompare(b[1].dateStart));
+
+        const container = document.getElementById('salariePlanningList');
+        if (missions.length === 0) {
+            container.innerHTML = '<div class="empty-state" style="background:var(--card);border-radius:var(--radius);padding:48px"><p>Aucune mission planifiée</p></div>';
+            return;
+        }
+
+        const months = ['jan', 'fév', 'mar', 'avr', 'mai', 'jun', 'jul', 'aoû', 'sep', 'oct', 'nov', 'déc'];
+        container.innerHTML = missions.map(([_, d]) => {
+            const dt = new Date(d.dateStart);
+            return `
+                <div class="planning-day">
+                    <div class="planning-date">
+                        <div class="day">${dt.getDate()}</div>
+                        <div class="month">${months[dt.getMonth()]}</div>
+                    </div>
+                    <div class="planning-info">
+                        <div class="client-name">${d.clientName}</div>
+                        <div class="mission-type">${prestationLabels[d.type] || d.typeAutre || d.type} · ${d.lieu || '-'}</div>
+                    </div>
+                    <div class="planning-time">${d.timeStart}<br>${d.timeEnd}</div>
+                </div>
+            `;
+        }).join('');
+    });
+}
+
+function renderMesHeures() {
+    const mois = document.getElementById('filterMesHeuresMois').value;
+    if (!mois) return;
+
+    db.ref('afrmo/pointages').orderByChild('salarieId').equalTo(currentSalarieId).once('value', snap => {
+        const all = snap.val() || {};
+        const entries = Object.entries(all).filter(([_, p]) => p.date && p.date.startsWith(mois) && p.debauche);
+        entries.sort((a, b) => a[1].date.localeCompare(b[1].date));
+
+        let totalMinutes = 0;
+        const joursSet = new Set();
+
+        const tbody = document.getElementById('mesHeuresBody');
+        if (entries.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-light);padding:32px">Aucune heure ce mois</td></tr>';
+            document.getElementById('mesHeuresTotal').textContent = '0h';
+            document.getElementById('mesHeuresJours').textContent = '0';
+            return;
+        }
+
+        tbody.innerHTML = entries.map(([_, p]) => {
+            const diff = (p.debauche - p.embauche) / 60000;
+            totalMinutes += diff;
+            joursSet.add(p.date);
+            return `
+                <tr>
+                    <td>${formatDate(p.date)}</td>
+                    <td>${formatTime(p.embauche)}</td>
+                    <td>${formatTime(p.debauche)}</td>
+                    <td style="font-family:'Space Mono',monospace">${calcDuration(p.embauche, p.debauche)}</td>
+                    <td style="font-size:12px">${p.lieu || '-'}</td>
+                </tr>
+            `;
+        }).join('');
+
+        const totalH = Math.floor(totalMinutes / 60);
+        const totalM = Math.round(totalMinutes % 60);
+        document.getElementById('mesHeuresTotal').textContent = `${totalH}h${totalM.toString().padStart(2, '0')}`;
+        document.getElementById('mesHeuresJours').textContent = joursSet.size;
+    });
+}
+
+// ============ EMAIL (mailto) ============
+function sendEmail(to, subject, body) {
+    const mailto = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.open(mailto, '_blank');
+    
+    // Store email log in Firebase
+    db.ref('afrmo/emails').push({
+        to, subject, body,
+        sentAt: Date.now(),
+        status: 'sent_via_mailto'
+    });
+}
+
+// ============ EDIT DEMANDE (CLIENT) ============
+let editDemandeId = null;
+
+function openEditDemande(id) {
+    db.ref('afrmo/demandes/' + id).once('value', snap => {
+        const d = snap.val();
+        if (!d) return;
+        editDemandeId = id;
+
+        // Populate type select based on client secteur
+        const secteur = currentUser.secteur || 'autre';
+        const types = prestationsBySecteur[secteur] || prestationsBySecteur['autre'];
+        const sel = document.getElementById('editDemandeType');
+        sel.innerHTML = '<option value="">-- Choisir --</option>';
+        types.forEach(t => {
+            sel.innerHTML += `<option value="${t}" ${t === d.type ? 'selected' : ''}>${prestationLabels[t] || t}</option>`;
+        });
+        sel.onchange = function() {
+            document.getElementById('editDemandeAutreGroup').style.display = this.value === 'autre' ? 'block' : 'none';
+        };
+
+        document.getElementById('editDemandeAutre').value = d.typeAutre || '';
+        document.getElementById('editDemandeAutreGroup').style.display = d.type === 'autre' ? 'block' : 'none';
+        document.getElementById('editDemandeStart').value = d.dateStart || '';
+        document.getElementById('editDemandeEnd').value = d.dateEnd || '';
+        document.getElementById('editDemandeTimeStart').value = d.timeStart || '07:00';
+        document.getElementById('editDemandeTimeEnd').value = d.timeEnd || '16:00';
+        document.getElementById('editDemandeNb').value = d.nbPersonnes || 1;
+        document.getElementById('editDemandeLieu').value = d.lieu || '';
+        document.getElementById('editDemandeComment').value = d.comment || '';
+        document.getElementById('editDemandeRecurrence').value = d.recurrence || 'none';
+
+        document.getElementById('modalEditDemande').classList.add('active');
+    });
+}
+
+function saveEditDemande() {
+    if (!editDemandeId) return;
+    const type = document.getElementById('editDemandeType').value;
+    const dateStart = document.getElementById('editDemandeStart').value;
+    if (!type || !dateStart) return toast('Type et date de début requis', 'error');
+
+    const updates = {
+        type,
+        typeAutre: type === 'autre' ? document.getElementById('editDemandeAutre').value.trim() : '',
+        dateStart,
+        dateEnd: document.getElementById('editDemandeEnd').value || dateStart,
+        timeStart: document.getElementById('editDemandeTimeStart').value,
+        timeEnd: document.getElementById('editDemandeTimeEnd').value,
+        nbPersonnes: parseInt(document.getElementById('editDemandeNb').value) || 1,
+        lieu: document.getElementById('editDemandeLieu').value.trim(),
+        comment: document.getElementById('editDemandeComment').value.trim(),
+        recurrence: document.getElementById('editDemandeRecurrence').value,
+        modifiedAt: Date.now()
+    };
+
+    db.ref('afrmo/demandes/' + editDemandeId).update(updates).then(() => {
+        toast('Demande modifiée ✓', 'success');
+        closeModal('modalEditDemande');
+        editDemandeId = null;
+        renderClientDemandes();
+    });
+}
+
+function cancelDemande(id) {
+    if (confirm('Annuler cette demande ?')) {
+        db.ref('afrmo/demandes/' + id).update({ status: 'refused', cancelledByClient: true, cancelledAt: Date.now() });
+        toast('Demande annulée', '');
+        renderClientDemandes();
+    }
+}
+
+// ============ EDIT CLIENT (ADMIN) ============
+let editClientId = null;
+
+function openEditClient(id) {
+    db.ref('afrmo/clients/' + id).once('value', snap => {
+        const c = snap.val();
+        if (!c) return;
+        editClientId = id;
+
+        document.getElementById('editClientEntreprise').value = c.entreprise || '';
+        document.getElementById('editClientContact').value = c.contact || '';
+        document.getElementById('editClientEmail').value = c.email || '';
+        document.getElementById('editClientTel').value = c.tel || '';
+        document.getElementById('editClientSecteur').value = c.secteur || 'autre';
+        document.getElementById('editClientAdresse').value = c.adresse || '';
+        document.getElementById('editClientLogin').value = c.login || '';
+        document.getElementById('editClientPassword').value = c.password || '';
+
+        document.getElementById('modalEditClient').classList.add('active');
+    });
+}
+
+function saveEditClient() {
+    if (!editClientId) return;
+    const entreprise = document.getElementById('editClientEntreprise').value.trim();
+    const login = document.getElementById('editClientLogin').value.trim();
+    const password = document.getElementById('editClientPassword').value.trim();
+    if (!entreprise || !login || !password) return toast('Entreprise, identifiant et mot de passe requis', 'error');
+
+    const updates = {
+        entreprise,
+        contact: document.getElementById('editClientContact').value.trim(),
+        email: document.getElementById('editClientEmail').value.trim(),
+        tel: document.getElementById('editClientTel').value.trim(),
+        secteur: document.getElementById('editClientSecteur').value,
+        adresse: document.getElementById('editClientAdresse').value.trim(),
+        login,
+        password
+    };
+
+    db.ref('afrmo/clients/' + editClientId).update(updates).then(() => {
+        toast('Client modifié ✓', 'success');
+        closeModal('modalEditClient');
+        editClientId = null;
+        renderClients();
+    });
+}
+
+// ============ INIT ============
+// Set current week for planning
+const now = new Date();
+const year = now.getFullYear();
+const week = getWeekNumber(now);
+document.getElementById('planningWeek').value = `${year}-W${week.toString().padStart(2, '0')}`;
+
+function getWeekNumber(d) {
+    const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    const dayNum = date.getUTCDay() || 7;
+    date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+    return Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+}
+
+// Set today for pointage filter
+document.getElementById('filterPointageDate').value = todayStr();
+
+// Anonymous auth
+firebase.auth().signInAnonymously().catch(err => {
+    console.warn('Auth error:', err);
+});
+</script>
+
+</body>
+</html>
