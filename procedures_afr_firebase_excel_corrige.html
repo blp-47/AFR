@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bibliothèque documentaire AFR Élevage</title>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<style>
+:root{
+  --blue:#163a5f;
+  --blue2:#245a8d;
+  --bg:#f4f6f8;
+  --card:#ffffff;
+  --text:#22313f;
+  --muted:#6b7785;
+  --line:#dde3ea;
+  --green:#1f8a5b;
+  --red:#c53030;
+  --orange:#d97706;
+  --purple:#6b4e8c;
+  --shadow:0 6px 22px rgba(20,35,55,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+a{color:inherit}
+
+header{
+  background:linear-gradient(135deg,var(--blue),var(--blue2));
+  color:#fff;
+  padding:18px 22px;
+  position:sticky;top:0;z-index:50;
+  box-shadow:0 2px 12px rgba(0,0,0,.14);
+}
+.header-inner{max-width:1450px;margin:auto;display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.brand{display:flex;gap:12px;align-items:center}
+.logo{
+  width:44px;height:44px;border-radius:12px;background:#fff;color:var(--blue);
+  display:flex;align-items:center;justify-content:center;font-weight:900;letter-spacing:-1px;
+  box-shadow:inset 0 0 0 2px rgba(0,0,0,.05)
+}
+h1{font-size:21px;font-weight:700;line-height:1.2}
+.subtitle{font-size:13px;opacity:.86;margin-top:3px}
+.header-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.pill{border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.12);color:#fff;border-radius:999px;padding:8px 12px;font-size:13px}
+.pill:hover{background:rgba(255,255,255,.22)}
+.pill.danger{background:rgba(197,48,48,.20)}
+
+.toolbar{background:#fff;border-bottom:1px solid var(--line);padding:12px 22px;position:sticky;top:80px;z-index:40}
+.toolbar-inner{max-width:1450px;margin:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.searchbox{position:relative;flex:1;min-width:220px}
+.searchbox:before{content:"🔍";position:absolute;left:12px;top:50%;transform:translateY(-50%);opacity:.55;font-size:13px}
+.searchbox input{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px 10px 36px;outline:none;background:#fafbfc}
+.searchbox input:focus{border-color:var(--blue);background:#fff}
+select,.input,textarea{
+  border:1px solid var(--line);border-radius:10px;padding:10px 11px;background:#fff;color:var(--text);outline:none;
+}
+textarea{min-height:80px;resize:vertical}
+.btn{
+  border:1px solid var(--line);background:#fff;color:var(--text);
+  padding:10px 13px;border-radius:10px;font-weight:600;font-size:13px;
+}
+.btn:hover{background:#eef3f8}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.primary:hover{background:#102b47}
+.btn.green{background:var(--green);border-color:var(--green);color:#fff}
+.btn.red{background:var(--red);border-color:var(--red);color:#fff}
+.btn.orange{background:var(--orange);border-color:var(--orange);color:#fff}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+
+.container{max-width:1450px;margin:20px auto;padding:0 22px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 15px;box-shadow:0 2px 8px rgba(0,0,0,.03)}
+.stat .n{font-size:24px;font-weight:800;color:var(--blue)}
+.stat .l{font-size:12px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.3px}
+.notice{background:#fff7ed;border-left:5px solid var(--orange);padding:12px 14px;border-radius:10px;margin-bottom:16px;color:#7c3f00;font-size:13px;line-height:1.45}
+.notice.ok{background:#eefbf4;border-left-color:var(--green);color:#145c3b}
+.notice.err{background:#fff5f5;border-left-color:var(--red);color:#822727}
+
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 12px;font-size:13px;font-weight:650;color:#46525f}
+.chip.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.chip .count{background:rgba(0,0,0,.07);border-radius:999px;padding:1px 7px;margin-left:5px;font-size:11px}
+.chip.active .count{background:rgba(255,255,255,.22)}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px}
+
+.folder-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.folder-card{
+  background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 2px 10px rgba(0,0,0,.03);
+  min-height:145px;display:flex;flex-direction:column;gap:10px;position:relative;overflow:hidden;cursor:pointer;
+}
+.folder-card:before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--cat,#163a5f)}
+.folder-card:hover{transform:translateY(-1px);box-shadow:0 7px 24px rgba(20,35,55,.10);border-color:#b9c6d4}
+.folder-icon{font-size:36px;line-height:1}
+.folder-title{font-size:18px;font-weight:850;color:var(--text)}
+.folder-meta{font-size:13px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap}
+.folder-preview{font-size:12px;color:#7b8794;line-height:1.35;margin-top:auto}
+.breadcrumb{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:-4px 0 14px;color:var(--muted);font-size:13px}
+.breadcrumb button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 10px;font-size:12px;font-weight:750}
+.card{
+  background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:0 2px 10px rgba(0,0,0,.03);
+  min-height:185px;display:flex;flex-direction:column;gap:9px;position:relative;overflow:hidden;
+}
+.card:before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--cat,#163a5f)}
+.card-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.badge{display:inline-flex;align-items:center;gap:4px;border-radius:8px;padding:4px 7px;font-size:11px;font-weight:800;background:#f1f5f9;color:#475569}
+.format{font-size:10px;letter-spacing:.45px;text-transform:uppercase}
+.fmt-pdf{background:#fee2e2;color:#991b1b}
+.fmt-xlsx,.fmt-xls,.fmt-xlsm,.fmt-csv{background:#dcfce7;color:#166534}
+.fmt-doc,.fmt-docx{background:#dbeafe;color:#1d4ed8}
+.fmt-img{background:#fef3c7;color:#92400e}
+.card-title{font-size:16px;font-weight:800;line-height:1.25;padding-right:2px}
+.card-desc{font-size:13px;color:var(--muted);line-height:1.4;flex:1}
+.card-meta{display:flex;gap:7px;flex-wrap:wrap;color:#697586;font-size:11px}
+.card-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:5px}
+.smallbtn{border:1px solid var(--line);background:#fff;border-radius:9px;padding:8px 10px;font-size:12px;font-weight:700}
+.smallbtn:hover{background:#eef3f8}
+.smallbtn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.smallbtn.red{color:#991b1b}
+.empty{text-align:center;background:#fff;border:1px dashed #cbd5e1;border-radius:18px;padding:46px 18px;color:var(--muted)}
+.empty .icon{font-size:46px;margin-bottom:8px;opacity:.55}
+.empty h2{font-size:18px;color:var(--text);margin-bottom:6px}
+
+.modal-backdrop{position:fixed;inset:0;background:rgba(8,16,28,.58);z-index:100;display:none;padding:18px;overflow:auto}
+.modal-backdrop.show{display:block}
+.modal{max-width:860px;margin:40px auto;background:#fff;border-radius:18px;box-shadow:var(--shadow);overflow:hidden}
+.modal.wide{max-width:1200px}
+.modal-head{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:16px 18px;border-bottom:1px solid var(--line)}
+.modal-head h2{font-size:18px}
+.modal-body{padding:18px}
+.modal-foot{padding:14px 18px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.x{border:none;background:#f1f5f9;border-radius:10px;width:36px;height:36px;font-size:18px}
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:12px;font-weight:800;color:#46525f;text-transform:uppercase;letter-spacing:.3px}
+.field.full{grid-column:1/-1}
+.filebox{
+  border:2px dashed #cbd5e1;background:#f8fafc;border-radius:14px;padding:18px;text-align:center;
+}
+.filebox input{margin-top:10px;max-width:100%}
+.progress{height:10px;background:#e5e7eb;border-radius:999px;overflow:hidden;margin-top:10px;display:none}
+.progress span{display:block;height:100%;width:0;background:var(--green);transition:width .2s}
+.help{font-size:12px;color:var(--muted);line-height:1.35}
+.viewer-frame{width:100%;height:72vh;border:1px solid var(--line);border-radius:12px;background:#fff}
+.sheet-container{height:72vh;overflow:auto;border:1px solid var(--line);border-radius:12px;background:#fff}
+.sheet-container table{border-collapse:collapse;width:100%;font-size:12px}
+.sheet-container th,.sheet-container td{border:1px solid #e5e7eb;padding:7px 9px;text-align:left;vertical-align:top}
+.sheet-container th{background:#f1f5f9;position:sticky;top:0;z-index:2}
+.viewer-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.admin-only{display:none}
+body.is-admin .admin-only{display:inline-flex}
+footer{text-align:center;color:#8b97a5;font-size:12px;padding:30px 10px}
+
+@media(max-width:760px){
+  header{position:relative}.toolbar{position:relative;top:auto}
+  .header-inner,.toolbar-inner{align-items:stretch}
+  .header-actions,.toolbar-inner{width:100%}
+  .pill,.btn,select{flex:1}
+  .form-grid{grid-template-columns:1fr}
+  .modal{margin:10px auto}
+  .container{padding:0 12px}
+}
+</style>
+</head>
+
+<body>
+<header>
+  <div class="header-inner">
+    <div class="brand">
+      <div class="logo">AFR</div>
+      <div>
+        <h1>Bibliothèque documentaire AFR Élevage</h1>
+        <div class="subtitle">Procédures, consignes, documents qualité, sécurité, sanitaire et production</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="pill" id="homeBtn">🏠 Accueil</button>
+      <button class="pill" id="adminBtn">🔐 Admin</button>
+      <button class="pill danger admin-only" id="logoutBtn">Déconnexion</button>
+    </div>
+  </div>
+</header>
+
+<div class="toolbar">
+  <div class="toolbar-inner">
+    <div class="searchbox">
+      <input id="searchInput" placeholder="Rechercher une procédure, un site, un mot-clé…" autocomplete="off">
+    </div>
+    <select id="siteFilter" title="Filtrer par site">
+      <option value="all">Tous les sites</option>
+    </select>
+    <select id="subcatFilter" title="Filtrer par sous-catégorie">
+      <option value="all">Toutes les sous-catégories</option>
+    </select>
+    <select id="sortSelect" title="Tri">
+      <option value="recent">Plus récents</option>
+      <option value="title">A-Z</option>
+      <option value="category">Catégorie</option>
+    </select>
+    <button class="btn primary admin-only" id="addBtn">➕ Ajouter</button>
+    <button class="btn admin-only" id="exportBtn">⬇️ Export JSON</button>
+    <label class="btn admin-only" style="position:relative;overflow:hidden">
+      ⬆️ Import JSON
+      <input type="file" id="importInput" accept=".json" style="position:absolute;inset:0;opacity:0;cursor:pointer">
+    </label>
+  </div>
+</div>
+
+<main class="container">
+  <div id="configNotice" class="notice err" style="display:none"></div>
+  <div id="statusNotice" class="notice" style="display:none"></div>
+
+  <section class="stats">
+    <div class="stat"><div class="n" id="statDocs">0</div><div class="l">documents</div></div>
+    <div class="stat"><div class="n" id="statCats">0</div><div class="l">catégories utilisées</div></div>
+    <div class="stat"><div class="n" id="statSites">0</div><div class="l">sites concernés</div></div>
+    <div class="stat"><div class="n" id="statAdmin">Lecture</div><div class="l">mode actuel</div></div>
+  </section>
+
+  <div class="chips" id="categoryChips"></div>
+  <section class="grid" id="docGrid"></section>
+</main>
+
+<footer>AFR Élevage – Bibliothèque documentaire consultable par les salariés</footer>
+
+<!-- Modal connexion admin -->
+<div class="modal-backdrop" id="loginModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>Connexion administrateur</h2>
+      <button class="x" data-close="loginModal">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="notice">
+        Les salariés peuvent consulter sans connexion. La connexion sert seulement à ajouter, modifier ou supprimer des documents.
+      </div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Email admin</label>
+          <input class="input" id="loginEmail" type="email" placeholder="exemple@afr33.fr">
+        </div>
+        <div class="field">
+          <label>Mot de passe</label>
+          <input class="input" id="loginPassword" type="password" placeholder="Mot de passe Firebase Auth">
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" data-close="loginModal">Annuler</button>
+      <button class="btn primary" id="loginSubmit">Se connecter</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal ajout / modification -->
+<div class="modal-backdrop" id="editModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="editTitle">Ajouter une procédure</h2>
+      <button class="x" data-close="editModal">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="docForm">
+        <input type="hidden" id="docId">
+        <div class="form-grid">
+          <div class="field">
+            <label>Titre *</label>
+            <input class="input" id="fTitle" required placeholder="Ex : Protocole nettoyage canetonnière">
+          </div>
+          <div class="field">
+            <label>Code / référence</label>
+            <input class="input" id="fCode" placeholder="Ex : PR_SAN-01">
+          </div>
+          <div class="field">
+            <label>Catégorie *</label>
+            <select id="fCategory" required>
+              <option value="qualite">Qualité</option>
+              <option value="sanitaire">Sanitaire</option>
+              <option value="rh">RH</option>
+              <option value="production">Production</option>
+              <option value="securite">Sécurité</option>
+              <option value="maintenance">Maintenance</option>
+              <option value="autre">Autre</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Sous-catégorie</label>
+            <input class="input" id="fSubcategory" list="subcatList" placeholder="Ex : Plan, Protocole, Registre…">
+            <datalist id="subcatList"></datalist>
+            <div class="help">Tu peux choisir une suggestion ou écrire ta propre sous-catégorie.</div>
+          </div>
+          <div class="field">
+            <label>Site</label>
+            <input class="input" id="fSite" placeholder="Tous sites, NT, NV, SG, ST, VS…">
+          </div>
+          <div class="field">
+            <label>Version / date</label>
+            <input class="input" id="fVersion" placeholder="Ex : 2026, v2, 27/04/2026">
+          </div>
+          <div class="field">
+            <label>Mots-clés</label>
+            <input class="input" id="fTags" placeholder="nettoyage, sécurité, eau…">
+          </div>
+          <div class="field full">
+            <label>Description</label>
+            <textarea id="fDesc" placeholder="Résumé court affiché sur la carte"></textarea>
+          </div>
+          <div class="field full">
+            <label>Fichier *</label>
+            <div class="filebox">
+              <div><strong>PDF, Excel, Word, image</strong></div>
+              <div class="help">Pour une modification, laisse vide si tu veux garder l’ancien fichier.</div>
+              <input id="fFile" type="file" accept=".pdf,.xlsx,.xls,.xlsm,.csv,.doc,.docx,.png,.jpg,.jpeg,.webp">
+              <div class="progress" id="uploadProgress"><span></span></div>
+              <div class="help" id="currentFile"></div>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" data-close="editModal">Annuler</button>
+      <button class="btn primary" id="saveDocBtn">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal visionneuse -->
+<div class="modal-backdrop" id="viewerModal">
+  <div class="modal wide">
+    <div class="modal-head">
+      <div>
+        <h2 id="viewerTitle">Document</h2>
+        <div class="help" id="viewerSub"></div>
+      </div>
+      <button class="x" data-close="viewerModal">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="viewer-toolbar">
+        <button class="btn" id="viewerDownload">⬇️ Télécharger</button>
+        <button class="btn" id="viewerOpen">🔎 Ouvrir dans un nouvel onglet</button>
+        <div class="searchbox" id="sheetSearchWrap" style="display:none;max-width:320px">
+          <input id="sheetSearch" placeholder="Rechercher dans le tableau…">
+        </div>
+      </div>
+      <div id="viewerContent"></div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+/*
+  ═══════════════════════════════════════════════════════════════
+  CONFIG FIREBASE À REMPLACER
+  ═══════════════════════════════════════════════════════════════
+
+  1) Dans Firebase Console > Paramètres du projet > Vos applications web
+  2) Copie la configuration et remplace les valeurs ci-dessous.
+  3) Active :
+     - Authentication > Email/Password
+     - Realtime Database
+     - Storage
+  4) Ajoute ton ou tes comptes admin dans Authentication.
+*/
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDJdHx6xKy43aTPdjoSB8dZjkOIjXyGyh8",
+  authDomain: "afr-nt2.firebaseapp.com",
+  databaseURL: "https://afr-nt2-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "afr-nt2",
+  storageBucket: "afr-nt2.firebasestorage.app",
+  messagingSenderId: "169851474976",
+  appId: "1:169851474976:web:2032be86439c1b554f9845",
+  measurementId: "G-ZS1PN57W68"
+};
+
+// Page d'accueil AFR. Change si besoin.
+const HOME_URL = "https://blp-47.github.io/AFR/";
+
+const CATEGORIES = {
+  all:         { label:"Toutes", icon:"📚", color:"#163a5f" },
+  qualite:    { label:"Qualité", icon:"⭐", color:"#163a5f" },
+  sanitaire:  { label:"Sanitaire", icon:"🧪", color:"#1f8a5b" },
+  rh:         { label:"RH", icon:"👥", color:"#8b5a00" },
+  production: { label:"Production", icon:"🏭", color:"#6b4e8c" },
+  securite:   { label:"Sécurité", icon:"⚠️", color:"#c53030" },
+  maintenance:{ label:"Maintenance", icon:"🔧", color:"#475569" },
+  autre:      { label:"Autres", icon:"📄", color:"#64748b" }
+};
+
+const SUBCATEGORIES = {
+  qualite: ["Plan", "Procédure", "Instruction", "Enregistrement", "Audit", "Document Unique"],
+  sanitaire: ["Plan", "Protocole", "Nettoyage", "Désinfection", "Analyses", "Biosécurité"],
+  rh: ["Contrat", "Formation", "Consigne", "Planning", "Sécurité salarié"],
+  production: ["Plan", "Protocole", "Suivi", "Ponte", "Insémination", "Mâles", "Canes"],
+  securite: ["Plan", "Consigne", "EPI", "Risque", "Urgence", "Incendie"],
+  maintenance: ["Plan", "Notice", "Entretien", "Réparation", "Contrôle"],
+  autre: ["Plan", "Note", "Modèle", "Divers"]
+};
+
+let app, auth, db, storage;
+let firebaseReady = false;
+let currentUser = null;
+let docs = [];
+let activeCategory = "all";
+let currentViewerDoc = null;
+let activeFolderSubcategory = null;
+
+const $ = sel => document.querySelector(sel);
+const $$ = sel => Array.from(document.querySelectorAll(sel));
+
+function escapeHtml(v){
+  return String(v ?? "").replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+}
+function slugify(s){
+  return String(s||"document").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9._-]+/g,"_").replace(/^_+|_+$/g,"").slice(0,80) || "document";
+}
+function fileExt(name){
+  return (String(name||"").split(".").pop() || "").toLowerCase();
+}
+function isExcel(ext){ return ["xlsx","xls","xlsm","csv"].includes(ext); }
+function isImage(ext){ return ["png","jpg","jpeg","webp"].includes(ext); }
+function isWord(ext){ return ["doc","docx"].includes(ext); }
+function isPdf(ext){ return ext === "pdf"; }
+function fmtDate(ts){
+  if(!ts) return "";
+  const d = typeof ts === "number" ? new Date(ts) : new Date(ts);
+  return isNaN(d) ? "" : d.toLocaleDateString("fr-FR");
+}
+function setNotice(msg, type=""){
+  const n = $("#statusNotice");
+  if(!msg){ n.style.display="none"; return; }
+  n.className = "notice " + type;
+  n.innerHTML = msg;
+  n.style.display="block";
+  setTimeout(()=>{ if(n.innerHTML===msg) n.style.display="none"; }, 5200);
+}
+function setConfigNotice(msg){
+  const n = $("#configNotice");
+  if(!msg){ n.style.display="none"; return; }
+  n.innerHTML = msg; n.style.display="block";
+}
+function isConfigFilled(){
+  return firebaseConfig.apiKey && !firebaseConfig.apiKey.includes("REMPLACE") && !firebaseConfig.projectId.includes("REMPLACE");
+}
+
+async function initFirebase(){
+  if(!isConfigFilled()){
+    setConfigNotice(
+      "<strong>Configuration Firebase manquante.</strong><br>" +
+      "Remplace les valeurs <code>REMPLACE_MOI</code> dans le fichier HTML. " +
+      "Ensuite les salariés verront les documents depuis Firebase et l’admin pourra en ajouter."
+    );
+    renderAll();
+    return;
+  }
+
+  try{
+    const [
+      firebaseApp,
+      firebaseAuth,
+      firebaseDb,
+      firebaseStorage
+    ] = await Promise.all([
+      import("https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js"),
+      import("https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js"),
+      import("https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js"),
+      import("https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js")
+    ]);
+
+    app = firebaseApp.initializeApp(firebaseConfig);
+    auth = firebaseAuth;
+    db = firebaseDb;
+    storage = firebaseStorage;
+    firebaseReady = true;
+    setConfigNotice("");
+
+    const authInstance = auth.getAuth(app);
+
+    auth.onAuthStateChanged(authInstance, user => {
+      currentUser = user;
+      document.body.classList.toggle("is-admin", !!user);
+      $("#statAdmin").textContent = user ? "Admin" : "Lecture";
+      if(user) setNotice("Mode administrateur activé.", "ok");
+      renderAll();
+    });
+
+    const proceduresRef = db.ref(db.getDatabase(app), "procedures");
+    db.onValue(proceduresRef, snap => {
+      const val = snap.val() || {};
+      docs = Object.entries(val).map(([id, v]) => ({ id, ...v }));
+      renderAll();
+    }, err => {
+      setConfigNotice("<strong>Erreur de lecture Firebase :</strong> " + escapeHtml(err.message));
+    });
+
+  }catch(err){
+    setConfigNotice("<strong>Impossible de charger Firebase :</strong> " + escapeHtml(err.message));
+    renderAll();
+  }
+}
+
+function sortDocs(arr){
+  const sort = $("#sortSelect").value;
+  arr.sort((a,b) => {
+    if(sort === "title") return String(a.title||"").localeCompare(String(b.title||""), "fr");
+    if(sort === "category") return String(a.category||"").localeCompare(String(b.category||""), "fr") || String(a.subcategory||"").localeCompare(String(b.subcategory||""), "fr") || String(a.title||"").localeCompare(String(b.title||""), "fr");
+    return (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0);
+  });
+  return arr;
+}
+
+function baseFilteredDocs({ignoreSubcategory=false} = {}){
+  const q = $("#searchInput").value.toLowerCase().trim();
+  const site = $("#siteFilter").value;
+  const subcat = activeFolderSubcategory || $("#subcatFilter").value;
+  return docs.filter(d => {
+    const catOk = activeCategory === "all" || d.category === activeCategory;
+    const siteOk = site === "all" || (d.site || "").toLowerCase() === site.toLowerCase();
+    const subcatValue = (d.subcategory || "Sans sous-catégorie");
+    const subcatOk = ignoreSubcategory || subcat === "all" || subcatValue.toLowerCase() === subcat.toLowerCase();
+    const hay = [d.title,d.code,d.desc,d.site,d.subcategory,d.tags,d.version,d.fileName].join(" ").toLowerCase();
+    const qOk = !q || hay.includes(q);
+    return catOk && siteOk && subcatOk && qOk;
+  });
+}
+
+function filteredDocs(){
+  return sortDocs(baseFilteredDocs());
+}
+
+function renderAll(){
+  renderStats();
+  renderSiteFilter();
+  renderSubcategoryFilter();
+  renderChips();
+  renderGrid();
+}
+
+function renderStats(){
+  $("#statDocs").textContent = docs.length;
+  $("#statCats").textContent = new Set(docs.map(d=>d.category).filter(Boolean)).size;
+  $("#statSites").textContent = new Set(docs.map(d=>d.site).filter(Boolean)).size;
+  $("#statAdmin").textContent = currentUser ? "Admin" : "Lecture";
+}
+
+function renderSiteFilter(){
+  const select = $("#siteFilter");
+  const current = select.value;
+  const sites = [...new Set(docs.map(d => (d.site||"").trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"fr"));
+  select.innerHTML = '<option value="all">Tous les sites</option>' + sites.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join("");
+  select.value = sites.includes(current) ? current : "all";
+}
+
+function renderSubcategoryFilter(){
+  const select = $("#subcatFilter");
+  const current = select.value;
+  const values = docs.map(d => (d.subcategory || "").trim()).filter(Boolean);
+  const unique = [...new Set(values)].sort((a,b)=>a.localeCompare(b,"fr"));
+  select.innerHTML = '<option value="all">Toutes les sous-catégories</option>' + unique.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join("");
+  select.value = unique.includes(current) ? current : "all";
+}
+
+function updateSubcategorySuggestions(){
+  const cat = $("#fCategory") ? $("#fCategory").value : "autre";
+  const suggestions = [...new Set([...(SUBCATEGORIES[cat] || SUBCATEGORIES.autre), ...docs.filter(d => d.category === cat).map(d => d.subcategory).filter(Boolean)])];
+  const list = $("#subcatList");
+  if(list) list.innerHTML = suggestions.map(v => `<option value="${escapeHtml(v)}"></option>`).join("");
+}
+
+function renderChips(){
+  const counts = { all: docs.length };
+  Object.keys(CATEGORIES).forEach(k => { if(k!=="all") counts[k]=0; });
+  docs.forEach(d => { if(counts[d.category] !== undefined) counts[d.category]++; else counts.autre++; });
+
+  $("#categoryChips").innerHTML = Object.entries(CATEGORIES).map(([key,c]) => `
+    <button class="chip ${activeCategory===key?"active":""}" data-cat="${key}">
+      ${c.icon} ${c.label} <span class="count">${counts[key] || 0}</span>
+    </button>
+  `).join("");
+
+  $$("#categoryChips .chip").forEach(ch => ch.onclick = () => {
+    activeCategory = ch.dataset.cat;
+    activeFolderSubcategory = null;
+    $("#subcatFilter").value = "all";
+    renderAll();
+  });
+}
+
+function renderGrid(){
+  const arr = filteredDocs();
+  const grid = $("#docGrid");
+  const selectedSubcat = activeFolderSubcategory || $("#subcatFilter").value;
+
+  if(!firebaseReady && !isConfigFilled()){
+    grid.innerHTML = `
+      <div class="empty" style="grid-column:1/-1">
+        <div class="icon">🔥</div>
+        <h2>App prête, Firebase pas encore configuré</h2>
+        <p>Remplace la configuration Firebase dans le fichier HTML, puis déploie sur GitHub Pages.</p>
+      </div>`;
+    return;
+  }
+
+  if(docs.length === 0){
+    grid.innerHTML = `
+      <div class="empty" style="grid-column:1/-1">
+        <div class="icon">📂</div>
+        <h2>Aucun document pour le moment</h2>
+        <p class="admin-only" style="display:${currentUser?"block":"none"}">Clique sur “Ajouter” pour envoyer la première procédure dans Firebase.</p>
+        <p style="display:${currentUser?"none":"block"}">Les documents ajoutés par l’administrateur apparaîtront ici automatiquement.</p>
+      </div>`;
+    return;
+  }
+
+  const shouldShowFolders = activeCategory !== "all" && selectedSubcat === "all";
+  if(shouldShowFolders){
+    const docsForFolders = sortDocs(baseFilteredDocs({ignoreSubcategory:true}));
+    if(docsForFolders.length === 0){
+      grid.innerHTML = `
+        <div class="empty" style="grid-column:1/-1">
+          <div class="icon">🔎</div>
+          <h2>Aucun résultat</h2>
+          <p>Modifie la recherche ou les filtres.</p>
+        </div>`;
+      return;
+    }
+    grid.innerHTML = renderFolderView(docsForFolders);
+    $$("#docGrid [data-folder]").forEach(btn => btn.onclick = () => {
+      activeFolderSubcategory = btn.dataset.folder;
+      $("#subcatFilter").value = btn.dataset.folder;
+      renderAll();
+    });
+    return;
+  }
+
+  if(arr.length === 0){
+    grid.innerHTML = `
+      <div class="empty" style="grid-column:1/-1">
+        <div class="icon">🔎</div>
+        <h2>Aucun résultat</h2>
+        <p>Modifie la recherche ou les filtres.</p>
+      </div>`;
+    return;
+  }
+
+  const cat = activeCategory !== "all" ? (CATEGORIES[activeCategory] || CATEGORIES.autre) : null;
+  const breadcrumb = activeFolderSubcategory ? `
+    <div class="breadcrumb" style="grid-column:1/-1">
+      <button id="backToFolders">← Dossiers ${cat ? escapeHtml(cat.label) : ""}</button>
+      <span>${cat ? escapeHtml(cat.label) + " › " : ""}${escapeHtml(activeFolderSubcategory)}</span>
+    </div>` : "";
+
+  grid.innerHTML = breadcrumb + arr.map(d => cardHtml(d)).join("");
+  const back = $("#backToFolders");
+  if(back) back.onclick = () => {
+    activeFolderSubcategory = null;
+    $("#subcatFilter").value = "all";
+    renderAll();
+  };
+  $$("#docGrid [data-open]").forEach(btn => btn.onclick = () => openViewer(btn.dataset.open));
+  $$("#docGrid [data-download]").forEach(btn => btn.onclick = () => downloadDoc(btn.dataset.download));
+  $$("#docGrid [data-edit]").forEach(btn => btn.onclick = () => openEdit(btn.dataset.edit));
+  $$("#docGrid [data-delete]").forEach(btn => btn.onclick = () => deleteDoc(btn.dataset.delete));
+}
+
+function renderFolderView(arr){
+  const cat = CATEGORIES[activeCategory] || CATEGORIES.autre;
+  const groups = new Map();
+  arr.forEach(d => {
+    const sub = (d.subcategory || "Sans sous-catégorie").trim() || "Sans sous-catégorie";
+    if(!groups.has(sub)) groups.set(sub, []);
+    groups.get(sub).push(d);
+  });
+  const folders = [...groups.entries()].sort((a,b)=>a[0].localeCompare(b[0], "fr"));
+  return `
+    <div class="breadcrumb" style="grid-column:1/-1">
+      <span>📁 ${escapeHtml(cat.label)} : choisis un dossier de sous-catégorie</span>
+    </div>
+    ${folders.map(([name, list]) => {
+      const preview = list.slice(0,3).map(d => d.title || "Sans titre").join(" • ");
+      return `
+        <article class="folder-card" style="--cat:${cat.color}" data-folder="${escapeHtml(name)}">
+          <div class="folder-icon">📁</div>
+          <div class="folder-title">${escapeHtml(name)}</div>
+          <div class="folder-meta"><span>${list.length} document(s)</span></div>
+          <div class="folder-preview">${escapeHtml(preview)}${list.length > 3 ? "…" : ""}</div>
+        </article>`;
+    }).join("")}`;
+}
+
+function cardHtml(d){
+  const cat = CATEGORIES[d.category] || CATEGORIES.autre;
+  const ext = fileExt(d.fileName || d.fileUrl);
+  const fmtClass = isImage(ext) ? "fmt-img" : "fmt-" + ext;
+  return `
+    <article class="card" style="--cat:${cat.color}">
+      <div class="card-head">
+        <span class="badge">${cat.icon} ${escapeHtml(cat.label)}${d.subcategory ? " › " + escapeHtml(d.subcategory) : ""}</span>
+        <span class="badge format ${fmtClass}">${escapeHtml(ext || d.format || "file")}</span>
+      </div>
+      <div class="card-title">${escapeHtml(d.title || "Sans titre")}</div>
+      <div class="card-desc">${escapeHtml(d.desc || "Aucune description.")}</div>
+      <div class="card-meta">
+        ${d.code ? `<span>🏷️ ${escapeHtml(d.code)}</span>` : ""}
+        ${d.subcategory ? `<span>📁 ${escapeHtml(d.subcategory)}</span>` : ""}
+        ${d.site ? `<span>📍 ${escapeHtml(d.site)}</span>` : ""}
+        ${d.version ? `<span>🗓️ ${escapeHtml(d.version)}</span>` : ""}
+        ${(d.updatedAt || d.createdAt) ? `<span>Mis à jour ${escapeHtml(fmtDate(d.updatedAt || d.createdAt))}</span>` : ""}
+      </div>
+      <div class="card-actions">
+        <button class="smallbtn primary" data-open="${escapeHtml(d.id)}">Consulter</button>
+        <button class="smallbtn" data-download="${escapeHtml(d.id)}">Télécharger</button>
+        ${currentUser ? `<button class="smallbtn" data-edit="${escapeHtml(d.id)}">Modifier</button>
+        <button class="smallbtn red" data-delete="${escapeHtml(d.id)}">Supprimer</button>` : ""}
+      </div>
+    </article>`;
+}
+
+function byId(id){ return docs.find(d => d.id === id); }
+
+async function loadFileArrayBufferForPreview(d){
+  const errors = [];
+  if(d && d.storagePath && firebaseReady && storage && app){
+    try{
+      const st = storage.getStorage(app);
+      const fileRef = storage.ref(st, d.storagePath);
+      if(typeof storage.getBytes === "function"){
+        const data = await storage.getBytes(fileRef, 50 * 1024 * 1024);
+        if(data instanceof ArrayBuffer) return data;
+        if(data && data.buffer) return data.buffer.slice(data.byteOffset || 0, (data.byteOffset || 0) + data.byteLength);
+      }
+      if(typeof storage.getBlob === "function"){
+        const blob = await storage.getBlob(fileRef);
+        return await blob.arrayBuffer();
+      }
+    }catch(err){
+      errors.push("lecture Firebase Storage : " + (err.message || err.code || err));
+    }
+  }
+  if(d && d.fileUrl){
+    try{
+      const res = await fetch(d.fileUrl, { cache:"no-store" });
+      if(!res.ok) throw new Error("HTTP " + res.status);
+      return await res.arrayBuffer();
+    }catch(err){
+      errors.push("lien public : " + (err.message || err));
+    }
+  }
+  throw new Error(errors.join(" / ") || "fichier introuvable");
+}
+
+
+async function openViewer(id){
+  const d = byId(id);
+  if(!d) return;
+  currentViewerDoc = d;
+  $("#viewerTitle").textContent = d.title || "Document";
+  $("#viewerSub").textContent = [d.code, (CATEGORIES[d.category]||CATEGORIES.autre).label, d.subcategory, d.site, d.version].filter(Boolean).join(" • ");
+  $("#viewerDownload").onclick = () => downloadDoc(id);
+  $("#viewerOpen").onclick = () => window.open(d.fileUrl, "_blank");
+  $("#sheetSearchWrap").style.display = "none";
+  $("#sheetSearch").value = "";
+  const ext = fileExt(d.fileName || d.fileUrl);
+  const content = $("#viewerContent");
+  content.innerHTML = "";
+
+  openModal("viewerModal");
+
+  if(isPdf(ext)){
+    content.innerHTML = `<iframe class="viewer-frame" src="${escapeHtml(d.fileUrl)}"></iframe>`;
+    return;
+  }
+
+  if(isImage(ext)){
+    content.innerHTML = `<div style="text-align:center;background:#f8fafc;border-radius:12px;padding:12px"><img src="${escapeHtml(d.fileUrl)}" style="max-width:100%;max-height:72vh;border-radius:10px"></div>`;
+    return;
+  }
+
+  if(isExcel(ext)){
+    content.innerHTML = `<div class="notice">Chargement du tableau…</div>`;
+    try{
+      const buf = await loadFileArrayBufferForPreview(d);
+      const wb = XLSX.read(buf, { type:"array" });
+      const tabs = wb.SheetNames.map((name,i)=>`<button class="btn ${i===0?"primary":""}" data-sheet="${escapeHtml(name)}">${escapeHtml(name)}</button>`).join("");
+      content.innerHTML = `<div class="viewer-toolbar" id="excelTabs">${tabs}</div><div class="sheet-container" id="excelSheet"></div>`;
+      $("#sheetSearchWrap").style.display = "block";
+
+      function showSheet(name){
+        $$("#excelTabs button").forEach(b => b.classList.toggle("primary", b.dataset.sheet === name));
+        const ws = wb.Sheets[name];
+        const html = XLSX.utils.sheet_to_html(ws, { editable:false });
+        const m = html.match(/<table[\s\S]*<\/table>/);
+        $("#excelSheet").innerHTML = m ? m[0] : html;
+        applySheetSearch();
+      }
+      $$("#excelTabs button").forEach(b => b.onclick = () => showSheet(b.dataset.sheet));
+      $("#sheetSearch").oninput = applySheetSearch;
+      showSheet(wb.SheetNames[0]);
+    }catch(err){
+      content.innerHTML = `<div class="notice err"><strong>Prévisualisation Excel impossible.</strong><br>Le document est bien enregistré : tu peux quand même utiliser <strong>Télécharger</strong> ou <strong>Ouvrir dans un nouvel onglet</strong>.<br><br><strong>Détail technique :</strong> ${escapeHtml(err.message)}<br><br>Si ce message apparaît encore, il faudra configurer le CORS du bucket Firebase Storage ou réimporter le document avec cette version corrigée.</div>`;
+    }
+    return;
+  }
+
+  if(isWord(ext)){
+    content.innerHTML = `
+      <div class="empty">
+        <div class="icon">📝</div>
+        <h2>Document Word</h2>
+        <p>La prévisualisation Word n’est pas toujours possible dans une page statique. Utilise “Télécharger” ou “Ouvrir dans un nouvel onglet”.</p>
+      </div>`;
+    return;
+  }
+
+  content.innerHTML = `
+    <div class="empty">
+      <div class="icon">📄</div>
+      <h2>Fichier disponible</h2>
+      <p>Utilise “Télécharger” ou “Ouvrir dans un nouvel onglet”.</p>
+    </div>`;
+}
+
+function applySheetSearch(){
+  const q = $("#sheetSearch").value.toLowerCase().trim();
+  $$("#excelSheet tr").forEach((row, idx) => {
+    if(!q || idx === 0) row.style.display = "";
+    else row.style.display = row.textContent.toLowerCase().includes(q) ? "" : "none";
+  });
+}
+
+function downloadDoc(id){
+  const d = byId(id);
+  if(!d || !d.fileUrl) return;
+  const a = document.createElement("a");
+  a.href = d.fileUrl;
+  a.download = d.fileName || d.title || "document";
+  a.target = "_blank";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+function openAdd(){
+  if(!currentUser){ openModal("loginModal"); return; }
+  $("#editTitle").textContent = "Ajouter une procédure";
+  $("#docForm").reset();
+  $("#docId").value = "";
+  $("#currentFile").textContent = "";
+  $("#uploadProgress").style.display = "none";
+  $("#uploadProgress span").style.width = "0%";
+  updateSubcategorySuggestions();
+  openModal("editModal");
+}
+
+function openEdit(id){
+  if(!currentUser){ openModal("loginModal"); return; }
+  const d = byId(id); if(!d) return;
+  $("#editTitle").textContent = "Modifier la procédure";
+  $("#docId").value = d.id;
+  $("#fTitle").value = d.title || "";
+  $("#fCode").value = d.code || "";
+  $("#fCategory").value = d.category || "autre";
+  updateSubcategorySuggestions();
+  $("#fSubcategory").value = d.subcategory || "";
+  $("#fSite").value = d.site || "";
+  $("#fVersion").value = d.version || "";
+  $("#fTags").value = d.tags || "";
+  $("#fDesc").value = d.desc || "";
+  $("#fFile").value = "";
+  $("#currentFile").innerHTML = d.fileName ? "Fichier actuel : <strong>" + escapeHtml(d.fileName) + "</strong>" : "";
+  $("#uploadProgress").style.display = "none";
+  $("#uploadProgress span").style.width = "0%";
+  openModal("editModal");
+}
+
+async function saveDoc(){
+  if(!firebaseReady || !currentUser){ openModal("loginModal"); return; }
+
+  const id = $("#docId").value;
+  const title = $("#fTitle").value.trim();
+  const category = $("#fCategory").value;
+  const file = $("#fFile").files[0];
+  if(!title){ setNotice("Titre obligatoire.", "err"); return; }
+  if(!id && !file){ setNotice("Fichier obligatoire pour ajouter une procédure.", "err"); return; }
+
+  const old = id ? byId(id) : null;
+  let fileUrl = old?.fileUrl || "";
+  let fileName = old?.fileName || "";
+  let storagePath = old?.storagePath || "";
+
+  try{
+    $("#saveDocBtn").disabled = true;
+    $("#uploadProgress").style.display = file ? "block" : "none";
+    $("#uploadProgress span").style.width = "0%";
+
+    if(file){
+      const safeName = Date.now() + "_" + slugify(file.name);
+      storagePath = "procedures/" + safeName;
+      const st = storage.getStorage(app);
+      const fileRef = storage.ref(st, storagePath);
+
+      await new Promise((resolve, reject) => {
+        const task = storage.uploadBytesResumable(fileRef, file);
+        task.on("state_changed", snap => {
+          const pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
+          $("#uploadProgress span").style.width = pct + "%";
+        }, reject, resolve);
+      });
+      fileUrl = await storage.getDownloadURL(fileRef);
+      fileName = file.name;
+
+      // On ne supprime pas automatiquement l'ancien fichier en modification,
+      // pour éviter une perte accidentelle si le lien est encore utilisé ailleurs.
+    }
+
+    const now = Date.now();
+    const payload = {
+      title,
+      code: $("#fCode").value.trim(),
+      category,
+      subcategory: $("#fSubcategory").value.trim(),
+      site: $("#fSite").value.trim(),
+      version: $("#fVersion").value.trim(),
+      tags: $("#fTags").value.trim(),
+      desc: $("#fDesc").value.trim(),
+      fileUrl,
+      fileName,
+      format: fileExt(fileName),
+      storagePath,
+      updatedAt: now,
+      createdAt: old?.createdAt || now,
+      updatedBy: currentUser.email || ""
+    };
+
+    const database = db.getDatabase(app);
+    if(id){
+      await db.update(db.ref(database, "procedures/" + id), payload);
+      setNotice("Procédure modifiée.", "ok");
+    }else{
+      const newRef = db.push(db.ref(database, "procedures"));
+      await db.set(newRef, payload);
+      setNotice("Procédure ajoutée et visible pour les salariés.", "ok");
+    }
+    closeModal("editModal");
+  }catch(err){
+    setNotice("Erreur : " + escapeHtml(err.message), "err");
+  }finally{
+    $("#saveDocBtn").disabled = false;
+  }
+}
+
+async function deleteDoc(id){
+  if(!firebaseReady || !currentUser) return;
+  const d = byId(id); if(!d) return;
+  const ok = confirm("Supprimer cette procédure de la bibliothèque ?\n\n" + (d.title || ""));
+  if(!ok) return;
+  try{
+    await db.remove(db.ref(db.getDatabase(app), "procedures/" + id));
+    // Le fichier Storage n'est pas supprimé automatiquement pour éviter une suppression irréversible par erreur.
+    setNotice("Procédure supprimée de la liste. Le fichier Storage peut être supprimé manuellement si besoin.", "ok");
+  }catch(err){
+    setNotice("Erreur suppression : " + escapeHtml(err.message), "err");
+  }
+}
+
+async function login(){
+  if(!firebaseReady){
+    setNotice("Firebase n’est pas encore configuré.", "err");
+    return;
+  }
+  try{
+    await auth.signInWithEmailAndPassword(auth.getAuth(app), $("#loginEmail").value.trim(), $("#loginPassword").value);
+    closeModal("loginModal");
+  }catch(err){
+    setNotice("Connexion impossible : " + escapeHtml(err.message), "err");
+  }
+}
+async function logout(){
+  if(firebaseReady) await auth.signOut(auth.getAuth(app));
+  setNotice("Déconnecté.", "ok");
+}
+
+function exportJson(){
+  const blob = new Blob([JSON.stringify(docs, null, 2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "bibliotheque_procedures_afr_" + new Date().toISOString().slice(0,10) + ".json";
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(a.href);
+}
+
+async function importJson(file){
+  if(!firebaseReady || !currentUser){ openModal("loginModal"); return; }
+  try{
+    const text = await file.text();
+    const arr = JSON.parse(text);
+    if(!Array.isArray(arr)) throw new Error("Le JSON doit contenir une liste de documents.");
+    const database = db.getDatabase(app);
+    const updates = {};
+    arr.forEach(item => {
+      const id = item.id || db.push(db.ref(database, "procedures")).key;
+      const clean = {...item};
+      delete clean.id;
+      clean.updatedAt = Date.now();
+      updates["procedures/" + id] = clean;
+    });
+    await db.update(db.ref(database), updates);
+    setNotice(arr.length + " document(s) importé(s).", "ok");
+  }catch(err){
+    setNotice("Import impossible : " + escapeHtml(err.message), "err");
+  }
+}
+
+function openModal(id){ $("#" + id).classList.add("show"); }
+function closeModal(id){ $("#" + id).classList.remove("show"); }
+
+$$("[data-close]").forEach(b => b.onclick = () => closeModal(b.dataset.close));
+$$(".modal-backdrop").forEach(m => m.addEventListener("click", e => { if(e.target === m) closeModal(m.id); }));
+
+$("#homeBtn").onclick = () => { location.href = HOME_URL; };
+$("#adminBtn").onclick = () => currentUser ? openAdd() : openModal("loginModal");
+$("#logoutBtn").onclick = logout;
+$("#loginSubmit").onclick = login;
+$("#addBtn").onclick = openAdd;
+$("#saveDocBtn").onclick = saveDoc;
+$("#exportBtn").onclick = exportJson;
+$("#importInput").onchange = e => e.target.files[0] && importJson(e.target.files[0]);
+$("#searchInput").oninput = renderAll;
+$("#siteFilter").onchange = () => { activeFolderSubcategory = null; renderAll(); };
+$("#subcatFilter").onchange = () => { activeFolderSubcategory = $("#subcatFilter").value === "all" ? null : $("#subcatFilter").value; renderAll(); };
+$("#sortSelect").onchange = renderAll;
+$("#fCategory").onchange = updateSubcategorySuggestions;
+document.addEventListener("keydown", e => {
+  if(e.key === "Escape") $$(".modal-backdrop.show").forEach(m => closeModal(m.id));
+});
+
+initFirebase();
+</script>
+</body>
+</html>
