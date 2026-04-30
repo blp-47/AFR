@@ -1,0 +1,21 @@
+name: BODACC Watch AFR
+
+on:
+  schedule:
+    # Tous les jours à 7h00 UTC (8h heure française en hiver, 9h en été)
+    - cron: '0 7 * * *'
+  workflow_dispatch: # Permet exécution manuelle depuis GitHub
+
+jobs:
+  check-bodacc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Run BODACC watcher
+        env:
+          FIREBASE_DB_URL: ${{ secrets.FIREBASE_DB_URL }}
+          FIREBASE_DB_SECRET: ${{ secrets.FIREBASE_DB_SECRET }}
+          FCM_SERVER_KEY: ${{ secrets.FCM_SERVER_KEY }}
+          FCM_TOPIC: ${{ secrets.FCM_TOPIC }}
+        run: node scripts/bodacc-watch.js
