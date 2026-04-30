@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BODACC – Veille AFR</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0f1117; --surface:#1f2435; --surface-2:#262b3f; --border:#2f3550;
+    --accent:#3b82f6; --accent-2:#60a5fa; --text:#e8ecf4; --muted:#8a93ad;
+    --ok:#10b981; --warn:#f59e0b; --err:#ef4444;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'DM Sans',system-ui,sans-serif;font-size:15px;min-height:100vh}
+  header{padding:18px 16px;background:linear-gradient(135deg,#1a1f30 0%,#0f1117 100%);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
+  h1{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;margin:0 0 4px;letter-spacing:-.02em}
+  .sub{color:var(--muted);font-size:13px}
+  main{padding:16px;max-width:900px;margin:0 auto;padding-bottom:80px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:14px}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  input,button,select{font-family:inherit;font-size:14px}
+  input[type=text]{flex:1;min-width:140px;background:var(--surface-2);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:10px;outline:none}
+  input[type=text]:focus{border-color:var(--accent)}
+  button{background:var(--accent);color:white;border:0;padding:10px 14px;border-radius:10px;font-weight:600;cursor:pointer;transition:.15s}
+  button:hover{background:var(--accent-2)}
+  button.ghost{background:var(--surface-2);color:var(--text);border:1px solid var(--border)}
+  button.danger{background:transparent;color:var(--err);border:1px solid var(--err);padding:6px 10px;font-size:12px}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  h2{font-family:'Syne',sans-serif;font-weight:700;font-size:16px;margin:0 0 10px;color:var(--accent-2);letter-spacing:-.01em}
+  .watch-item{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--surface-2);border-radius:10px;margin-bottom:6px;font-size:13px}
+  .watch-item strong{font-family:'Syne',sans-serif;letter-spacing:.02em}
+  .watch-item .label{color:var(--muted);font-size:11px;margin-top:2px}
+  .annonce{background:var(--surface-2);border-left:3px solid var(--accent);border-radius:8px;padding:12px;margin-bottom:10px}
+  .annonce.new{border-left-color:var(--warn);background:#2a2218}
+  .a-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+  .a-type{font-weight:600;color:var(--accent-2);font-size:13px}
+  .a-date{color:var(--muted);font-size:12px;white-space:nowrap}
+  .a-body{font-size:13px;line-height:1.5;color:var(--text)}
+  .a-meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;font-size:11px;color:var(--muted)}
+  .badge{display:inline-block;padding:2px 8px;background:var(--border);border-radius:6px;font-size:11px}
+  .badge.new{background:var(--warn);color:#1a1100;font-weight:700}
+  .empty{text-align:center;color:var(--muted);padding:24px;font-size:13px}
+  .status{font-size:12px;color:var(--muted);margin-top:6px}
+  details{margin-top:8px}
+  details summary{cursor:pointer;color:var(--accent-2);font-size:12px}
+  pre{background:#0a0c12;padding:8px;border-radius:6px;font-size:11px;overflow-x:auto;margin-top:6px;color:#cbd2e0}
+  a{color:var(--accent-2)}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--accent);padding:10px 16px;border-radius:10px;font-size:13px;z-index:100;opacity:0;transition:.3s;pointer-events:none}
+  .toast.show{opacity:1}
+</style>
+</head>
+<body>
+<header>
+  <h1>BODACC · Veille AFR</h1>
+  <div class="sub">Surveillance automatisée des SIREN d'intérêt</div>
+</header>
+<main>
+
+  <div class="card">
+    <h2>SIREN surveillés</h2>
+    <div id="watchlist"></div>
+    <div class="row" style="margin-top:10px">
+      <input type="text" id="siren-input" placeholder="SIREN (9 chiffres)" maxlength="9" inputmode="numeric">
+      <input type="text" id="label-input" placeholder="Libellé (ex: EARL IB2S)">
+      <button onclick="addSiren()">Ajouter</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Actions</h2>
+    <div class="row">
+      <button onclick="checkAll()" id="btn-check">🔍 Vérifier maintenant</button>
+      <button class="ghost" onclick="loadHistory()">📜 Historique complet</button>
+    </div>
+    <div class="status" id="status">Prêt.</div>
+  </div>
+
+  <div class="card">
+    <h2>Annonces récentes</h2>
+    <div id="annonces"></div>
+  </div>
+
+</main>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, set, get, remove, onValue, push, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+// ⚠️ Remplace par la config Firebase de afr-nt2 (copie depuis index.html du portail AFR)
+const firebaseConfig = {
+ apiKey: "AIzaSyDJdHx6xKy43aTPdjoSB8dZjkOIjXyGyh8",
+  authDomain: "afr-nt2.firebaseapp.com",
+  databaseURL: "https://afr-nt2-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "afr-nt2",
+  storageBucket: "afr-nt2.firebasestorage.app",
+  messagingSenderId: "169851474976",
+  appId: "1:169851474976:web:2032be86439c1b554f9845",
+  measurementId: "G-ZS1PN57W68"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// SIREN par défaut au premier chargement
+const DEFAULT_WATCH = {
+  "989106851": { label: "EARL IB2S (successeur SAS Bengaoui Issam)", added: Date.now() },
+  "102247285": { label: "SARL H A FORCE2", added: Date.now() }
+};
+
+const BODACC_API = "https://bodacc-datadila.opendatasoft.com/api/explore/v2.1/catalog/datasets/annonces-commerciales/records";
+
+let watchlist = {};
+let annonces = {};
+
+// === Watchlist ===
+const watchRef = ref(db, "bodacc/watchlist");
+onValue(watchRef, (snap) => {
+  watchlist = snap.val() || {};
+  // Init defaults si vide
+  if (Object.keys(watchlist).length === 0) {
+    set(watchRef, DEFAULT_WATCH);
+    return;
+  }
+  renderWatchlist();
+});
+
+function renderWatchlist(){
+  const c = document.getElementById("watchlist");
+  if (!Object.keys(watchlist).length) {
+    c.innerHTML = '<div class="empty">Aucun SIREN surveillé</div>';
+    return;
+  }
+  c.innerHTML = Object.entries(watchlist).map(([siren, info]) => `
+    <div class="watch-item">
+      <div>
+        <strong>${siren}</strong>
+        <div class="label">${escapeHtml(info.label || "")}</div>
+      </div>
+      <button class="danger" onclick="removeSiren('${siren}')">Retirer</button>
+    </div>
+  `).join("");
+}
+
+window.addSiren = async () => {
+  const siren = document.getElementById("siren-input").value.trim().replace(/\s/g,"");
+  const label = document.getElementById("label-input").value.trim();
+  if (!/^\d{9}$/.test(siren)) { toast("SIREN invalide (9 chiffres requis)"); return; }
+  await update(ref(db, "bodacc/watchlist/" + siren), { label: label || siren, added: Date.now() });
+  document.getElementById("siren-input").value = "";
+  document.getElementById("label-input").value = "";
+  toast("SIREN ajouté");
+};
+
+window.removeSiren = async (siren) => {
+  if (!confirm("Retirer " + siren + " de la surveillance ?")) return;
+  await remove(ref(db, "bodacc/watchlist/" + siren));
+  toast("SIREN retiré");
+};
+
+// === Vérification BODACC ===
+window.checkAll = async () => {
+  const btn = document.getElementById("btn-check");
+  btn.disabled = true;
+  const status = document.getElementById("status");
+  const sirens = Object.keys(watchlist);
+  if (!sirens.length) { status.textContent = "Aucun SIREN à vérifier."; btn.disabled = false; return; }
+
+  let totalNew = 0;
+  for (const siren of sirens) {
+    status.textContent = `Vérification ${siren}...`;
+    try {
+      const newCount = await checkSiren(siren);
+      totalNew += newCount;
+    } catch(e) {
+      console.error(siren, e);
+      status.textContent = `Erreur ${siren}: ${e.message}`;
+    }
+  }
+  status.textContent = `Vérification terminée. ${totalNew} nouvelle(s) annonce(s).`;
+  await loadHistory();
+  btn.disabled = false;
+  if (totalNew) toast(`${totalNew} nouvelle(s) annonce(s) !`);
+};
+
+async function checkSiren(siren) {
+  const url = `${BODACC_API}?where=registre%3D%22${siren}%22&order_by=dateparution%20desc&limit=20`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error("HTTP " + r.status);
+  const data = await r.json();
+  const results = data.results || [];
+
+  let newCount = 0;
+  for (const item of results) {
+    const id = item.id || `${item.numeroannonce}_${item.dateparution}`;
+    const existRef = ref(db, `bodacc/annonces/${siren}/${sanitizeKey(id)}`);
+    const existing = await get(existRef);
+    if (!existing.exists()) {
+      await set(existRef, {
+        ...item,
+        _siren: siren,
+        _label: watchlist[siren]?.label || siren,
+        _seenAt: Date.now(),
+        _isNew: true
+      });
+      newCount++;
+    }
+  }
+  return newCount;
+}
+
+function sanitizeKey(s) {
+  return String(s).replace(/[.#$/\[\]]/g, "_");
+}
+
+// === Affichage annonces ===
+window.loadHistory = async () => {
+  const annoncesRef = ref(db, "bodacc/annonces");
+  const snap = await get(annoncesRef);
+  const data = snap.val() || {};
+  const all = [];
+  for (const siren in data) {
+    for (const id in data[siren]) {
+      all.push(data[siren][id]);
+    }
+  }
+  all.sort((a,b) => (b.dateparution || "").localeCompare(a.dateparution || ""));
+  renderAnnonces(all);
+};
+
+function renderAnnonces(list) {
+  const c = document.getElementById("annonces");
+  if (!list.length) {
+    c.innerHTML = '<div class="empty">Aucune annonce trouvée. Lance une vérification.</div>';
+    return;
+  }
+  c.innerHTML = list.map(a => {
+    const personne = parsePersonne(a.listepersonnes);
+    return `
+    <div class="annonce ${a._isNew ? 'new' : ''}">
+      <div class="a-head">
+        <div>
+          <div class="a-type">${escapeHtml(a.familleavis_lib || a.familleavis || "Annonce")} · ${escapeHtml(personne.denomination || a._label || "")}</div>
+          ${a._isNew ? '<span class="badge new">NOUVEAU</span>' : ''}
+        </div>
+        <div class="a-date">${formatDate(a.dateparution)}</div>
+      </div>
+      <div class="a-body">${formatBody(a)}</div>
+      <div class="a-meta">
+        <span class="badge">SIREN ${a._siren}</span>
+        <span class="badge">${escapeHtml(a.tribunal || "")}</span>
+        <span class="badge">${escapeHtml(a.numerodepartement || "")}</span>
+        ${a.numeroannonce ? `<span class="badge">N°${a.numeroannonce}</span>` : ''}
+      </div>
+      <details>
+        <summary>Détails JSON</summary>
+        <pre>${escapeHtml(JSON.stringify(a, null, 2))}</pre>
+      </details>
+      <div style="margin-top:8px">
+        <button class="ghost" onclick="markRead('${a._siren}','${sanitizeKey(a.id)}')" style="font-size:12px;padding:4px 10px">Marquer lu</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+window.markRead = async (siren, id) => {
+  await update(ref(db, `bodacc/annonces/${siren}/${id}`), { _isNew: false });
+  loadHistory();
+};
+
+function parsePersonne(lp) {
+  if (!lp) return {};
+  try {
+    const obj = typeof lp === "string" ? JSON.parse(lp) : lp;
+    const p = obj.personne || obj;
+    return {
+      denomination: p.denomination || p.nom || "",
+      adresse: p.adresseSiegeSocial?.france ? Object.values(p.adresseSiegeSocial.france).filter(Boolean).join(" ") : "",
+      activite: p.activite || ""
+    };
+  } catch(e) { return {}; }
+}
+
+function formatBody(a) {
+  const parts = [];
+  if (a.depot) parts.push(`<strong>Dépôt :</strong> ${escapeHtml(typeof a.depot === "string" ? a.depot : JSON.stringify(a.depot))}`);
+  if (a.modificationsgenerales) parts.push(`<strong>Modification :</strong> ${escapeHtml(typeof a.modificationsgenerales === "string" ? a.modificationsgenerales : JSON.stringify(a.modificationsgenerales))}`);
+  if (a.radiationaurcs) parts.push(`<strong>Radiation :</strong> ${escapeHtml(typeof a.radiationaurcs === "string" ? a.radiationaurcs : JSON.stringify(a.radiationaurcs))}`);
+  if (a.jugement) parts.push(`<strong>Jugement :</strong> ${escapeHtml(typeof a.jugement === "string" ? a.jugement : JSON.stringify(a.jugement))}`);
+  const personne = parsePersonne(a.listepersonnes);
+  if (personne.adresse) parts.push(`<strong>Adresse :</strong> ${escapeHtml(personne.adresse)}`);
+  if (personne.activite) parts.push(`<strong>Activité :</strong> ${escapeHtml(personne.activite)}`);
+  return parts.join("<br>") || '<em style="color:var(--muted)">Voir détails JSON</em>';
+}
+
+function formatDate(d) {
+  if (!d) return "";
+  const dt = new Date(d);
+  return dt.toLocaleDateString("fr-FR", { day:"2-digit", month:"short", year:"numeric" });
+}
+
+function escapeHtml(s) {
+  return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+function toast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2500);
+}
+
+// Charger historique au démarrage
+loadHistory();
+</script>
+</body>
+</html>
