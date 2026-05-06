@@ -1,0 +1,2436 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pointage AFR">
+<meta name="theme-color" content="#0f1117">
+<title>Pointage AFR Élevage</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📍</text></svg>">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-elev: #161922;
+  --bg-elev2: #1d212c;
+  --border: #262a36;
+  --border-strong: #353a48;
+  --text: #e7e9ee;
+  --text-mute: #8a8f9c;
+  --text-dim: #5b6070;
+  --accent: #3b82f6;
+  --accent-hover: #5b9aff;
+  --accent-soft: rgba(59,130,246,0.15);
+  --green: #22c55e;
+  --green-soft: rgba(34,197,94,0.18);
+  --orange: #f59e0b;
+  --orange-soft: rgba(245,158,11,0.18);
+  --red: #ef4444;
+  --red-soft: rgba(239,68,68,0.18);
+  --purple: #a855f7;
+  --purple-soft: rgba(168,85,247,0.18);
+  --radius: 14px;
+  --radius-lg: 20px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --shadow: 0 8px 24px rgba(0,0,0,0.35);
+  --shadow-lg: 0 20px 48px rgba(0,0,0,0.5);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+body {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100svh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.display { font-family: 'Syne', sans-serif; font-weight: 700; letter-spacing: -0.02em; }
+button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+input, select, textarea { font-family: inherit; font-size: 15px; color: var(--text); background: var(--bg-elev); border: 1px solid var(--border); border-radius: 10px; padding: 11px 14px; outline: none; width: 100%; transition: border-color 0.15s; }
+input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+label { display: block; font-size: 13px; color: var(--text-mute); margin-bottom: 6px; font-weight: 500; }
+
+/* === SCREENS === */
+.screen { display: none; min-height: 100svh; flex-direction: column; }
+.screen.active { display: flex; }
+
+/* === LOGIN === */
+#screen-login {
+  background: radial-gradient(1200px 600px at 50% -20%, rgba(59,130,246,0.18), transparent 60%), var(--bg);
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 36px 28px;
+  box-shadow: var(--shadow-lg);
+}
+.login-logo { text-align: center; margin-bottom: 28px; }
+.login-logo .display { font-size: 28px; color: var(--text); }
+.login-logo .sub { font-size: 13px; color: var(--text-mute); margin-top: 6px; letter-spacing: 0.08em; text-transform: uppercase; }
+.login-tabs { display: flex; background: var(--bg); border-radius: 12px; padding: 4px; margin-bottom: 22px; }
+.login-tab { flex: 1; padding: 11px; text-align: center; font-size: 14px; font-weight: 600; color: var(--text-mute); border-radius: 9px; transition: all 0.15s; }
+.login-tab.active { background: var(--accent); color: white; }
+
+.code-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 18px 0; }
+.code-cell { aspect-ratio: 1; background: var(--bg); border: 2px solid var(--border); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 700; color: var(--text); transition: all 0.15s; }
+.code-cell.filled { border-color: var(--accent); background: var(--accent-soft); }
+.keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 8px; }
+.key {
+  aspect-ratio: 1.4;
+  background: var(--bg-elev2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text);
+  transition: all 0.1s;
+}
+.key:active { background: var(--accent); color: white; transform: scale(0.95); }
+.key.action { background: var(--bg); font-size: 18px; }
+
+.btn { padding: 13px 20px; background: var(--accent); color: white; border-radius: 11px; font-weight: 600; font-size: 15px; transition: background 0.15s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.btn:hover { background: var(--accent-hover); }
+.btn.full { width: 100%; }
+.btn.ghost { background: var(--bg-elev2); color: var(--text); }
+.btn.ghost:hover { background: var(--border); }
+.btn.danger { background: var(--red); }
+.btn.success { background: var(--green); }
+.btn.warning { background: var(--orange); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn.small { padding: 8px 14px; font-size: 13px; border-radius: 8px; }
+.btn.icon { padding: 10px; aspect-ratio: 1; }
+
+/* === SALARIÉ HEADER === */
+.app-header {
+  background: var(--bg-elev);
+  border-bottom: 1px solid var(--border);
+  padding: calc(var(--safe-top) + 16px) 18px 16px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: blur(20px);
+}
+.app-header-inner { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.app-header-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 17px; letter-spacing: -0.01em; }
+.app-header-sub { font-size: 12px; color: var(--text-mute); margin-top: 2px; }
+
+/* === SALARIÉ === */
+#screen-salarie { padding-bottom: calc(var(--safe-bottom) + 24px); }
+.salarie-content { padding: 18px; flex: 1; display: flex; flex-direction: column; gap: 16px; max-width: 600px; margin: 0 auto; width: 100%; }
+
+.status-card {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.status-card::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: var(--status-glow, transparent);
+  opacity: 0.4;
+  pointer-events: none;
+}
+.status-card.en-service { --status-glow: radial-gradient(400px 200px at 50% 0%, rgba(34,197,94,0.25), transparent); }
+.status-card.en-pause { --status-glow: radial-gradient(400px 200px at 50% 0%, rgba(245,158,11,0.25), transparent); }
+.status-card.hors-service { --status-glow: radial-gradient(400px 200px at 50% 0%, rgba(91,96,112,0.18), transparent); }
+
+.status-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 14px; border-radius: 100px;
+  font-size: 12px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
+  position: relative; z-index: 1;
+}
+.status-badge.en-service { background: var(--green-soft); color: var(--green); }
+.status-badge.en-pause { background: var(--orange-soft); color: var(--orange); }
+.status-badge.hors-service { background: var(--bg-elev2); color: var(--text-mute); }
+.status-badge .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; animation: pulse 2s infinite; }
+.status-badge.hors-service .dot { animation: none; opacity: 0.5; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+.status-name { font-family: 'Syne', sans-serif; font-size: 24px; font-weight: 700; margin: 14px 0 4px; position: relative; z-index: 1; }
+.status-clock { font-size: 36px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; margin: 8px 0 4px; position: relative; z-index: 1; }
+.status-date { font-size: 13px; color: var(--text-mute); position: relative; z-index: 1; }
+
+.gps-card {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  display: flex; align-items: center; gap: 12px;
+  font-size: 13px;
+}
+.gps-icon { width: 36px; height: 36px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.gps-icon.error { background: var(--red-soft); color: var(--red); }
+.gps-icon.ok { background: var(--green-soft); color: var(--green); }
+.gps-info { flex: 1; min-width: 0; }
+.gps-info .label { color: var(--text-mute); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; }
+.gps-info .value { font-weight: 600; font-size: 14px; }
+.gps-info .meta { color: var(--text-mute); font-size: 12px; margin-top: 2px; }
+
+.action-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.action-grid.single { grid-template-columns: 1fr; }
+.action-btn {
+  padding: 28px 16px;
+  border-radius: var(--radius-lg);
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  border: 2px solid transparent;
+  transition: all 0.15s;
+  font-family: 'Syne', sans-serif;
+}
+.action-btn:active { transform: scale(0.97); }
+.action-btn.embauche { background: var(--green); color: white; box-shadow: 0 6px 20px rgba(34,197,94,0.35); }
+.action-btn.pause { background: var(--orange); color: white; box-shadow: 0 6px 20px rgba(245,158,11,0.3); }
+.action-btn.reprise { background: var(--accent); color: white; box-shadow: 0 6px 20px rgba(59,130,246,0.3); }
+.action-btn.debauche { background: var(--red); color: white; box-shadow: 0 6px 20px rgba(239,68,68,0.3); }
+.action-btn:disabled { background: var(--bg-elev2); color: var(--text-dim); box-shadow: none; cursor: not-allowed; }
+.action-btn .ico { font-size: 28px; }
+
+.timeline {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+.timeline-title { font-size: 12px; color: var(--text-mute); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; margin-bottom: 12px; }
+.timeline-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--border); }
+.timeline-item:first-of-type { border-top: none; padding-top: 0; }
+.timeline-time { font-weight: 600; font-variant-numeric: tabular-nums; min-width: 56px; }
+.timeline-type { padding: 3px 10px; border-radius: 100px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.timeline-type.embauche { background: var(--green-soft); color: var(--green); }
+.timeline-type.pause { background: var(--orange-soft); color: var(--orange); }
+.timeline-type.reprise { background: var(--accent-soft); color: var(--accent); }
+.timeline-type.debauche { background: var(--red-soft); color: var(--red); }
+.timeline-loc { color: var(--text-mute); font-size: 12px; flex: 1; text-align: right; }
+.empty { text-align: center; padding: 24px; color: var(--text-mute); font-size: 13px; }
+
+.batiment-picker {
+  margin-top: 10px;
+  padding: 12px;
+  background: var(--bg);
+  border-radius: 10px;
+  font-size: 13px;
+}
+.batiment-picker .row { display: flex; align-items: center; gap: 10px; }
+.batiment-picker select { padding: 8px 10px; font-size: 13px; flex: 1; }
+
+.team-site-group { margin-bottom: 14px; }
+.team-site-group:last-child { margin-bottom: 0; }
+.team-site-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 0 8px;
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  border-top: 1px solid var(--border);
+}
+.team-site-group:first-child .team-site-header { border-top: none; padding-top: 0; }
+.team-site-counter { font-family: 'DM Sans', sans-serif; font-size: 11px; color: var(--text-mute); font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; }
+.team-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 0;
+  font-size: 13px;
+}
+.team-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.team-dot.en-service { background: var(--green); box-shadow: 0 0 8px rgba(34,197,94,0.6); }
+.team-dot.en-pause { background: var(--orange); }
+.team-dot.fini { background: var(--text-dim); }
+.team-dot.absent { background: var(--bg-elev2); border: 1px solid var(--border-strong); }
+.team-name { flex: 1; font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.team-name.self { color: var(--accent); }
+.team-meta { font-size: 11px; color: var(--text-mute); white-space: nowrap; }
+.team-meta .bat { display: inline-block; padding: 2px 7px; border-radius: 100px; background: var(--bg-elev2); margin-left: 4px; font-weight: 600; }
+
+/* === ADMIN === */
+#screen-admin { background: var(--bg); }
+.admin-tabs {
+  display: flex;
+  background: var(--bg-elev);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: none;
+  position: sticky;
+  top: 56px;
+  z-index: 40;
+}
+.admin-tabs::-webkit-scrollbar { display: none; }
+.admin-tab {
+  padding: 14px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-mute);
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+}
+.admin-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.admin-content { padding: 20px; max-width: 1200px; margin: 0 auto; width: 100%; }
+.admin-pane { display: none; }
+.admin-pane.active { display: block; }
+
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 24px; }
+.kpi {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  position: relative;
+  overflow: hidden;
+}
+.kpi-label { font-size: 12px; color: var(--text-mute); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+.kpi-value { font-family: 'Syne', sans-serif; font-size: 30px; font-weight: 700; margin-top: 8px; letter-spacing: -0.02em; }
+.kpi-meta { font-size: 12px; color: var(--text-mute); margin-top: 4px; }
+.kpi.green .kpi-value { color: var(--green); }
+.kpi.orange .kpi-value { color: var(--orange); }
+.kpi.red .kpi-value { color: var(--red); }
+.kpi.accent .kpi-value { color: var(--accent); }
+
+.section {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 18px;
+  overflow: hidden;
+}
+.section-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  flex-wrap: wrap;
+}
+.section-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 16px; letter-spacing: -0.01em; }
+.section-body { padding: 16px 18px; }
+.section-body.tight { padding: 0; }
+
+table { width: 100%; border-collapse: collapse; }
+th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-mute); font-weight: 600; text-align: left; padding: 12px 14px; background: var(--bg-elev2); border-bottom: 1px solid var(--border); }
+td { padding: 12px 14px; border-bottom: 1px solid var(--border); font-size: 14px; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(255,255,255,0.02); }
+
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 100px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.chip.green { background: var(--green-soft); color: var(--green); }
+.chip.red { background: var(--red-soft); color: var(--red); }
+.chip.orange { background: var(--orange-soft); color: var(--orange); }
+.chip.accent { background: var(--accent-soft); color: var(--accent); }
+.chip.purple { background: var(--purple-soft); color: var(--purple); }
+.chip.gray { background: var(--bg-elev2); color: var(--text-mute); }
+
+.filters { display: flex; gap: 10px; flex-wrap: wrap; }
+.filters > * { flex: 1; min-width: 130px; max-width: 220px; }
+
+/* === MODAL === */
+.modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(6px);
+  display: none;
+  align-items: center; justify-content: center;
+  padding: 16px;
+  z-index: 100;
+}
+.modal-backdrop.active { display: flex; }
+.modal {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+}
+.modal-header { padding: 18px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.modal-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 17px; }
+.modal-body { padding: 20px; }
+.modal-footer { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; }
+.field { margin-bottom: 14px; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* === TOAST === */
+#toast {
+  position: fixed; left: 50%; bottom: calc(var(--safe-bottom) + 24px);
+  transform: translateX(-50%) translateY(120%);
+  background: var(--bg-elev2);
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  padding: 12px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: var(--shadow-lg);
+  z-index: 200;
+  transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+  max-width: 90vw;
+}
+#toast.show { transform: translateX(-50%) translateY(0); }
+#toast.error { border-color: var(--red); }
+#toast.success { border-color: var(--green); }
+
+/* === MOBILE TWEAKS === */
+@media (max-width: 480px) {
+  .kpi-value { font-size: 24px; }
+  .filters > * { max-width: none; }
+  .field-row { grid-template-columns: 1fr; }
+  th, td { padding: 10px 10px; font-size: 13px; }
+  .admin-content { padding: 14px; }
+}
+
+/* === SPINNER === */
+.spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.2); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.muted { color: var(--text-mute); font-size: 13px; }
+.text-right { text-align: right; }
+.flex { display: flex; align-items: center; gap: 10px; }
+.flex.between { justify-content: space-between; }
+.flex.wrap { flex-wrap: wrap; }
+.gap-sm { gap: 6px; }
+.mt-md { margin-top: 16px; }
+.mb-sm { margin-bottom: 8px; }
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- ========================= LOGIN SCREEN ========================= -->
+<div id="screen-login" class="screen active">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="display">AFR Élevage</div>
+      <div class="sub">Pointage géolocalisé</div>
+    </div>
+    <div class="login-tabs">
+      <div class="login-tab active" data-mode="salarie" onclick="setLoginMode('salarie')">Salarié</div>
+      <div class="login-tab" data-mode="admin" onclick="setLoginMode('admin')">Admin</div>
+    </div>
+
+    <div id="login-salarie">
+      <label style="text-align:center;margin-bottom:14px">Saisis ton code à 4 chiffres</label>
+      <div class="code-grid">
+        <div class="code-cell" id="cc-0"></div>
+        <div class="code-cell" id="cc-1"></div>
+        <div class="code-cell" id="cc-2"></div>
+        <div class="code-cell" id="cc-3"></div>
+      </div>
+      <div class="keypad">
+        <button class="key" onclick="codePress('1')">1</button>
+        <button class="key" onclick="codePress('2')">2</button>
+        <button class="key" onclick="codePress('3')">3</button>
+        <button class="key" onclick="codePress('4')">4</button>
+        <button class="key" onclick="codePress('5')">5</button>
+        <button class="key" onclick="codePress('6')">6</button>
+        <button class="key" onclick="codePress('7')">7</button>
+        <button class="key" onclick="codePress('8')">8</button>
+        <button class="key" onclick="codePress('9')">9</button>
+        <button class="key action" onclick="codeClear()">C</button>
+        <button class="key" onclick="codePress('0')">0</button>
+        <button class="key action" onclick="codeBack()">⌫</button>
+      </div>
+    </div>
+
+    <div id="login-admin" class="hidden">
+      <div class="field">
+        <label>Mot de passe administrateur</label>
+        <input type="password" id="admin-password" placeholder="••••••••" onkeydown="if(event.key==='Enter') loginAdmin()">
+      </div>
+      <button class="btn full" onclick="loginAdmin()">Connexion</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========================= SALARIÉ SCREEN ========================= -->
+<div id="screen-salarie" class="screen">
+  <div class="app-header">
+    <div class="app-header-inner">
+      <div>
+        <div class="app-header-title">Pointage</div>
+        <div class="app-header-sub" id="header-salarie-name">—</div>
+      </div>
+      <button class="btn ghost small" onclick="logout()">Quitter</button>
+    </div>
+  </div>
+
+  <div class="salarie-content">
+    <div class="status-card hors-service" id="status-card">
+      <span class="status-badge hors-service" id="status-badge"><span class="dot"></span><span id="status-text">Hors service</span></span>
+      <div class="status-name display" id="status-name">—</div>
+      <div class="status-clock" id="status-clock">--:--</div>
+      <div class="status-date" id="status-date">—</div>
+    </div>
+
+    <div class="gps-card" id="gps-card">
+      <div class="gps-icon" id="gps-icon">📍</div>
+      <div class="gps-info">
+        <div class="label">Localisation</div>
+        <div class="value" id="gps-value">Acquisition en cours…</div>
+        <div class="meta" id="gps-meta"></div>
+      </div>
+    </div>
+
+    <div id="batiment-picker" class="batiment-picker hidden">
+      <div class="row">
+        <span class="muted" style="font-size:12px">Forcer le bâtiment :</span>
+        <select id="batiment-override"><option value="">Auto (GPS)</option></select>
+      </div>
+    </div>
+
+    <div class="action-grid" id="action-grid">
+      <!-- buttons populated dynamically -->
+    </div>
+
+    <div class="timeline" id="team-now">
+      <div class="timeline-title flex between" style="display:flex">
+        <span>Équipe maintenant</span>
+        <span class="muted" id="team-count" style="font-size:11px;text-transform:none;letter-spacing:0">—</span>
+      </div>
+      <div id="team-list"></div>
+    </div>
+
+    <div class="timeline" id="today-timeline">
+      <div class="timeline-title">Aujourd'hui</div>
+      <div id="today-list"><div class="empty">Aucun pointage aujourd'hui</div></div>
+    </div>
+
+    <div class="timeline">
+      <div class="timeline-title">Récap du mois</div>
+      <div id="month-summary"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ========================= ADMIN SCREEN ========================= -->
+<div id="screen-admin" class="screen">
+  <div class="app-header">
+    <div class="app-header-inner">
+      <div>
+        <div class="app-header-title">Administration</div>
+        <div class="app-header-sub">Pointage géolocalisé</div>
+      </div>
+      <button class="btn ghost small" onclick="logout()">Quitter</button>
+    </div>
+  </div>
+
+  <div class="admin-tabs">
+    <div class="admin-tab active" data-pane="dashboard" onclick="setAdminPane('dashboard')">Tableau de bord</div>
+    <div class="admin-tab" data-pane="pointages" onclick="setAdminPane('pointages')">Pointages</div>
+    <div class="admin-tab" data-pane="salaries" onclick="setAdminPane('salaries')">Salariés</div>
+    <div class="admin-tab" data-pane="sites" onclick="setAdminPane('sites')">Sites & Bâtiments</div>
+    <div class="admin-tab" data-pane="anomalies" onclick="setAdminPane('anomalies')">Anomalies</div>
+    <div class="admin-tab" data-pane="settings" onclick="setAdminPane('settings')">Réglages</div>
+  </div>
+
+  <div class="admin-content">
+    <!-- DASHBOARD -->
+    <div class="admin-pane active" id="pane-dashboard">
+      <div class="kpi-grid" id="kpi-grid"></div>
+
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">En service maintenant</div>
+          <span class="muted" id="active-count">0</span>
+        </div>
+        <div class="section-body tight">
+          <table>
+            <thead><tr><th>Salarié</th><th>Site</th><th>Bâtiment</th><th>Embauche</th><th>Durée</th></tr></thead>
+            <tbody id="active-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Heures travaillées (mois en cours)</div>
+        </div>
+        <div class="section-body tight">
+          <table>
+            <thead><tr><th>Salarié</th><th>Site</th><th>Jours</th><th>Heures</th><th>Heures sup ≥ 35h/sem</th></tr></thead>
+            <tbody id="hours-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- POINTAGES -->
+    <div class="admin-pane" id="pane-pointages">
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Filtres</div>
+          <button class="btn small" onclick="exportPointagesExcel()">📊 Export Excel</button>
+        </div>
+        <div class="section-body">
+          <div class="filters">
+            <div><label>Du</label><input type="date" id="filter-from"></div>
+            <div><label>Au</label><input type="date" id="filter-to"></div>
+            <div><label>Salarié</label><select id="filter-salarie"><option value="">Tous</option></select></div>
+            <div><label>Site</label><select id="filter-site"><option value="">Tous</option></select></div>
+            <div><label>Type</label><select id="filter-type"><option value="">Tous</option><option value="embauche">Embauche</option><option value="pause">Pause</option><option value="reprise">Reprise</option><option value="debauche">Débauche</option></select></div>
+            <div style="display:flex;align-items:end"><button class="btn full small" onclick="renderPointages()">Filtrer</button></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Historique</div>
+          <span class="muted" id="pointages-count">0 pointages</span>
+        </div>
+        <div class="section-body tight" style="overflow-x:auto">
+          <table>
+            <thead><tr><th>Date</th><th>Heure</th><th>Salarié</th><th>Type</th><th>Site / Bâtiment</th><th>GPS</th><th></th></tr></thead>
+            <tbody id="pointages-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SALARIÉS -->
+    <div class="admin-pane" id="pane-salaries">
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Liste des salariés</div>
+          <button class="btn small" onclick="openSalarieModal()">+ Ajouter</button>
+        </div>
+        <div class="section-body tight" style="overflow-x:auto">
+          <table>
+            <thead><tr><th>Nom</th><th>Prénom</th><th>Site</th><th>Fonction</th><th>Code</th><th>Statut</th><th></th></tr></thead>
+            <tbody id="salaries-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SITES -->
+    <div class="admin-pane" id="pane-sites">
+      <div class="flex between mb-sm" style="margin-bottom:14px">
+        <p class="muted" style="font-size:13px">Définis chaque bâtiment avec ses coordonnées GPS et son rayon. Tu peux capturer ta position actuelle depuis un téléphone sur place.</p>
+      </div>
+      <div id="sites-container"></div>
+    </div>
+
+    <!-- ANOMALIES -->
+    <div class="admin-pane" id="pane-anomalies">
+      <div class="section">
+        <div class="section-header"><div class="section-title">Détection automatique</div></div>
+        <div class="section-body">
+          <p class="muted" style="font-size:13px;margin-bottom:14px">Pointages incomplets (oubli de débauche), pointages hors zone GPS, pauses anormalement longues.</p>
+          <div id="anomalies-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="admin-pane" id="pane-settings">
+      <div class="section">
+        <div class="section-header"><div class="section-title">Paramètres généraux</div></div>
+        <div class="section-body">
+          <div class="field">
+            <label>Rayon par défaut pour un nouveau bâtiment (mètres)</label>
+            <input type="number" id="setting-radius" min="20" max="500">
+          </div>
+          <div class="field">
+            <label>Tolérance GPS pour pointage hors zone (mètres au-delà du rayon)</label>
+            <input type="number" id="setting-tolerance" min="0" max="500">
+          </div>
+          <div class="field">
+            <label>Heures contractuelles hebdomadaires (seuil heures sup)</label>
+            <input type="number" id="setting-hsup" min="20" max="50" step="0.5">
+          </div>
+          <div class="field">
+            <label>Mot de passe administrateur</label>
+            <input type="password" id="setting-password" placeholder="Laisser vide pour ne pas changer">
+          </div>
+          <button class="btn" onclick="saveSettings()">Enregistrer</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header"><div class="section-title">Réinitialisation</div></div>
+        <div class="section-body">
+          <p class="muted" style="font-size:13px;line-height:1.6;margin-bottom:12px">
+            Recharge la configuration par défaut des sites/bâtiments. Les coordonnées GPS déjà saisies seront perdues.
+          </p>
+          <button class="btn warning small" onclick="resetSitesToDefault()">⚠ Réinitialiser sites & bâtiments par défaut</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header"><div class="section-title">Export & sauvegarde</div></div>
+        <div class="section-body">
+          <div class="flex gap-sm wrap">
+            <button class="btn ghost small" onclick="exportFullBackup()">⬇ Sauvegarde complète JSON</button>
+            <button class="btn ghost small" onclick="exportPointagesExcel()">⬇ Tous les pointages Excel</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header"><div class="section-title">Connexion Tableau de Bord</div></div>
+        <div class="section-body">
+          <p class="muted" style="font-size:13px;line-height:1.6">
+            Cette app écrit dans Firebase au chemin <code style="background:var(--bg);padding:2px 6px;border-radius:4px">pointage/</code> sur le projet <code style="background:var(--bg);padding:2px 6px;border-radius:4px">afr-nt2</code>.<br><br>
+            Pour intégrer les données dans le Tableau de Bord direction, lis :
+            <ul style="margin:10px 0 0 18px;line-height:1.8">
+              <li><code style="background:var(--bg);padding:2px 6px;border-radius:4px">pointage/pointages/{YYYY-MM-DD}/*</code> → tous les pointages du jour</li>
+              <li><code style="background:var(--bg);padding:2px 6px;border-radius:4px">pointage/salaries/*</code> → liste des salariés</li>
+              <li><code style="background:var(--bg);padding:2px 6px;border-radius:4px">pointage/sites/*</code> → sites et bâtiments avec coordonnées</li>
+            </ul>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========================= MODALS ========================= -->
+
+<!-- Salarié modal -->
+<div class="modal-backdrop" id="modal-salarie">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-salarie-title">Nouveau salarié</div>
+      <button class="btn ghost icon small" onclick="closeModal('modal-salarie')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="sal-id">
+      <div class="field-row">
+        <div class="field"><label>Nom</label><input id="sal-nom" type="text"></div>
+        <div class="field"><label>Prénom</label><input id="sal-prenom" type="text"></div>
+      </div>
+      <div class="field"><label>Site de rattachement</label><select id="sal-site"></select></div>
+      <div class="field"><label>Fonction / Bâtiment</label><input id="sal-fonction" type="text" placeholder="ex: Ferme NV, Production, Resp. FERMES 33..."></div>
+      <div class="field-row">
+        <div class="field"><label>Code (4 chiffres)</label><input id="sal-code" type="text" maxlength="4" pattern="[0-9]{4}"></div>
+        <div class="field"><label>Statut</label><select id="sal-actif"><option value="true">Actif</option><option value="false">Inactif</option></select></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn ghost" onclick="closeModal('modal-salarie')">Annuler</button>
+      <button class="btn danger hidden" id="btn-delete-salarie" onclick="deleteSalarie()">Supprimer</button>
+      <button class="btn" onclick="saveSalarie()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bâtiment modal -->
+<div class="modal-backdrop" id="modal-batiment">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-batiment-title">Nouveau bâtiment</div>
+      <button class="btn ghost icon small" onclick="closeModal('modal-batiment')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="bat-id">
+      <input type="hidden" id="bat-site">
+      <div class="field"><label>Nom du bâtiment</label><input id="bat-nom" placeholder="ex: NT2, NV1, ST..."></div>
+      <div class="field"><label>Type</label><select id="bat-type">
+        <option value="Ponte">Ponte</option>
+        <option value="Élevage">Élevage</option>
+        <option value="Bureaux">Bureaux</option>
+        <option value="Autre">Autre</option>
+      </select></div>
+      <div class="field-row">
+        <div class="field"><label>Latitude</label><input id="bat-lat" type="number" step="0.0000001" placeholder="44.8378"></div>
+        <div class="field"><label>Longitude</label><input id="bat-lng" type="number" step="0.0000001" placeholder="-0.5792"></div>
+      </div>
+      <button class="btn ghost full small" onclick="captureGPS()" style="margin-bottom:14px">📍 Capturer ma position actuelle</button>
+      <div class="field"><label>Rayon (mètres)</label><input id="bat-rayon" type="number" min="20" max="500" value="150"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn ghost" onclick="closeModal('modal-batiment')">Annuler</button>
+      <button class="btn danger hidden" id="btn-delete-batiment" onclick="deleteBatiment()">Supprimer</button>
+      <button class="btn" onclick="saveBatiment()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Site modal -->
+<div class="modal-backdrop" id="modal-site">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-site-title">Nouveau site</div>
+      <button class="btn ghost icon small" onclick="closeModal('modal-site')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="site-id">
+      <div class="field"><label>Nom</label><input id="site-nom" placeholder="ex: AFR 33"></div>
+      <div class="field"><label>Département</label><input id="site-dept" placeholder="ex: Gironde"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn ghost" onclick="closeModal('modal-site')">Annuler</button>
+      <button class="btn danger hidden" id="btn-delete-site" onclick="deleteSite()">Supprimer</button>
+      <button class="btn" onclick="saveSite()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Pointage detail modal -->
+<div class="modal-backdrop" id="modal-pointage">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Détail pointage</div>
+      <button class="btn ghost icon small" onclick="closeModal('modal-pointage')">✕</button>
+    </div>
+    <div class="modal-body" id="modal-pointage-body"></div>
+    <div class="modal-footer">
+      <button class="btn ghost" onclick="closeModal('modal-pointage')">Fermer</button>
+      <button class="btn danger" id="btn-delete-pointage" onclick="deletePointage()">Supprimer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+/* ============================================================
+   FIREBASE INIT
+   ============================================================ */
+const firebaseConfig = {
+  apiKey: "AIzaSyCfSjbJuw2kygRgIwOXh6DV2oRJ7vKkSvM",
+  authDomain: "afr-nt2.firebaseapp.com",
+  databaseURL: "https://afr-nt2-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "afr-nt2",
+  storageBucket: "afr-nt2.appspot.com"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const ROOT = 'pointage';
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let state = {
+  loginMode: 'salarie',
+  loginCode: '',
+  currentSalarie: null,    // { id, nom, prenom, code, siteRattachement }
+  isAdmin: false,
+  sites: {},               // sites[siteId] = { nom, departement, batiments: { batId: {...} } }
+  salaries: {},            // salaries[salId] = { nom, prenom, code, ... }
+  pointages: {},           // pointages[YYYY-MM-DD][pid] = { ... }
+  settings: {
+    rayonDefaut: 150,
+    tolerance: 50,
+    heuresContractuelles: 35,
+    adminPasswordHash: null
+  },
+  gps: null,               // { lat, lng, accuracy, timestamp }
+  gpsWatchId: null,
+  detectedBatiment: null,  // { siteId, batimentId, distance }
+  manualBatiment: null,    // { siteId, batimentId } when user overrides
+  clockInterval: null
+};
+
+const DEFAULT_PASSWORD = 'afr2026';
+
+/* ============================================================
+   UTILS
+   ============================================================ */
+function $(id) { return document.getElementById(id); }
+function $$(sel) { return document.querySelectorAll(sel); }
+
+function toast(msg, type) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = type || '';
+  t.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function todayISO() { return new Date().toISOString().slice(0, 10); }
+function nowTime() { return new Date().toTimeString().slice(0, 5); }
+function fmtTime(ts) { return new Date(ts).toTimeString().slice(0, 5); }
+function fmtDate(d) { return new Date(d).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); }
+function fmtDateShort(d) { return new Date(d).toLocaleDateString('fr-FR'); }
+function fmtDuration(ms) {
+  if (!ms || ms < 0) return '—';
+  const totalMin = Math.floor(ms / 60000);
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  return `${h}h${String(m).padStart(2, '0')}`;
+}
+
+async function sha256(text) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Haversine distance in meters
+function distM(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+  const φ1 = lat1 * Math.PI / 180, φ2 = lat2 * Math.PI / 180;
+  const dφ = (lat2 - lat1) * Math.PI / 180, dλ = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dφ/2)**2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(dλ/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+/* ============================================================
+   AUTH
+   ============================================================ */
+function setLoginMode(mode) {
+  state.loginMode = mode;
+  $$('.login-tab').forEach(t => t.classList.toggle('active', t.dataset.mode === mode));
+  $('login-salarie').classList.toggle('hidden', mode !== 'salarie');
+  $('login-admin').classList.toggle('hidden', mode !== 'admin');
+  state.loginCode = '';
+  updateCodeDisplay();
+}
+
+function updateCodeDisplay() {
+  for (let i = 0; i < 4; i++) {
+    const cell = $('cc-' + i);
+    if (i < state.loginCode.length) {
+      cell.textContent = '•';
+      cell.classList.add('filled');
+    } else {
+      cell.textContent = '';
+      cell.classList.remove('filled');
+    }
+  }
+}
+
+function codePress(d) {
+  if (state.loginCode.length >= 4) return;
+  state.loginCode += d;
+  updateCodeDisplay();
+  if (state.loginCode.length === 4) setTimeout(loginSalarie, 150);
+}
+function codeBack() { state.loginCode = state.loginCode.slice(0, -1); updateCodeDisplay(); }
+function codeClear() { state.loginCode = ''; updateCodeDisplay(); }
+
+function loginSalarie() {
+  const sal = Object.entries(state.salaries).find(([id, s]) => s.code === state.loginCode && s.actif !== false);
+  if (!sal) {
+    toast('Code incorrect', 'error');
+    setTimeout(() => { state.loginCode = ''; updateCodeDisplay(); }, 800);
+    return;
+  }
+  state.currentSalarie = { id: sal[0], ...sal[1] };
+  showScreen('salarie');
+  initSalarieView();
+}
+
+async function loginAdmin() {
+  const pw = $('admin-password').value;
+  if (!pw) return toast('Entre le mot de passe', 'error');
+  const hash = await sha256(pw);
+  const stored = state.settings.adminPasswordHash || await sha256(DEFAULT_PASSWORD);
+  if (hash !== stored) return toast('Mot de passe incorrect', 'error');
+  state.isAdmin = true;
+  $('admin-password').value = '';
+  showScreen('admin');
+  initAdminView();
+}
+
+function logout() {
+  state.currentSalarie = null;
+  state.isAdmin = false;
+  state.loginCode = '';
+  if (state.gpsWatchId) { navigator.geolocation.clearWatch(state.gpsWatchId); state.gpsWatchId = null; }
+  if (state.clockInterval) { clearInterval(state.clockInterval); state.clockInterval = null; }
+  updateCodeDisplay();
+  showScreen('login');
+}
+
+function showScreen(name) {
+  $$('.screen').forEach(s => s.classList.remove('active'));
+  $('screen-' + name).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+/* ============================================================
+   FIREBASE LISTENERS
+   ============================================================ */
+function attachListeners() {
+  db.ref(`${ROOT}/sites`).on('value', snap => {
+    state.sites = snap.val() || {};
+    if (!Object.keys(state.sites).length) bootstrapSites();
+    if (state.isAdmin) renderSites();
+    refreshAdminViewIfActive();
+    refreshBatimentDropdown();
+  });
+  db.ref(`${ROOT}/salaries`).on('value', snap => {
+    state.salaries = snap.val() || {};
+    if (!Object.keys(state.salaries).length) bootstrapSalaries();
+    if (state.isAdmin) refreshAdminViewIfActive();
+  });
+  db.ref(`${ROOT}/pointages`).on('value', snap => {
+    state.pointages = snap.val() || {};
+    if (state.currentSalarie) refreshSalarieView();
+    if (state.isAdmin) refreshAdminViewIfActive();
+  });
+  db.ref(`${ROOT}/settings`).on('value', snap => {
+    const s = snap.val();
+    if (s) state.settings = { ...state.settings, ...s };
+  });
+}
+
+async function bootstrapSalaries() {
+  // Pré-population des 15 salariés (codes structurés par site)
+  const seed = {
+    s3301: { nom: 'LE POTTIER', prenom: 'Julien', code: '3301', fonction: 'Resp. FERMES 33', siteRattachement: 'afr33', actif: true },
+    s3302: { nom: 'DUPUY', prenom: 'Julien', code: '3302', fonction: 'Ferme NV', siteRattachement: 'afr33', actif: true },
+    s3303: { nom: 'GAILLARD', prenom: 'Laura', code: '3303', fonction: 'Ferme NV', siteRattachement: 'afr33', actif: true },
+    s3304: { nom: 'REYGADE', prenom: 'Manon', code: '3304', fonction: 'Ferme NV', siteRattachement: 'afr33', actif: true },
+    s3305: { nom: 'CHAGNEAU', prenom: 'Jordanne', code: '3305', fonction: 'Ferme NT', siteRattachement: 'afr33', actif: true },
+    s3306: { nom: 'MARCHEIX', prenom: 'Clément', code: '3306', fonction: 'Ferme NT', siteRattachement: 'afr33', actif: true },
+    s3307: { nom: 'GONZALEZ MORENO', prenom: 'Thomas', code: '3307', fonction: 'Ferme NT', siteRattachement: 'afr33', actif: true },
+    s3308: { nom: 'DELBONNEL', prenom: 'Romain', code: '3308', fonction: 'Ferme ST', siteRattachement: 'afr33', actif: true },
+    s4001: { nom: 'SIMON', prenom: 'Laura', code: '4001', fonction: 'Adjoint Resp. FERME SG', siteRattachement: 'afr40', actif: true },
+    s4002: { nom: 'FRAMAZELLE', prenom: 'Christelle', code: '4002', fonction: 'Production', siteRattachement: 'afr40', actif: true },
+    s4003: { nom: 'DUMARTIN', prenom: 'Rémy', code: '4003', fonction: 'Production', siteRattachement: 'afr40', actif: true },
+    s4004: { nom: 'THEPENIER', prenom: 'Johanna', code: '4004', fonction: 'Production', siteRattachement: 'afr40', actif: true },
+    s4005: { nom: 'DEMARCQ', prenom: 'Cyril', code: '4005', fonction: 'Production', siteRattachement: 'afr40', actif: true },
+    s4701: { nom: 'LE POTTIER', prenom: 'Benoît', code: '4701', fonction: 'Resp. FERME 47', siteRattachement: 'afr47', actif: true },
+    s4702: { nom: 'MOMMAS', prenom: 'Théo', code: '4702', fonction: 'Ferme VS', siteRattachement: 'afr47', actif: true }
+  };
+  await db.ref(`${ROOT}/salaries`).set(seed);
+  toast('15 salariés pré-chargés', 'success');
+}
+
+async function bootstrapSites() {
+  // Pré-population des 3 sites + bâtiments connus (sans GPS, à configurer)
+  const seed = {
+    afr33: {
+      nom: 'AFR 33',
+      departement: 'Gironde',
+      batiments: {
+        nt: { nom: 'NT', type: 'Ponte',   lat: 0, lng: 0, rayon: 150 },
+        nv: { nom: 'NV', type: 'Ponte',   lat: 0, lng: 0, rayon: 150 },
+        st: { nom: 'ST', type: 'Élevage', lat: 0, lng: 0, rayon: 150 }
+      }
+    },
+    afr40: {
+      nom: 'AFR 40',
+      departement: 'Landes',
+      batiments: {
+        sg: { nom: 'SG', type: 'Ponte', lat: 0, lng: 0, rayon: 150 }
+      }
+    },
+    afr47: {
+      nom: 'AFR 47',
+      departement: 'Lot-et-Garonne',
+      batiments: {
+        vs: { nom: 'VS', type: 'Élevage', lat: 0, lng: 0, rayon: 150 }
+      }
+    }
+  };
+  await db.ref(`${ROOT}/sites`).set(seed);
+  toast('Sites pré-configurés. Configure les coordonnées GPS dans l\'onglet Sites.', 'success');
+}
+
+/* ============================================================
+   GPS
+   ============================================================ */
+function startGPS() {
+  if (!navigator.geolocation) {
+    setGPSError('Géolocalisation non supportée');
+    return;
+  }
+  state.gpsWatchId = navigator.geolocation.watchPosition(
+    pos => {
+      state.gps = {
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+        accuracy: pos.coords.accuracy,
+        timestamp: pos.timestamp
+      };
+      detectBatiment();
+      updateGPSCard();
+    },
+    err => {
+      setGPSError(err.code === 1 ? 'Permission refusée' : 'Position indisponible');
+    },
+    { enableHighAccuracy: true, maximumAge: 30000, timeout: 30000 }
+  );
+}
+
+function setGPSError(msg) {
+  $('gps-icon').className = 'gps-icon error';
+  $('gps-icon').textContent = '⚠';
+  $('gps-value').textContent = msg;
+  $('gps-meta').textContent = '';
+}
+
+function detectBatiment() {
+  if (!state.gps) return null;
+  let best = null;
+  for (const [siteId, site] of Object.entries(state.sites)) {
+    for (const [batId, bat] of Object.entries(site.batiments || {})) {
+      if (!bat.lat && !bat.lng) continue;
+      const d = distM(state.gps.lat, state.gps.lng, bat.lat, bat.lng);
+      if (!best || d < best.distance) {
+        best = { siteId, batimentId: batId, distance: d, rayon: bat.rayon || 150, nom: bat.nom, siteNom: site.nom };
+      }
+    }
+  }
+  state.detectedBatiment = best;
+  return best;
+}
+
+function updateGPSCard() {
+  const det = state.detectedBatiment;
+  const tol = state.settings.tolerance || 50;
+  if (!det) {
+    $('gps-icon').className = 'gps-icon';
+    $('gps-icon').textContent = '📍';
+    $('gps-value').textContent = `Position acquise (±${Math.round(state.gps.accuracy)}m)`;
+    $('gps-meta').textContent = 'Aucun bâtiment configuré à proximité';
+    return;
+  }
+  const inside = det.distance <= det.rayon;
+  const tolerable = det.distance <= det.rayon + tol;
+  if (inside) {
+    $('gps-icon').className = 'gps-icon ok';
+    $('gps-icon').textContent = '✓';
+    $('gps-value').textContent = `${det.siteNom} — ${det.nom}`;
+    $('gps-meta').textContent = `Dans la zone (${Math.round(det.distance)}m du centre)`;
+  } else if (tolerable) {
+    $('gps-icon').className = 'gps-icon';
+    $('gps-icon').textContent = '◎';
+    $('gps-value').textContent = `${det.siteNom} — ${det.nom} (limite)`;
+    $('gps-meta').textContent = `${Math.round(det.distance)}m (rayon ${det.rayon}m)`;
+  } else {
+    $('gps-icon').className = 'gps-icon error';
+    $('gps-icon').textContent = '⚠';
+    $('gps-value').textContent = `Hors zone : ${det.siteNom} — ${det.nom}`;
+    $('gps-meta').textContent = `${Math.round(det.distance)}m du centre — rayon ${det.rayon}m`;
+  }
+}
+
+function refreshBatimentDropdown() {
+  const sel = $('batiment-override');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Auto (GPS)</option>';
+  for (const [siteId, site] of Object.entries(state.sites)) {
+    for (const [batId, bat] of Object.entries(site.batiments || {})) {
+      const opt = document.createElement('option');
+      opt.value = `${siteId}|${batId}`;
+      opt.textContent = `${site.nom} — ${bat.nom}`;
+      sel.appendChild(opt);
+    }
+  }
+}
+
+/* ============================================================
+   SALARIÉ VIEW
+   ============================================================ */
+function initSalarieView() {
+  $('header-salarie-name').textContent = `${state.currentSalarie.prenom} ${state.currentSalarie.nom}`;
+  $('status-name').textContent = `${state.currentSalarie.prenom} ${state.currentSalarie.nom}`;
+  $('batiment-picker').classList.remove('hidden');
+  refreshBatimentDropdown();
+  startClock();
+  startGPS();
+  refreshSalarieView();
+}
+
+function startClock() {
+  const update = () => {
+    const now = new Date();
+    $('status-clock').textContent = now.toTimeString().slice(0, 5);
+    $('status-date').textContent = fmtDate(now);
+  };
+  update();
+  state.clockInterval = setInterval(update, 1000);
+}
+
+function getCurrentStatus() {
+  const today = todayISO();
+  const todayPts = state.pointages[today] || {};
+  const mine = Object.entries(todayPts)
+    .filter(([id, p]) => p.salarieId === state.currentSalarie.id)
+    .map(([id, p]) => ({ id, ...p }))
+    .sort((a, b) => a.timestamp - b.timestamp);
+  if (!mine.length) return { status: 'hors-service', last: null };
+  const last = mine[mine.length - 1];
+  if (last.type === 'embauche' || last.type === 'reprise') return { status: 'en-service', last };
+  if (last.type === 'pause') return { status: 'en-pause', last };
+  return { status: 'hors-service', last };
+}
+
+function refreshSalarieView() {
+  const { status, last } = getCurrentStatus();
+  const card = $('status-card');
+  const badge = $('status-badge');
+  card.className = 'status-card ' + status;
+  badge.className = 'status-badge ' + status;
+  $('status-text').textContent = status === 'en-service' ? 'En service' : status === 'en-pause' ? 'En pause' : 'Hors service';
+  renderActionButtons(status);
+  renderTeamView();
+  renderTodayList();
+  renderMonthSummary();
+}
+
+function getSalarieStatus(salId) {
+  // Retourne { status, last, embaucheTime } pour un salarié au jour J
+  const today = todayISO();
+  const todayPts = state.pointages[today] || {};
+  const mine = Object.entries(todayPts)
+    .filter(([id, p]) => p.salarieId === salId)
+    .map(([id, p]) => ({ id, ...p }))
+    .sort((a, b) => a.timestamp - b.timestamp);
+  if (!mine.length) return { status: 'absent', last: null, embaucheTime: null };
+  const last = mine[mine.length - 1];
+  const embauche = mine.find(p => p.type === 'embauche');
+  if (last.type === 'embauche' || last.type === 'reprise') return { status: 'en-service', last, embaucheTime: embauche ? embauche.timestamp : null };
+  if (last.type === 'pause') return { status: 'en-pause', last, embaucheTime: embauche ? embauche.timestamp : null };
+  return { status: 'fini', last, embaucheTime: embauche ? embauche.timestamp : null };
+}
+
+function renderTeamView() {
+  const list = $('team-list');
+  if (!list) return;
+  // Grouper salariés actifs par site
+  const bySite = {};
+  for (const [salId, sal] of Object.entries(state.salaries)) {
+    if (sal.actif === false) continue;
+    const siteId = sal.siteRattachement || 'autre';
+    (bySite[siteId] = bySite[siteId] || []).push({ id: salId, ...sal });
+  }
+  // Compteurs globaux
+  let totalActif = 0, totalEnService = 0;
+  for (const arr of Object.values(bySite)) {
+    for (const s of arr) {
+      totalActif++;
+      const st = getSalarieStatus(s.id);
+      if (st.status === 'en-service') totalEnService++;
+    }
+  }
+  $('team-count').textContent = `${totalEnService} en service / ${totalActif} actifs`;
+
+  // Ordre des sites : on suit l'ordre défini dans state.sites
+  const siteOrder = Object.keys(state.sites);
+  // On y ajoute les éventuels "autre"
+  for (const k of Object.keys(bySite)) if (!siteOrder.includes(k)) siteOrder.push(k);
+
+  let html = '';
+  for (const siteId of siteOrder) {
+    const sals = bySite[siteId];
+    if (!sals || !sals.length) continue;
+    const site = state.sites[siteId];
+    const siteName = site ? site.nom : 'Autre';
+    const enService = sals.filter(s => getSalarieStatus(s.id).status === 'en-service').length;
+    const enPause = sals.filter(s => getSalarieStatus(s.id).status === 'en-pause').length;
+
+    // Tri : en service > en pause > fini > absent, puis alpha
+    const orderRank = { 'en-service': 0, 'en-pause': 1, 'fini': 2, 'absent': 3 };
+    sals.sort((a, b) => {
+      const sa = getSalarieStatus(a.id).status;
+      const sb = getSalarieStatus(b.id).status;
+      if (orderRank[sa] !== orderRank[sb]) return orderRank[sa] - orderRank[sb];
+      return (a.nom + a.prenom).localeCompare(b.nom + b.prenom);
+    });
+
+    html += `<div class="team-site-group">
+      <div class="team-site-header">
+        <span>${siteName}</span>
+        <span class="team-site-counter">${enService} sur ${sals.length}${enPause ? ` · ${enPause} en pause` : ''}</span>
+      </div>`;
+
+    for (const s of sals) {
+      const st = getSalarieStatus(s.id);
+      const isSelf = state.currentSalarie && s.id === state.currentSalarie.id;
+      let meta = '';
+      if (st.status === 'en-service' && st.embaucheTime) {
+        const loc = st.last.batimentChoisi || st.last.batimentDetecte;
+        const batName = loc && state.sites[loc.siteId] && state.sites[loc.siteId].batiments[loc.batimentId]
+          ? state.sites[loc.siteId].batiments[loc.batimentId].nom : null;
+        meta = `depuis ${fmtTime(st.embaucheTime)}${batName ? `<span class="bat">${batName}</span>` : ''}`;
+      } else if (st.status === 'en-pause') {
+        meta = `pause depuis ${fmtTime(st.last.timestamp)}`;
+      } else if (st.status === 'fini') {
+        meta = `parti à ${fmtTime(st.last.timestamp)}`;
+      } else {
+        meta = 'pas pointé';
+      }
+
+      html += `<div class="team-row">
+        <div class="team-dot ${st.status}"></div>
+        <div class="team-name${isSelf ? ' self' : ''}">${s.prenom} ${s.nom}${isSelf ? ' · toi' : ''}</div>
+        <div class="team-meta">${meta}</div>
+      </div>`;
+    }
+    html += `</div>`;
+  }
+  list.innerHTML = html || '<div class="empty">Aucun salarié</div>';
+}
+
+function renderActionButtons(status) {
+  const grid = $('action-grid');
+  grid.innerHTML = '';
+  grid.className = 'action-grid';
+  if (status === 'hors-service') {
+    grid.classList.add('single');
+    grid.innerHTML = `<button class="action-btn embauche" onclick="pointer('embauche')"><span class="ico">▶</span>Embauche</button>`;
+  } else if (status === 'en-service') {
+    grid.innerHTML = `
+      <button class="action-btn pause" onclick="pointer('pause')"><span class="ico">⏸</span>Pause</button>
+      <button class="action-btn debauche" onclick="pointer('debauche')"><span class="ico">■</span>Débauche</button>
+    `;
+  } else {
+    grid.innerHTML = `
+      <button class="action-btn reprise" onclick="pointer('reprise')"><span class="ico">▶</span>Reprise</button>
+      <button class="action-btn debauche" onclick="pointer('debauche')"><span class="ico">■</span>Débauche</button>
+    `;
+  }
+}
+
+async function pointer(type) {
+  if (!state.gps) return toast('Position GPS non disponible — patiente quelques secondes', 'error');
+  const det = state.detectedBatiment;
+  const override = $('batiment-override').value;
+  let chosenSite = null, chosenBat = null;
+  if (override) [chosenSite, chosenBat] = override.split('|');
+
+  const ptData = {
+    salarieId: state.currentSalarie.id,
+    salarieNom: `${state.currentSalarie.prenom} ${state.currentSalarie.nom}`,
+    type,
+    timestamp: Date.now(),
+    gps: { lat: state.gps.lat, lng: state.gps.lng, accuracy: Math.round(state.gps.accuracy) },
+    batimentDetecte: det ? { siteId: det.siteId, batimentId: det.batimentId, distance: Math.round(det.distance), inZone: det.distance <= det.rayon } : null,
+    batimentChoisi: chosenSite ? { siteId: chosenSite, batimentId: chosenBat } : null
+  };
+
+  try {
+    await db.ref(`${ROOT}/pointages/${todayISO()}`).push(ptData);
+    const labels = { embauche: 'Embauche', pause: 'Pause', reprise: 'Reprise', debauche: 'Débauche' };
+    toast(`${labels[type]} enregistrée à ${nowTime()}`, 'success');
+  } catch (e) {
+    toast('Erreur : ' + e.message, 'error');
+  }
+}
+
+function renderTodayList() {
+  const today = todayISO();
+  const todayPts = state.pointages[today] || {};
+  const mine = Object.entries(todayPts)
+    .filter(([id, p]) => p.salarieId === state.currentSalarie.id)
+    .map(([id, p]) => ({ id, ...p }))
+    .sort((a, b) => a.timestamp - b.timestamp);
+  const list = $('today-list');
+  if (!mine.length) {
+    list.innerHTML = '<div class="empty">Aucun pointage aujourd\'hui</div>';
+    return;
+  }
+  list.innerHTML = mine.map(p => {
+    const loc = p.batimentChoisi || p.batimentDetecte;
+    const locName = loc ? siteName(loc.siteId, loc.batimentId) : '—';
+    return `
+      <div class="timeline-item">
+        <div class="timeline-time">${fmtTime(p.timestamp)}</div>
+        <div class="timeline-type ${p.type}">${p.type}</div>
+        <div class="timeline-loc">${locName}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function siteName(siteId, batId) {
+  const s = state.sites[siteId];
+  if (!s) return '—';
+  if (!batId) return s.nom;
+  const b = (s.batiments || {})[batId];
+  return b ? `${s.nom} — ${b.nom}` : s.nom;
+}
+
+function renderMonthSummary() {
+  const now = new Date();
+  const ym = now.toISOString().slice(0, 7); // YYYY-MM
+  const myPts = [];
+  for (const [date, day] of Object.entries(state.pointages)) {
+    if (!date.startsWith(ym)) continue;
+    for (const p of Object.values(day)) {
+      if (p.salarieId === state.currentSalarie.id) myPts.push({ date, ...p });
+    }
+  }
+  const hours = computeWorkedHoursMs(myPts);
+  const days = new Set(myPts.map(p => p.date)).size;
+  $('month-summary').innerHTML = `
+    <div class="timeline-item"><div style="flex:1"><div class="muted" style="font-size:11px;text-transform:uppercase">Jours travaillés</div><div style="font-weight:700;font-size:18px;font-family:'Syne',sans-serif">${days}</div></div></div>
+    <div class="timeline-item"><div style="flex:1"><div class="muted" style="font-size:11px;text-transform:uppercase">Heures totales</div><div style="font-weight:700;font-size:18px;font-family:'Syne',sans-serif">${fmtDuration(hours)}</div></div></div>
+  `;
+}
+
+/* ============================================================
+   HOURS COMPUTATION
+   ============================================================ */
+function computeWorkedHoursMs(pts) {
+  // Group by date, then chain pointages: embauche/reprise => start, pause/debauche => stop
+  const byDate = {};
+  for (const p of pts) (byDate[p.date] = byDate[p.date] || []).push(p);
+  let totalMs = 0;
+  for (const date in byDate) {
+    const list = byDate[date].sort((a, b) => a.timestamp - b.timestamp);
+    let openStart = null;
+    for (const p of list) {
+      if (p.type === 'embauche' || p.type === 'reprise') {
+        if (!openStart) openStart = p.timestamp;
+      } else if (p.type === 'pause' || p.type === 'debauche') {
+        if (openStart) { totalMs += p.timestamp - openStart; openStart = null; }
+      }
+    }
+    // Si débauche oubliée → pas comptée
+  }
+  return totalMs;
+}
+
+function computeWorkedHoursPerWeek(pts) {
+  // Returns array of { weekKey, ms }
+  const byWeek = {};
+  for (const p of pts) {
+    const d = new Date(p.date);
+    const wk = getISOWeekKey(d);
+    (byWeek[wk] = byWeek[wk] || []).push(p);
+  }
+  const out = {};
+  for (const wk in byWeek) out[wk] = computeWorkedHoursMs(byWeek[wk]);
+  return out;
+}
+
+function getISOWeekKey(d) {
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  const wk = Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+  return `${date.getUTCFullYear()}-W${String(wk).padStart(2, '0')}`;
+}
+
+/* ============================================================
+   ADMIN VIEW
+   ============================================================ */
+function setAdminPane(name) {
+  $$('.admin-tab').forEach(t => t.classList.toggle('active', t.dataset.pane === name));
+  $$('.admin-pane').forEach(p => p.classList.toggle('active', p.id === 'pane-' + name));
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'pointages') { populateFilters(); renderPointages(); }
+  if (name === 'salaries') renderSalaries();
+  if (name === 'sites') renderSites();
+  if (name === 'anomalies') renderAnomalies();
+  if (name === 'settings') loadSettings();
+}
+
+function refreshAdminViewIfActive() {
+  if (!state.isAdmin) return;
+  const active = document.querySelector('.admin-pane.active');
+  if (!active) return;
+  const name = active.id.replace('pane-', '');
+  setAdminPane(name);
+}
+
+function initAdminView() {
+  setAdminPane('dashboard');
+}
+
+function renderDashboard() {
+  const today = todayISO();
+  const todayPts = Object.values(state.pointages[today] || {});
+  // En service maintenant : par salarié, prendre le dernier pointage du jour
+  const lastBySal = {};
+  for (const p of todayPts) {
+    if (!lastBySal[p.salarieId] || p.timestamp > lastBySal[p.salarieId].timestamp) lastBySal[p.salarieId] = p;
+  }
+  const enService = Object.values(lastBySal).filter(p => p.type === 'embauche' || p.type === 'reprise');
+  const enPause = Object.values(lastBySal).filter(p => p.type === 'pause');
+  const totalSalaries = Object.values(state.salaries).filter(s => s.actif !== false).length;
+  // Heures travaillées aujourd'hui
+  const allTodayPts = todayPts.map(p => ({ date: today, ...p }));
+  const hoursToday = computeWorkedHoursMs(allTodayPts);
+
+  $('kpi-grid').innerHTML = `
+    <div class="kpi green"><div class="kpi-label">En service</div><div class="kpi-value">${enService.length}</div><div class="kpi-meta">sur ${totalSalaries} salariés actifs</div></div>
+    <div class="kpi orange"><div class="kpi-label">En pause</div><div class="kpi-value">${enPause.length}</div></div>
+    <div class="kpi accent"><div class="kpi-label">Heures aujourd'hui</div><div class="kpi-value">${fmtDuration(hoursToday)}</div><div class="kpi-meta">cumul tous salariés</div></div>
+    <div class="kpi"><div class="kpi-label">Pointages du jour</div><div class="kpi-value">${todayPts.length}</div></div>
+  `;
+
+  // Active table
+  const activeRows = enService.concat(enPause).map(p => {
+    const sal = state.salaries[p.salarieId];
+    if (!sal) return '';
+    const loc = p.batimentChoisi || p.batimentDetecte;
+    const locInfo = loc ? state.sites[loc.siteId] : null;
+    const batInfo = locInfo && locInfo.batiments ? locInfo.batiments[loc.batimentId] : null;
+    const myPts = todayPts.filter(x => x.salarieId === p.salarieId).sort((a,b) => a.timestamp - b.timestamp);
+    const embauche = myPts.find(x => x.type === 'embauche');
+    const dur = embauche ? Date.now() - embauche.timestamp : 0;
+    return `<tr>
+      <td><strong>${sal.prenom} ${sal.nom}</strong></td>
+      <td>${locInfo ? locInfo.nom : '—'}</td>
+      <td>${batInfo ? batInfo.nom : '—'}</td>
+      <td>${embauche ? fmtTime(embauche.timestamp) : '—'}</td>
+      <td><span class="chip ${p.type === 'pause' ? 'orange' : 'green'}">${fmtDuration(dur)} ${p.type === 'pause' ? '(pause)' : ''}</span></td>
+    </tr>`;
+  }).filter(Boolean).join('');
+  $('active-tbody').innerHTML = activeRows || `<tr><td colspan="5" class="empty">Personne en service actuellement</td></tr>`;
+  $('active-count').textContent = `${enService.length + enPause.length} personne(s)`;
+
+  // Hours table - mois en cours
+  const ym = today.slice(0, 7);
+  const monthPts = [];
+  for (const [date, day] of Object.entries(state.pointages)) {
+    if (!date.startsWith(ym)) continue;
+    for (const p of Object.values(day)) monthPts.push({ date, ...p });
+  }
+  const hsupSeuil = state.settings.heuresContractuelles || 35;
+  const hoursRows = Object.values(state.salaries).filter(s => s.actif !== false).map(s => {
+    const id = Object.entries(state.salaries).find(([k,v]) => v === s)[0];
+    const myPts = monthPts.filter(p => p.salarieId === id);
+    const days = new Set(myPts.map(p => p.date)).size;
+    const ms = computeWorkedHoursMs(myPts);
+    const perWeek = computeWorkedHoursPerWeek(myPts);
+    const hsupMs = Object.values(perWeek).reduce((acc, ms) => acc + Math.max(0, ms - hsupSeuil * 3600000), 0);
+    const site = state.sites[s.siteRattachement];
+    return `<tr>
+      <td><strong>${s.prenom} ${s.nom}</strong></td>
+      <td>${site ? site.nom : '—'}</td>
+      <td>${days}</td>
+      <td><strong>${fmtDuration(ms)}</strong></td>
+      <td>${hsupMs > 0 ? `<span class="chip orange">${fmtDuration(hsupMs)}</span>` : '<span class="muted">—</span>'}</td>
+    </tr>`;
+  }).join('');
+  $('hours-tbody').innerHTML = hoursRows || `<tr><td colspan="5" class="empty">Aucun salarié</td></tr>`;
+}
+
+function populateFilters() {
+  const fSal = $('filter-salarie');
+  fSal.innerHTML = '<option value="">Tous</option>' + Object.entries(state.salaries).map(([id, s]) => `<option value="${id}">${s.prenom} ${s.nom}</option>`).join('');
+  const fSite = $('filter-site');
+  fSite.innerHTML = '<option value="">Tous</option>' + Object.entries(state.sites).map(([id, s]) => `<option value="${id}">${s.nom}</option>`).join('');
+  if (!$('filter-from').value) {
+    const d = new Date(); d.setDate(1);
+    $('filter-from').value = d.toISOString().slice(0, 10);
+    $('filter-to').value = todayISO();
+  }
+}
+
+function getFilteredPointages() {
+  const from = $('filter-from').value;
+  const to = $('filter-to').value;
+  const sal = $('filter-salarie').value;
+  const site = $('filter-site').value;
+  const type = $('filter-type').value;
+  const out = [];
+  for (const [date, day] of Object.entries(state.pointages)) {
+    if (from && date < from) continue;
+    if (to && date > to) continue;
+    for (const [pid, p] of Object.entries(day)) {
+      if (sal && p.salarieId !== sal) continue;
+      if (type && p.type !== type) continue;
+      const loc = p.batimentChoisi || p.batimentDetecte;
+      if (site && (!loc || loc.siteId !== site)) continue;
+      out.push({ date, pid, ...p });
+    }
+  }
+  return out.sort((a, b) => b.timestamp - a.timestamp);
+}
+
+function renderPointages() {
+  const list = getFilteredPointages();
+  $('pointages-count').textContent = `${list.length} pointage(s)`;
+  $('pointages-tbody').innerHTML = list.map(p => {
+    const loc = p.batimentChoisi || p.batimentDetecte;
+    const locName = loc ? siteName(loc.siteId, loc.batimentId) : '—';
+    const inZone = p.batimentDetecte && p.batimentDetecte.inZone;
+    const overrideTag = p.batimentChoisi ? '<span class="chip purple">Manuel</span>' : (inZone === false ? '<span class="chip red">Hors zone</span>' : '');
+    return `<tr style="cursor:pointer" onclick="openPointageDetail('${p.date}','${p.pid}')">
+      <td>${fmtDateShort(p.date)}</td>
+      <td><strong>${fmtTime(p.timestamp)}</strong></td>
+      <td>${p.salarieNom || '—'}</td>
+      <td><span class="chip ${typeChip(p.type)}">${p.type}</span></td>
+      <td>${locName} ${overrideTag}</td>
+      <td class="muted" style="font-size:12px">${p.gps ? `${p.gps.lat.toFixed(5)}, ${p.gps.lng.toFixed(5)} (±${p.gps.accuracy}m)` : '—'}</td>
+      <td>›</td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="7" class="empty">Aucun pointage</td></tr>`;
+}
+
+function typeChip(t) {
+  return { embauche: 'green', pause: 'orange', reprise: 'accent', debauche: 'red' }[t] || 'gray';
+}
+
+let currentPointageDetail = null;
+function openPointageDetail(date, pid) {
+  const p = state.pointages[date] && state.pointages[date][pid];
+  if (!p) return;
+  currentPointageDetail = { date, pid };
+  const loc = p.batimentChoisi || p.batimentDetecte;
+  const locName = loc ? siteName(loc.siteId, loc.batimentId) : '—';
+  $('modal-pointage-body').innerHTML = `
+    <div class="field"><label>Date / Heure</label><div>${fmtDateShort(date)} à ${fmtTime(p.timestamp)}</div></div>
+    <div class="field"><label>Salarié</label><div>${p.salarieNom || p.salarieId}</div></div>
+    <div class="field"><label>Type</label><div><span class="chip ${typeChip(p.type)}">${p.type}</span></div></div>
+    <div class="field"><label>Localisation</label><div>${locName}</div></div>
+    ${p.gps ? `<div class="field"><label>Coordonnées GPS</label><div style="font-family:monospace;font-size:13px">${p.gps.lat}, ${p.gps.lng} (±${p.gps.accuracy}m)</div><a class="muted" style="font-size:12px" target="_blank" href="https://www.google.com/maps?q=${p.gps.lat},${p.gps.lng}">Voir sur la carte ↗</a></div>` : ''}
+    ${p.batimentDetecte ? `<div class="field"><label>Détection auto</label><div>${siteName(p.batimentDetecte.siteId, p.batimentDetecte.batimentId)} — ${p.batimentDetecte.distance}m ${p.batimentDetecte.inZone ? '<span class="chip green">Dans la zone</span>' : '<span class="chip red">Hors zone</span>'}</div></div>` : ''}
+    ${p.batimentChoisi ? `<div class="field"><label>Override manuel</label><div>${siteName(p.batimentChoisi.siteId, p.batimentChoisi.batimentId)}</div></div>` : ''}
+  `;
+  $('modal-pointage').classList.add('active');
+}
+
+async function deletePointage() {
+  if (!currentPointageDetail) return;
+  if (!confirm('Supprimer ce pointage définitivement ?')) return;
+  await db.ref(`${ROOT}/pointages/${currentPointageDetail.date}/${currentPointageDetail.pid}`).remove();
+  closeModal('modal-pointage');
+  toast('Pointage supprimé', 'success');
+}
+
+/* === SALARIÉS CRUD === */
+function renderSalaries() {
+  const rows = Object.entries(state.salaries).map(([id, s]) => {
+    const site = state.sites[s.siteRattachement];
+    return `<tr style="cursor:pointer" onclick="openSalarieModal('${id}')">
+      <td><strong>${s.nom}</strong></td>
+      <td>${s.prenom}</td>
+      <td>${site ? site.nom : '—'}</td>
+      <td class="muted" style="font-size:13px">${s.fonction || '—'}</td>
+      <td style="font-family:monospace">${s.code}</td>
+      <td>${s.actif === false ? '<span class="chip gray">Inactif</span>' : '<span class="chip green">Actif</span>'}</td>
+      <td>›</td>
+    </tr>`;
+  }).join('');
+  $('salaries-tbody').innerHTML = rows || `<tr><td colspan="7" class="empty">Aucun salarié — clique sur Ajouter</td></tr>`;
+}
+
+function openSalarieModal(id) {
+  $('modal-salarie-title').textContent = id ? 'Modifier salarié' : 'Nouveau salarié';
+  $('btn-delete-salarie').classList.toggle('hidden', !id);
+  const sel = $('sal-site');
+  sel.innerHTML = '<option value="">—</option>' + Object.entries(state.sites).map(([sid, s]) => `<option value="${sid}">${s.nom}</option>`).join('');
+  if (id) {
+    const s = state.salaries[id];
+    $('sal-id').value = id;
+    $('sal-nom').value = s.nom || '';
+    $('sal-prenom').value = s.prenom || '';
+    $('sal-site').value = s.siteRattachement || '';
+    $('sal-fonction').value = s.fonction || '';
+    $('sal-code').value = s.code || '';
+    $('sal-actif').value = s.actif === false ? 'false' : 'true';
+  } else {
+    $('sal-id').value = '';
+    $('sal-nom').value = '';
+    $('sal-prenom').value = '';
+    $('sal-site').value = '';
+    $('sal-fonction').value = '';
+    $('sal-code').value = generateUniqueCode();
+    $('sal-actif').value = 'true';
+  }
+  $('modal-salarie').classList.add('active');
+}
+
+function generateUniqueCode() {
+  const existing = new Set(Object.values(state.salaries).map(s => s.code));
+  for (let i = 0; i < 100; i++) {
+    const c = String(Math.floor(1000 + Math.random() * 9000));
+    if (!existing.has(c)) return c;
+  }
+  return '0000';
+}
+
+async function saveSalarie() {
+  const id = $('sal-id').value;
+  const nom = $('sal-nom').value.trim();
+  const prenom = $('sal-prenom').value.trim();
+  const site = $('sal-site').value;
+  const code = $('sal-code').value.trim();
+  const actif = $('sal-actif').value === 'true';
+  if (!nom || !prenom) return toast('Nom et prénom requis', 'error');
+  if (!/^\d{4}$/.test(code)) return toast('Code 4 chiffres', 'error');
+  const dup = Object.entries(state.salaries).find(([k, v]) => v.code === code && k !== id);
+  if (dup) return toast('Ce code est déjà utilisé', 'error');
+  const data = { nom, prenom, code, siteRattachement: site, fonction: $('sal-fonction').value.trim(), actif };
+  if (id) await db.ref(`${ROOT}/salaries/${id}`).update(data);
+  else await db.ref(`${ROOT}/salaries`).push(data);
+  closeModal('modal-salarie');
+  toast('Salarié enregistré', 'success');
+}
+
+async function deleteSalarie() {
+  const id = $('sal-id').value;
+  if (!id) return;
+  if (!confirm('Supprimer ce salarié ? Les pointages historiques sont conservés.')) return;
+  await db.ref(`${ROOT}/salaries/${id}`).remove();
+  closeModal('modal-salarie');
+  toast('Salarié supprimé', 'success');
+}
+
+/* === SITES CRUD === */
+function renderSites() {
+  const c = $('sites-container');
+  c.innerHTML = '';
+  // Bouton ajout site
+  c.innerHTML += `<div style="margin-bottom:14px"><button class="btn small" onclick="openSiteModal()">+ Nouveau site</button></div>`;
+  for (const [sid, site] of Object.entries(state.sites)) {
+    const bats = site.batiments || {};
+    const batRows = Object.entries(bats).map(([bid, b]) => {
+      const hasGps = b.lat && b.lng;
+      return `<tr style="cursor:pointer" onclick="openBatimentModal('${sid}','${bid}')">
+        <td><strong>${b.nom}</strong></td>
+        <td><span class="chip gray">${b.type}</span></td>
+        <td>${hasGps ? `${b.lat.toFixed(6)}, ${b.lng.toFixed(6)}` : '<span class="chip orange">GPS non configuré</span>'}</td>
+        <td>${b.rayon}m</td>
+        <td>›</td>
+      </tr>`;
+    }).join('');
+    c.innerHTML += `
+      <div class="section">
+        <div class="section-header">
+          <div>
+            <div class="section-title">${site.nom}</div>
+            <div class="muted" style="font-size:12px;margin-top:2px">${site.departement || ''}</div>
+          </div>
+          <div class="flex gap-sm">
+            <button class="btn ghost small" onclick="openSiteModal('${sid}')">Modifier</button>
+            <button class="btn small" onclick="openBatimentModal('${sid}')">+ Bâtiment</button>
+          </div>
+        </div>
+        <div class="section-body tight" style="overflow-x:auto">
+          <table>
+            <thead><tr><th>Nom</th><th>Type</th><th>Coordonnées</th><th>Rayon</th><th></th></tr></thead>
+            <tbody>${batRows || `<tr><td colspan="5" class="empty">Aucun bâtiment — clique sur "+ Bâtiment"</td></tr>`}</tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }
+}
+
+function openSiteModal(id) {
+  $('modal-site-title').textContent = id ? 'Modifier site' : 'Nouveau site';
+  $('btn-delete-site').classList.toggle('hidden', !id);
+  if (id) {
+    const s = state.sites[id];
+    $('site-id').value = id;
+    $('site-nom').value = s.nom || '';
+    $('site-dept').value = s.departement || '';
+  } else {
+    $('site-id').value = '';
+    $('site-nom').value = '';
+    $('site-dept').value = '';
+  }
+  $('modal-site').classList.add('active');
+}
+
+async function saveSite() {
+  const id = $('site-id').value;
+  const nom = $('site-nom').value.trim();
+  const dept = $('site-dept').value.trim();
+  if (!nom) return toast('Nom requis', 'error');
+  if (id) {
+    await db.ref(`${ROOT}/sites/${id}`).update({ nom, departement: dept });
+  } else {
+    const newId = nom.toLowerCase().replace(/[^a-z0-9]/g, '');
+    await db.ref(`${ROOT}/sites/${newId}`).set({ nom, departement: dept, batiments: {} });
+  }
+  closeModal('modal-site');
+  toast('Site enregistré', 'success');
+}
+
+async function deleteSite() {
+  const id = $('site-id').value;
+  if (!id) return;
+  if (!confirm('Supprimer ce site et tous ses bâtiments ? Cette action est irréversible.')) return;
+  await db.ref(`${ROOT}/sites/${id}`).remove();
+  closeModal('modal-site');
+  toast('Site supprimé', 'success');
+}
+
+function openBatimentModal(siteId, batId) {
+  $('modal-batiment-title').textContent = batId ? 'Modifier bâtiment' : 'Nouveau bâtiment';
+  $('btn-delete-batiment').classList.toggle('hidden', !batId);
+  $('bat-site').value = siteId;
+  if (batId) {
+    const b = state.sites[siteId].batiments[batId];
+    $('bat-id').value = batId;
+    $('bat-nom').value = b.nom || '';
+    $('bat-type').value = b.type || 'Ponte';
+    $('bat-lat').value = b.lat || '';
+    $('bat-lng').value = b.lng || '';
+    $('bat-rayon').value = b.rayon || state.settings.rayonDefaut;
+  } else {
+    $('bat-id').value = '';
+    $('bat-nom').value = '';
+    $('bat-type').value = 'Ponte';
+    $('bat-lat').value = '';
+    $('bat-lng').value = '';
+    $('bat-rayon').value = state.settings.rayonDefaut || 150;
+  }
+  $('modal-batiment').classList.add('active');
+}
+
+function captureGPS() {
+  if (!navigator.geolocation) return toast('Géolocalisation non disponible', 'error');
+  toast('Acquisition GPS…');
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      $('bat-lat').value = pos.coords.latitude.toFixed(7);
+      $('bat-lng').value = pos.coords.longitude.toFixed(7);
+      toast(`Position capturée (±${Math.round(pos.coords.accuracy)}m)`, 'success');
+    },
+    err => toast('Erreur GPS : ' + err.message, 'error'),
+    { enableHighAccuracy: true, timeout: 15000 }
+  );
+}
+
+async function saveBatiment() {
+  const siteId = $('bat-site').value;
+  const id = $('bat-id').value;
+  const nom = $('bat-nom').value.trim();
+  const type = $('bat-type').value;
+  const lat = parseFloat($('bat-lat').value);
+  const lng = parseFloat($('bat-lng').value);
+  const rayon = parseInt($('bat-rayon').value);
+  if (!nom) return toast('Nom requis', 'error');
+  if (isNaN(rayon) || rayon < 20) return toast('Rayon invalide (min 20m)', 'error');
+  const data = { nom, type, lat: isNaN(lat) ? 0 : lat, lng: isNaN(lng) ? 0 : lng, rayon };
+  if (id) {
+    await db.ref(`${ROOT}/sites/${siteId}/batiments/${id}`).update(data);
+  } else {
+    const newId = nom.toLowerCase().replace(/[^a-z0-9]/g, '');
+    await db.ref(`${ROOT}/sites/${siteId}/batiments/${newId}`).set(data);
+  }
+  closeModal('modal-batiment');
+  toast('Bâtiment enregistré', 'success');
+}
+
+async function deleteBatiment() {
+  const siteId = $('bat-site').value;
+  const id = $('bat-id').value;
+  if (!id) return;
+  if (!confirm('Supprimer ce bâtiment ?')) return;
+  await db.ref(`${ROOT}/sites/${siteId}/batiments/${id}`).remove();
+  closeModal('modal-batiment');
+  toast('Bâtiment supprimé', 'success');
+}
+
+/* === ANOMALIES === */
+function renderAnomalies() {
+  const anom = [];
+  // 1. Pointages incomplets : embauche sans débauche le jour même (et jour passé)
+  const today = todayISO();
+  for (const [date, day] of Object.entries(state.pointages)) {
+    if (date >= today) continue; // jour en cours = ok
+    const bySal = {};
+    for (const p of Object.values(day)) (bySal[p.salarieId] = bySal[p.salarieId] || []).push(p);
+    for (const [salId, list] of Object.entries(bySal)) {
+      const sorted = list.sort((a, b) => a.timestamp - b.timestamp);
+      const last = sorted[sorted.length - 1];
+      if (last.type !== 'debauche') {
+        const sal = state.salaries[salId];
+        anom.push({
+          type: 'oubli',
+          date,
+          salName: sal ? `${sal.prenom} ${sal.nom}` : last.salarieNom || salId,
+          msg: `Pas de débauche — dernier pointage : ${last.type} à ${fmtTime(last.timestamp)}`
+        });
+      }
+    }
+  }
+  // 2. Pointages hors zone
+  for (const [date, day] of Object.entries(state.pointages)) {
+    for (const [pid, p] of Object.entries(day)) {
+      if (p.batimentDetecte && p.batimentDetecte.inZone === false && !p.batimentChoisi) {
+        const sal = state.salaries[p.salarieId];
+        anom.push({
+          type: 'hors-zone',
+          date,
+          salName: sal ? `${sal.prenom} ${sal.nom}` : p.salarieNom || p.salarieId,
+          msg: `${p.type} à ${fmtTime(p.timestamp)} — ${p.batimentDetecte.distance}m du centre de ${siteName(p.batimentDetecte.siteId, p.batimentDetecte.batimentId)}`
+        });
+      }
+    }
+  }
+
+  if (!anom.length) {
+    $('anomalies-list').innerHTML = `<div class="empty">Aucune anomalie détectée 🎉</div>`;
+    return;
+  }
+  anom.sort((a, b) => b.date.localeCompare(a.date));
+  $('anomalies-list').innerHTML = anom.map(a => `
+    <div class="timeline-item" style="padding:12px 0">
+      <div class="timeline-time">${fmtDateShort(a.date)}</div>
+      <div class="timeline-type ${a.type === 'oubli' ? 'orange' : 'red'}" style="background:${a.type === 'oubli' ? 'var(--orange-soft)' : 'var(--red-soft)'};color:${a.type === 'oubli' ? 'var(--orange)' : 'var(--red)'}">${a.type === 'oubli' ? 'Oubli débauche' : 'Hors zone'}</div>
+      <div style="flex:1"><strong>${a.salName}</strong><div class="muted" style="font-size:12px">${a.msg}</div></div>
+    </div>
+  `).join('');
+}
+
+/* === SETTINGS === */
+function loadSettings() {
+  $('setting-radius').value = state.settings.rayonDefaut || 150;
+  $('setting-tolerance').value = state.settings.tolerance || 50;
+  $('setting-hsup').value = state.settings.heuresContractuelles || 35;
+  $('setting-password').value = '';
+}
+
+async function saveSettings() {
+  const radius = parseInt($('setting-radius').value);
+  const tol = parseInt($('setting-tolerance').value);
+  const hsup = parseFloat($('setting-hsup').value);
+  const newPw = $('setting-password').value;
+  const upd = {
+    rayonDefaut: isNaN(radius) ? 150 : radius,
+    tolerance: isNaN(tol) ? 50 : tol,
+    heuresContractuelles: isNaN(hsup) ? 35 : hsup
+  };
+  if (newPw) upd.adminPasswordHash = await sha256(newPw);
+  await db.ref(`${ROOT}/settings`).update(upd);
+  toast('Réglages enregistrés', 'success');
+}
+
+async function resetSitesToDefault() {
+  if (!confirm('Cette action va EFFACER la configuration actuelle des sites et bâtiments (y compris coordonnées GPS) et la remplacer par la configuration par défaut. Les pointages historiques sont conservés. Continuer ?')) return;
+  await db.ref(`${ROOT}/sites`).remove();
+  // bootstrapSites se déclenchera automatiquement au prochain snapshot
+  toast('Configuration réinitialisée', 'success');
+}
+
+/* === EXPORTS === */
+async function exportPointagesExcel() {
+  const list = state.isAdmin ? getFilteredPointages() : [];
+  if (!list.length) return toast('Aucun pointage à exporter', 'error');
+
+  toast('Génération du fichier Excel…', 'success');
+
+  // Pour les feuilles "détail par salarié", on récupère TOUS les pointages
+  // de la plage de dates (en ignorant le filtre "Type" sinon le calcul des heures
+  // serait faussé). On respecte les filtres Salarié et Site.
+  const from = $('filter-from').value;
+  const to = $('filter-to').value;
+  const siteFilter = $('filter-site').value;
+  const salFilter = $('filter-salarie').value;
+
+  const allInRange = [];
+  for (const [date, day] of Object.entries(state.pointages)) {
+    if (from && date < from) continue;
+    if (to && date > to) continue;
+    for (const [pid, p] of Object.entries(day)) {
+      if (salFilter && p.salarieId !== salFilter) continue;
+      const loc = p.batimentChoisi || p.batimentDetecte;
+      if (siteFilter && (!loc || loc.siteId !== siteFilter)) continue;
+      allInRange.push({ date, pid, ...p });
+    }
+  }
+
+  // Palette de couleurs (ARGB pour ExcelJS)
+  const C = {
+    headerBg: 'FF0F1117',
+    headerText: 'FFFFFFFF',
+    accentBg: 'FF3B82F6',
+    accentSoft: 'FFDBEAFE',
+    weekendBg: 'FFF3F4F6',
+    altRowBg: 'FFF9FAFB',
+    anomalyBg: 'FFFEE2E2',
+    anomalyText: 'FFB91C1C',
+    border: 'FFD1D5DB',
+    green: 'FF10B981',
+    orange: 'FFF59E0B',
+    red: 'FFEF4444',
+    accent: 'FF3B82F6',
+    hsupBg: 'FFFEF3C7',
+    muted: 'FF6B7280'
+  };
+  const thinBorder = {
+    top: { style: 'thin', color: { argb: C.border } },
+    left: { style: 'thin', color: { argb: C.border } },
+    bottom: { style: 'thin', color: { argb: C.border } },
+    right: { style: 'thin', color: { argb: C.border } }
+  };
+
+  const periodLabel = (from || to)
+    ? `${from ? fmtDateShort(from) : '…'} → ${to ? fmtDateShort(to) : '…'}`
+    : 'Toutes périodes';
+
+  const seuil = state.settings.heuresContractuelles || 35;
+
+  // Regroupement des pointages par salarié
+  const empMap = {};
+  for (const p of allInRange) {
+    if (!empMap[p.salarieId]) {
+      const s = state.salaries[p.salarieId];
+      empMap[p.salarieId] = {
+        id: p.salarieId,
+        name: s ? `${s.prenom} ${s.nom}` : (p.salarieNom || 'Inconnu'),
+        site: s && s.siteRattachement ? (state.sites[s.siteRattachement] || {}).nom || '' : '',
+        pts: []
+      };
+    }
+    empMap[p.salarieId].pts.push(p);
+  }
+
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'AFR Élevage — Pointage';
+  wb.created = new Date();
+
+  // ===========================================================
+  // FEUILLE 1 : Récapitulatif
+  // ===========================================================
+  const ws1 = wb.addWorksheet('Récapitulatif', { properties: { tabColor: { argb: C.accent } } });
+
+  ws1.mergeCells('A1:F1');
+  const t1 = ws1.getCell('A1');
+  t1.value = 'AFR ÉLEVAGE — Récapitulatif des pointages';
+  t1.font = { name: 'Calibri', size: 16, bold: true, color: { argb: C.headerText } };
+  t1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C.headerBg } };
+  t1.alignment = { horizontal: 'center', vertical: 'middle' };
+  ws1.getRow(1).height = 32;
+
+  ws1.mergeCells('A2:F2');
+  const t2 = ws1.getCell('A2');
+  t2.value = `Période : ${periodLabel}    |    Généré le ${fmtDateShort(todayISO())} à ${nowTime()}`;
+  t2.font = { italic: true, color: { argb: C.muted } };
+  t2.alignment = { horizontal: 'center' };
+  ws1.getRow(2).height = 18;
+
+  // En-tête tableau récap
+  const hdr1Cols = ['Salarié', 'Site', 'Jours travaillés', 'Heures totales', 'Heures sup', 'Heures contractuelles'];
+  const hdr1 = ws1.getRow(4);
+  hdr1Cols.forEach((v, i) => {
+    const c = hdr1.getCell(i + 1);
+    c.value = v;
+    c.font = { bold: true, color: { argb: C.headerText }, size: 11 };
+    c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C.accentBg } };
+    c.alignment = { horizontal: 'center', vertical: 'middle' };
+    c.border = thinBorder;
+  });
+  hdr1.height = 24;
+
+  // Lignes récap
+  let rR = 5;
+  let totalAllMs = 0;
+  let totalAllHsup = 0;
+  let totalAllDays = 0;
+  const sortedEmployees = Object.values(empMap).sort((a, b) => a.name.localeCompare(b.name));
+
+  sortedEmployees.forEach((emp, idx) => {
+    const days = new Set(emp.pts.map(p => p.date)).size;
+    const ms = computeWorkedHoursMs(emp.pts);
+    const perWeek = computeWorkedHoursPerWeek(emp.pts);
+    const hsupMs = Object.values(perWeek).reduce((a, m) => a + Math.max(0, m - seuil * 3600000), 0);
+    totalAllMs += ms; totalAllHsup += hsupMs; totalAllDays += days;
+
+    const row = ws1.getRow(rR++);
+    row.getCell(1).value = emp.name;
+    row.getCell(2).value = emp.site || '—';
+    row.getCell(3).value = days;
+    row.getCell(4).value = fmtDuration(ms);
+    row.getCell(5).value = fmtDuration(hsupMs);
+    row.getCell(6).value = `${seuil} h / semaine`;
+
+    const isAlt = idx % 2 === 1;
+    for (let i = 1; i <= 6; i++) {
+      const c = row.getCell(i);
+      c.border = thinBorder;
+      c.alignment = { horizontal: i === 1 ? 'left' : 'center', vertical: 'middle' };
+      if (isAlt) c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C.altRowBg } };
+    }
+    row.getCell(1).font = { bold: true };
+    row.getCell(4).font = { bold: true, color: { argb: C.accent } };
+    if (hsupMs > 0) row.getCell(5).font = { bold: true, color: { argb: C.orange } };
+    row.height = 20;
+  });
+
+  // Ligne TOTAL
+  const totalR = ws1.getRow(rR++);
+  totalR.getCell(1).value = 'TOTAL';
+  totalR.getCell(2).value = `${sortedEmployees.length} salarié(s)`;
+  totalR.getCell(3).value = totalAllDays;
+  totalR.getCell(4).value = fmtDuration(totalAllMs);
+  totalR.getCell(5).value = fmtDuration(totalAllHsup);
+  totalR.getCell(6).value = '';
+  for (let i = 1; i <= 6; i++) {
+    const c = totalR.getCell(i);
+    c.font = { bold: true, color: { argb: C.headerText } };
+    c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C.headerBg } };
+    c.alignment = { horizontal: i === 1 ? 'left' : 'center', vertical: 'middle' };
+    c.border = thinBorder;
+  }
+  totalR.height = 24;
+
+  ws1.columns = [{ width: 28 }, { width: 22 }, { width: 16 }, { width: 16 }, { width: 14 }, { width: 22 }];
+  ws1.views = [{ state: 'frozen', ySplit: 4 }];
+  ws1.pageSetup = { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0,
+    margins: { left: 0.4, right: 0.4, top: 0.5, bottom: 0.5, header: 0.3, footer: 0.3 } };
+
+  // ===========================================================
+  // FEUILLE 2 : Tous pointages (pour audit)
+  // ===========================================================
+  const ws2 = wb.addWorksheet('Pointages', { properties: { tabColor: { argb: C.muted } } });
+
+  ws2.mergeCells('A1:H1');
+  const t3 = ws2.getCell('A1');
+  t3.value = 'AFR ÉLEVAGE — Détail des pointages (filtres appliqués)';
+  t3.font = { size: 14, bold: true, color: { argb: C.headerText } };
+  t3.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C.headerBg } };
+  t3.alignment = { horizontal: 'center', vertical: 'middle' };
+  ws2.getRow(1).height = 28;
+
+  const hdr2Cols = ['Date', 'Heure', 'Salarié', 'Type', 'Site', 'Bâtiment', 'GPS (lat, lng)', 'Précision'];
+  const hdr2 = ws2.getRow(3);
+  hdr2Cols.forEach((v, i) => {
+    const c = hdr2.getCell(i + 1);
+    c.value = v;
+    c.font = { bold: true, color: { argb: C.headerText } };
+    c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C.accentBg } };
+    c.alignment = { horizontal: 'center', vertical: 'middle' };
+    c.border = thinBorder;
+  });
+  hdr2.height = 22;
+
+  const typeColors = { embauche: C.green, pause: C.orange, reprise: C.accent, debauche: C.red };
+  let r2 = 4;
+  // On trie par date asc puis heure asc pour la lisibilité
+  const sortedList = [...list].sort((a, b) => (a.date.localeCompare(b.date)) || (a.timestamp - b.timestamp));
+  sortedList.forEach((p, idx) => {
+    const loc = p.batimentChoisi || p.batimentDetecte;
+    const siteN = loc ? (state.sites[loc.siteId] || {}).nom || '' : '';
+    const batN = loc ? ((state.sites[loc.siteId] || {}).batiments || {})[loc.batimentId]?.nom || '' : '';
+    const row = ws2.getRow(r2++);
+    row.getCell(1).value = fmtDateShort(p.date);
+    row.getCell(2).value = fmtTime(p.timestamp);
+    row.getCell(3).value = p.salarieNom || '';
+    row.getCell(4).value = p.type;
+    row.getCell(5).value = siteN;
+    row.getCell(6).value = batN;
+    row.getCell(7).value = p.gps ? `${p.gps.lat.toFixed(5)}, ${p.gps.lng.toFixed(5)}` : '';
+    row.getCell(8).value = p.gps ? `±${p.gps.accuracy} m` : '';
+
+    const isAlt = idx % 2 === 1;
+    for (let i = 1; i <= 8; i++) {
+      const c = row.getCell(i);
+      c.border = thinBorder;
+      c.alignment = { vertical: 'middle', horizontal: i === 3 || i === 5 || i === 6 ? 'left' : 'center' };
+      if (isAlt && i !== 4) c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C.altRowBg } };
+    }
+    // Cellule "Type" colorée
+    const tc = row.getCell(4);
+    tc.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 };
+    tc.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: typeColors[p.type] || C.muted } };
+    tc.alignment = { horizontal: 'center', vertical: 'middle' };
+
+    // Hors zone : surlignage rouge sur site/bâtiment
+    if (p.batimentDetecte && !p.batimentDetecte.inZone) {
+      [5, 6].forEach(i => {
+        row.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C.anomalyBg } };
+        row.getCell(i).font = { color: { argb: C.anomalyText }, bold: true };
+      });
+    }
+  });
+
+  ws2.columns = [{ width: 12 }, { width: 9 }, { width: 24 }, { width: 12 },
+                 { width: 18 }, { width: 22 }, { width: 24 }, { width: 11 }];
+  ws2.views = [{ state: 'frozen', ySplit: 3 }];
+  ws2.autoFilter = { from: { row: 3, column: 1 }, to: { row: r2 - 1, column: 8 } };
+  ws2.pageSetup = { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0 };
+
+  // ===========================================================
+  // FEUILLES 3+ : UNE PAR SALARIÉ
+  // ===========================================================
+  const sheetNameSet = new Set(['récapitulatif', 'pointages']);
+  function safeSheetName(name) {
+    let n = name.replace(/[\*\?:\\\/\[\]']/g, ' ').trim();
+    if (n.length > 31) n = n.slice(0, 31).trim();
+    let base = n, i = 2;
+    while (sheetNameSet.has(n.toLowerCase())) {
+      const suf = ` (${i++})`;
+      n = base.slice(0, 31 - suf.length).trim() + suf;
+    }
+    sheetNameSet.add(n.toLowerCase());
+    return n;
+  }
+
+  for (const emp of sortedEmployees) {
+    const ws = wb.addWorksheet(safeSheetName(emp.name), { properties: { tabColor: { argb: C.accent } } });
+
+    // Bandeau titre
+    ws.mergeCells('A1:I1');
+    const ec1 = ws.getCell('A1');
+    ec1.value = `AFR ÉLEVAGE — ${emp.name}`;
+    ec1.font = { name: 'Calibri', size: 18, bold: true, color: { argb: C.headerText } };
+    ec1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C.headerBg } };
+    ec1.alignment = { horizontal: 'center', vertical: 'middle' };
+    ws.getRow(1).height = 36;
+
+    // Bandeau infos
+    ws.mergeCells('A2:I2');
+    const ec2 = ws.getCell('A2');
+    ec2.value = `Site de rattachement : ${emp.site || '—'}    |    Période : ${periodLabel}    |    Édité le ${fmtDateShort(todayISO())}`;
+    ec2.font = { italic: true, color: { argb: C.muted } };
+    ec2.alignment = { horizontal: 'center', vertical: 'middle' };
+    ws.getRow(2).height = 20;
+
+    // En-tête tableau
+    const cols = ['Date', 'Jour', 'Embauche', 'Pause', 'Reprise', 'Débauche', 'Heures', 'Site / Bâtiment', 'Anomalie'];
+    const hdr = ws.getRow(4);
+    cols.forEach((v, i) => {
+      const c = hdr.getCell(i + 1);
+      c.value = v;
+      c.font = { bold: true, color: { argb: C.headerText }, size: 11 };
+      c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C.accentBg } };
+      c.alignment = { horizontal: 'center', vertical: 'middle' };
+      c.border = thinBorder;
+    });
+    hdr.height = 24;
+
+    // Regroupement par date
+    const byDate = {};
+    for (const p of emp.pts) (byDate[p.date] = byDate[p.date] || []).push(p);
+    const sortedDates = Object.keys(byDate).sort();
+
+    let r = 5;
+    let totalMs = 0;
+
+    for (const date of sortedDates) {
+      const dayPts = byDate[date].sort((a, b) => a.timestamp - b.timestamp);
+      const embs = dayPts.filter(p => p.type === 'embauche').map(p => fmtTime(p.timestamp));
+      const pauses = dayPts.filter(p => p.type === 'pause').map(p => fmtTime(p.timestamp));
+      const reprises = dayPts.filter(p => p.type === 'reprise').map(p => fmtTime(p.timestamp));
+      const debs = dayPts.filter(p => p.type === 'debauche').map(p => fmtTime(p.timestamp));
+
+      const dayMs = computeWorkedHoursMs(dayPts);
+      totalMs += dayMs;
+
+      // Sites visités
+      const lieux = new Set();
+      for (const p of dayPts) {
+        const loc = p.batimentChoisi || p.batimentDetecte;
+        if (loc) lieux.add(siteName(loc.siteId, loc.batimentId));
+      }
+
+      // Anomalies
+      const anomalies = [];
+      const last = dayPts[dayPts.length - 1];
+      if (last && last.type !== 'debauche' && date < todayISO()) anomalies.push('Oubli débauche');
+      if (dayPts.some(p => p.batimentDetecte && !p.batimentDetecte.inZone)) anomalies.push('Hors zone');
+      if (embs.length === 0 && (pauses.length || reprises.length || debs.length)) anomalies.push('Pas d\'embauche');
+
+      const d = new Date(date);
+      const dayOfWeek = d.toLocaleDateString('fr-FR', { weekday: 'long' });
+      const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+
+      const row = ws.getRow(r++);
+      row.getCell(1).value = fmtDateShort(date);
+      row.getCell(2).value = dayOfWeek.charAt(0).toUpperCase() + dayOfWeek.slice(1);
+      row.getCell(3).value = embs.join(' / ') || '—';
+      row.getCell(4).value = pauses.join(' / ') || '—';
+      row.getCell(5).value = reprises.join(' / ') || '—';
+      row.getCell(6).value = debs.join(' / ') || '—';
+      row.getCell(7).value = fmtDuration(dayMs);
+      row.getCell(8).value = [...lieux].join(', ') || '—';
+      row.getCell(9).value = anomalies.join(' • ');
+
+      const baseFill = isWeekend ? C.weekendBg : (sortedDates.indexOf(date) % 2 === 1 ? C.altRowBg : null);
+      const hasAnomaly = anomalies.length > 0;
+
+      for (let i = 1; i <= 9; i++) {
+        const c = row.getCell(i);
+        c.border = thinBorder;
+        c.alignment = { horizontal: (i === 1 || i === 2 || i === 8) ? 'left' : 'center', vertical: 'middle' };
+        if (baseFill) c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: baseFill } };
+      }
+
+      if (isWeekend) row.getCell(2).font = { italic: true, color: { argb: C.muted } };
+      if (embs.length) row.getCell(3).font = { color: { argb: C.green }, bold: true };
+      else row.getCell(3).font = { color: { argb: C.muted } };
+      if (pauses.length) row.getCell(4).font = { color: { argb: C.orange } };
+      else row.getCell(4).font = { color: { argb: C.muted } };
+      if (reprises.length) row.getCell(5).font = { color: { argb: C.accent } };
+      else row.getCell(5).font = { color: { argb: C.muted } };
+      if (debs.length) row.getCell(6).font = { color: { argb: C.red }, bold: true };
+      else row.getCell(6).font = { color: { argb: C.muted } };
+      row.getCell(7).font = { bold: true, size: 11 };
+
+      if (hasAnomaly) {
+        row.getCell(9).font = { color: { argb: C.anomalyText }, bold: true };
+        row.getCell(9).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C.anomalyBg } };
+      }
+      row.height = 20;
+    }
+
+    // Ligne TOTAL
+    const totalRowIdx = r++;
+    ws.mergeCells(totalRowIdx, 1, totalRowIdx, 6);
+    const totalRow = ws.getRow(totalRowIdx);
+    totalRow.getCell(1).value = `TOTAL — ${sortedDates.length} jour(s) travaillé(s)`;
+    totalRow.getCell(7).value = fmtDuration(totalMs);
+    totalRow.getCell(8).value = '';
+    totalRow.getCell(9).value = '';
+    for (let i = 1; i <= 9; i++) {
+      const c = totalRow.getCell(i);
+      c.font = { bold: true, color: { argb: C.headerText }, size: 12 };
+      c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C.headerBg } };
+      c.alignment = { horizontal: i === 1 ? 'right' : 'center', vertical: 'middle' };
+      c.border = thinBorder;
+    }
+    totalRow.height = 26;
+
+    // Ligne heures supplémentaires si > 0
+    const perWeek = computeWorkedHoursPerWeek(emp.pts);
+    const hsupMs = Object.values(perWeek).reduce((a, m) => a + Math.max(0, m - seuil * 3600000), 0);
+    if (hsupMs > 0) {
+      const hsupIdx = r++;
+      ws.mergeCells(hsupIdx, 1, hsupIdx, 6);
+      const hsupRow = ws.getRow(hsupIdx);
+      hsupRow.getCell(1).value = `Heures supplémentaires (au-delà de ${seuil} h / semaine)`;
+      hsupRow.getCell(7).value = fmtDuration(hsupMs);
+      for (let i = 1; i <= 9; i++) {
+        const c = hsupRow.getCell(i);
+        c.font = { bold: true, color: { argb: C.orange }, size: 11 };
+        c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C.hsupBg } };
+        c.alignment = { horizontal: i === 1 ? 'right' : 'center', vertical: 'middle' };
+        c.border = thinBorder;
+      }
+      hsupRow.height = 22;
+    }
+
+    // Détail par semaine
+    if (Object.keys(perWeek).length > 1) {
+      r++; // ligne vide
+      const wkHdr = ws.getRow(r++);
+      ws.mergeCells(wkHdr.number, 1, wkHdr.number, 9);
+      wkHdr.getCell(1).value = 'Détail par semaine';
+      wkHdr.getCell(1).font = { bold: true, color: { argb: C.headerText }, size: 11 };
+      wkHdr.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C.accentBg } };
+      wkHdr.getCell(1).alignment = { horizontal: 'left', vertical: 'middle', indent: 1 };
+      wkHdr.height = 22;
+
+      const sortedWeeks = Object.keys(perWeek).sort();
+      sortedWeeks.forEach((wk, idx) => {
+        const wkRow = ws.getRow(r++);
+        const wms = perWeek[wk];
+        const whs = Math.max(0, wms - seuil * 3600000);
+        wkRow.getCell(1).value = `Semaine ${wk}`;
+        ws.mergeCells(wkRow.number, 1, wkRow.number, 5);
+        wkRow.getCell(6).value = 'Total';
+        wkRow.getCell(7).value = fmtDuration(wms);
+        wkRow.getCell(8).value = whs > 0 ? `Sup : ${fmtDuration(whs)}` : '';
+        for (let i = 1; i <= 9; i++) {
+          const c = wkRow.getCell(i);
+          c.border = thinBorder;
+          c.alignment = { horizontal: i === 1 ? 'left' : 'center', vertical: 'middle', indent: i === 1 ? 1 : 0 };
+          if (idx % 2 === 1) c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C.altRowBg } };
+        }
+        wkRow.getCell(7).font = { bold: true };
+        if (whs > 0) wkRow.getCell(8).font = { color: { argb: C.orange }, bold: true };
+        wkRow.height = 18;
+      });
+    }
+
+    // Largeurs de colonnes
+    ws.columns = [
+      { width: 12 }, { width: 12 }, { width: 11 }, { width: 11 },
+      { width: 11 }, { width: 11 }, { width: 11 }, { width: 30 }, { width: 22 }
+    ];
+
+    // Figer l'en-tête
+    ws.views = [{ state: 'frozen', ySplit: 4 }];
+
+    // Mise en page impression A4 paysage
+    ws.pageSetup = {
+      orientation: 'landscape',
+      paperSize: 9, // A4
+      fitToPage: true,
+      fitToWidth: 1,
+      fitToHeight: 0,
+      margins: { left: 0.4, right: 0.4, top: 0.6, bottom: 0.6, header: 0.3, footer: 0.3 }
+    };
+    ws.headerFooter = {
+      oddHeader: `&L&"Calibri,Bold"&12AFR ÉLEVAGE&CPointages — ${emp.name}&R&D`,
+      oddFooter: '&LSAS AFR Élevage — Document confidentiel&CPage &P / &N&R&D &T'
+    };
+  }
+
+  // ===========================================================
+  // ÉCRITURE DU FICHIER
+  // ===========================================================
+  const buf = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Pointages_AFR_${todayISO()}.xlsx`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast(`Export généré : ${sortedEmployees.length} salarié(s)`, 'success');
+}
+
+async function exportFullBackup() {
+  const snap = await db.ref(ROOT).once('value');
+  const json = JSON.stringify(snap.val(), null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `pointage_backup_${todayISO()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Sauvegarde téléchargée', 'success');
+}
+
+/* === MODAL HELPERS === */
+function closeModal(id) { $(id).classList.remove('active'); }
+
+/* ============================================================
+   INIT
+   ============================================================ */
+firebase.auth().signInAnonymously().catch(e => console.warn('Auth anon failed:', e));
+attachListeners();
+updateCodeDisplay();
+
+// Empêche zoom double-tap iOS
+document.addEventListener('touchend', e => {
+  const t = Date.now();
+  if (window._lastTap && t - window._lastTap < 300) e.preventDefault();
+  window._lastTap = t;
+}, { passive: false });
+
+// Click hors modal pour fermer
+$$('.modal-backdrop').forEach(m => {
+  m.addEventListener('click', e => {
+    if (e.target === m) m.classList.remove('active');
+  });
+});
+</script>
+</body>
+</html>
