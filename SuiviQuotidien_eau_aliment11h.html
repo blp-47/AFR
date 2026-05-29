@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Suivi Quotidien – AFR Élevage</title>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --primary: #1a6b3c;
+    --primary-light: #e8f5ee;
+    --accent: #f0a500;
+    --danger: #d9534f;
+    --warn: #f0a500;
+    --ok: #1a6b3c;
+    --bg: #f4f6f9;
+    --card: #ffffff;
+    --border: #dde3ea;
+    --text: #1c2b3a;
+    --muted: #6b7c8f;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
+
+  header {
+    background: var(--primary);
+    color: white;
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  }
+  header h1 { font-size: 1.1rem; font-weight: 600; }
+  header span { font-size: 0.85rem; opacity: 0.8; margin-left: auto; }
+
+  .container { max-width: 1200px; margin: 0 auto; padding: 24px 16px; }
+
+  /* Zone de dépôt */
+  .drop-zone {
+    border: 2px dashed var(--primary);
+    border-radius: 12px;
+    background: var(--primary-light);
+    padding: 36px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 24px;
+  }
+  .drop-zone.drag-over { background: #d0ead9; border-color: #0f5230; }
+  .drop-zone svg { width: 40px; height: 40px; fill: var(--primary); margin-bottom: 10px; }
+  .drop-zone p { color: var(--primary); font-weight: 600; font-size: 1rem; }
+  .drop-zone small { color: var(--muted); font-size: 0.82rem; }
+  #fileInput { display: none; }
+
+  /* Files en attente */
+  .pending-list { margin-bottom: 20px; }
+  .pending-item {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.88rem;
+  }
+  .pending-item .ferme-tag {
+    background: var(--primary);
+    color: white;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-weight: 700;
+    font-size: 0.8rem;
+    min-width: 40px;
+    text-align: center;
+  }
+  .pending-item .values { flex: 1; display: flex; gap: 16px; flex-wrap: wrap; }
+  .pending-item .val { display: flex; flex-direction: column; align-items: center; }
+  .pending-item .val label { font-size: 0.7rem; color: var(--muted); }
+  .pending-item .val span { font-weight: 600; font-size: 0.95rem; }
+  .val.eau, .val.aliment { min-width: 210px; align-items: flex-start; }
+  .val.eau span, .val.aliment span { text-align: left; line-height: 1.25; }
+
+  .pending-item .status { font-size: 0.78rem; color: var(--muted); }
+  .pending-item .remove { cursor: pointer; color: var(--danger); font-size: 1.1rem; margin-left: auto; }
+  .pending-item.error { border-color: var(--danger); background: #fff5f5; }
+  .pending-item.error .ferme-tag { background: var(--danger); }
+
+  /* Bouton envoyer */
+  .send-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  #btnEnvoyer {
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 11px 28px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.2s;
+  }
+  #btnEnvoyer:hover { background: #145530; }
+  #btnEnvoyer:disabled { background: #a0b8a8; cursor: not-allowed; }
+  #sendStatus { font-size: 0.88rem; color: var(--muted); }
+  #sendStatus.ok { color: var(--ok); font-weight: 600; }
+  #sendStatus.err { color: var(--danger); }
+
+  /* Dashboard */
+  .section-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .dashboard-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    font-size: 0.88rem;
+  }
+  .dashboard-table th {
+    background: var(--primary);
+    color: white;
+    padding: 10px 14px;
+    text-align: center;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .dashboard-table th:first-child { text-align: left; }
+  .dashboard-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    text-align: center;
+  }
+  .dashboard-table td:first-child { text-align: left; font-weight: 700; color: var(--primary); }
+  .dashboard-table tr:last-child td { border-bottom: none; }
+  .dashboard-table tr:hover td { background: var(--primary-light); }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+  .badge.ok { background: #d4edda; color: #155724; }
+  .badge.warn { background: #fff3cd; color: #856404; }
+  .badge.danger { background: #f8d7da; color: #721c24; }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  .date-info {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-left: auto;
+  }
+
+  @media (max-width: 600px) {
+    .pending-item .values { gap: 8px; }
+    .dashboard-table { font-size: 0.78rem; }
+    .dashboard-table th, .dashboard-table td { padding: 8px 8px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <svg viewBox="0 0 24 24" fill="white" width="22" height="22"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+  <h1>Suivi Quotidien – AFR Élevage</h1>
+  <span id="dateAffichee"></span>
+</header>
+
+<div class="container">
+
+  <!-- Zone dépôt -->
+  <div class="drop-zone" id="dropZone">
+    <svg viewBox="0 0 24 24"><path d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+    <p>Glissez les fichiers Excel des fermes ici</p>
+    <small>ou cliquez pour sélectionner • Un fichier par ferme</small>
+    <input type="file" id="fileInput" multiple accept=".xlsx,.xlsm">
+  </div>
+
+  <!-- Liste des fichiers en attente -->
+  <div class="pending-list" id="pendingList"></div>
+
+  <!-- Barre d'envoi -->
+  <div class="send-bar" id="sendBar" style="display:none">
+    <button id="btnEnvoyer" onclick="envoyerTout()">
+      <svg viewBox="0 0 24 24" fill="white" width="16" height="16"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      Envoyer vers Firebase
+    </button>
+    <span id="sendStatus"></span>
+  </div>
+
+  <!-- Dashboard -->
+  <div class="section-title">Comparatif des fermes – dernière saisie</div>
+  <div id="dashboardContainer">
+    <div class="empty-state" id="emptyState">Aucune donnée disponible — importez des fichiers pour alimenter le tableau</div>
+    <table class="dashboard-table" id="dashboardTable" style="display:none">
+      <thead>
+        <tr>
+          <th>Ferme</th>
+          <th>Date</th>
+          <th>% Ponte</th>
+          <th>% Ponte au sol</th>
+          <th>% Déclassés</th>
+          <th>Mortalité</th>
+          <th>Durée IA</th>
+          <th>Eau 11h</th>
+          <th>Aliment 11h</th>
+        </tr>
+      </thead>
+      <tbody id="dashboardBody"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+// ─── Firebase ───────────────────────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyD9zMzUMbpMFZB7Hp7aHt0z9sIPBZ7tFgA",
+  authDomain: "afr-nt2.firebaseapp.com",
+  databaseURL: "https://afr-nt2-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "afr-nt2",
+  storageBucket: "afr-nt2.appspot.com",
+  messagingSenderId: "1005737808405",
+  appId: "1:1005737808405:web:afr"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ─── Date ────────────────────────────────────────────────────────────────────
+const today = new Date();
+document.getElementById('dateAffichee').textContent =
+  today.toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+
+// ─── Données en attente d'envoi ───────────────────────────────────────────
+let pendingData = []; // [{ferme, date, ponte, sol, declasse, mortalite, dureeIA, eau11h, aliment11h, filename}]
+
+// Helper global : conversion fiable des nombres pour l'affichage et le dashboard
+function cleanNumber(v) {
+  if (v === null || v === undefined || v === '') return null;
+  if (typeof v === 'number' && isFinite(v)) return v;
+  const n = parseFloat(String(v).replace(/\s/g, '').replace(',', '.').replace(/[^0-9.\-]/g, ''));
+  return isNaN(n) ? null : n;
+}
+
+// ─── Drag & Drop ─────────────────────────────────────────────────────────────
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  traiterFichiers(e.dataTransfer.files);
+});
+fileInput.addEventListener('change', e => traiterFichiers(e.target.files));
+
+// ─── Extraction nom de ferme depuis le nom de fichier ─────────────────────
+function extractFerme(filename) {
+  const upper = filename.toUpperCase();
+  const fermes = ['NT1','NT2','NV1','NV2','ST1','ST2','ST3','VS','SG1','SG2','SG3'];
+  for (const f of fermes) {
+    if (upper.includes(f)) return f;
+  }
+  // fallback: chercher pattern lettre+chiffre
+  const m = upper.match(/([A-Z]{2,3}\d)/);
+  return m ? m[1] : 'INCONNUE';
+}
+
+// ─── Lecture Excel ────────────────────────────────────────────────────────
+function lireExcel(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        // Ne pas utiliser cellDates pour éviter le recalcul des formules de date
+        const wb = XLSX.read(e.target.result, { type: 'binary', cellDates: false });
+
+        // Colonnes variables selon type de fichier
+        // NT/NV/ST/VS : % Ponte=idx28, % Déclassés=idx32, % Sol=idx33
+        // SG          : % Ponte=idx32, % Déclassés=idx36, % Sol=idx37
+        const ferme = extractFerme(file.name);
+        const isSG = ferme.startsWith('SG');
+        const idxPonte    = isSG ? 32 : 28;
+        const idxDeclasse = isSG ? 36 : 32;
+        const idxSol      = isSG ? 37 : 33;
+
+        const wsPonte = wb.Sheets['Ponte'];
+        let ponte = null, declasse = null, sol = null, datePonte = null, datePonteObj = null;
+        if (wsPonte) {
+          const data = XLSX.utils.sheet_to_json(wsPonte, { header: 1, defval: null });
+          for (let i = data.length - 1; i >= 11; i--) {
+            const row = data[i];
+            const valPonte = row[idxPonte];
+            if (valPonte && valPonte !== 0 && typeof valPonte === 'number') {
+              ponte = Math.round(valPonte * 100 * 100) / 100;
+              declasse = row[idxDeclasse] ? Math.round(row[idxDeclasse] * 100 * 100) / 100 : 0;
+              sol = row[idxSol] ? Math.round(row[idxSol] * 100 * 100) / 100 : 0;
+              // Lire la valeur affichée (w) de la cellule C pour éviter le recalcul des formules
+              // XLSX.js stocke la valeur formatée dans cell.w et la valeur brute dans cell.v
+              const wsRef = wsPonte;
+              const cellAddr = XLSX.utils.encode_cell({r: i, c: 2}); // col C = index 2
+              const cell = wsRef[cellAddr];
+              let datePonteRaw = null;
+              if (cell) {
+                // Utiliser la valeur brute numérique (numéro de série Excel)
+                const serial = cell.v;
+                if (typeof serial === 'number' && serial > 40000) {
+                  // Convertir le numéro de série Excel en date UTC
+                  const d = new Date(Math.round((serial - 25569) * 86400 * 1000));
+                  datePonteObj = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+                  datePonte = datePonteObj.toLocaleDateString('fr-FR', {timeZone: 'UTC'});
+                }
+              }
+              break;
+            }
+          }
+        }
+
+        // Helper : normaliser un numéro de série Excel en Date UTC (cellDates:false)
+        function toDate(val) {
+          if (!val) return null;
+          if (val instanceof Date) return val;
+          if (typeof val === 'number' && val > 40000) {
+            const d = new Date(Math.round((val - 25569) * 86400 * 1000));
+            return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+          }
+          return null;
+        }
+        // Helper : même jour calendaire
+        function memeJour(a, b) {
+          if (!a || !b) return false;
+          return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+        }
+        function dateKeyUTC(d) {
+          if (!d) return new Date().toISOString().split('T')[0];
+          return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
+        }
+        function addEauValue(obj, key, value) {
+          const n = cleanNumber(value);
+          if (n !== null) obj[key] = n;
+        }
+
+        // Feuille NB ♀ → mortalité J = R+S+T+U de la ligne dont la date = datePonteObj
+        // Si pas de ligne ce jour → 0
+        const wsNB = wb.Sheets['NB ♀'];
+        let mortalite = 0;
+        if (wsNB && datePonteObj) {
+          const data = XLSX.utils.sheet_to_json(wsNB, { header: 1, defval: null });
+          for (let i = data.length - 1; i >= 11; i--) {
+            const row = data[i];
+            const d = toDate(row[2]); // col C = date
+            if (d && memeJour(d, datePonteObj)) {
+              mortalite = (row[17]||0) + (row[18]||0) + (row[19]||0) + (row[20]||0);
+              break;
+            }
+          }
+        }
+
+        // Feuille IA → additionner toutes les durées du même jour que la ponte
+        // SG1/SG2 : col AS (idx 44) = DURÉE I.A. totale | autres fermes : col AR (idx 43)
+        // (NV a 2 parcs inséminés le même jour → 2 lignes à cumuler)
+        const wsIA = wb.Sheets['IA'];
+        const idxDureeIA = isSG ? 44 : 43;
+        let dureeIA = null;
+        if (wsIA && datePonteObj) {
+          const data = XLSX.utils.sheet_to_json(wsIA, { header: 1, defval: null });
+          let totalMinIA = 0;
+          for (let i = 10; i < data.length; i++) {
+            const row = data[i];
+            const dateIA = toDate(row[2]); // col C = Jour
+            if (!dateIA) continue;
+            if (!memeJour(dateIA, datePonteObj)) continue;
+            const duree = row[idxDureeIA];
+            if (!duree || duree === 0) continue;
+            if (typeof duree === 'number' && duree > 0) {
+              totalMinIA += Math.round(duree * 24 * 60);
+            }
+          }
+          if (totalMinIA > 0) {
+            const h = Math.floor(totalMinIA / 60), m = totalMinIA % 60;
+            dureeIA = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+          }
+        }
+
+        // Feuille Relevés → compteurs relevés vers 11h
+        // On prend les DERNIÈRES valeurs saisies dans les colonnes de compteurs.
+        // Eau :
+        // - SG1 / SG2 : P,Q,R,S = Sol parc 1, Nid parc 1, Sol parc 2, Nid parc 2.
+        // - NT1 : P,Q = Sol/Nid bâtiment.
+        // - NV1 / NV2 : O,P = Sol/Nid bâtiment.
+        // Aliment :
+        // - NT / NV1 / NV2 : E.
+        // - SG1 : E=P40, I=P41.
+        // - SG2 : E=P50, I=P51.
+        const wsReleves = wb.Sheets['Relevés'];
+        const eau11h = {};
+        const aliment11h = {};
+        if (wsReleves) {
+          const dataRel = XLSX.utils.sheet_to_json(wsReleves, { header: 1, defval: null });
+
+          function lastValueInColumn(colIndex) {
+            for (let i = dataRel.length - 1; i >= 10; i--) {
+              const n = cleanNumber(dataRel[i]?.[colIndex]);
+              if (n !== null) return n;
+            }
+            return null;
+          }
+          function setEauKey(key, colIndex) {
+            const n = lastValueInColumn(colIndex);
+            if (n !== null) eau11h[key] = n;
+          }
+          function setAlimentKey(key, colIndex) {
+            const n = lastValueInColumn(colIndex);
+            if (n !== null) aliment11h[key] = n;
+          }
+
+          if (ferme === 'SG1') {
+            // Colonnes P,Q,R,S : compteur 40 Sol/Nid puis compteur 41 Sol/Nid
+            setEauKey('Compteur eau Sol P40', 15); // P
+            setEauKey('Compteur eau Nid P40', 16); // Q
+            setEauKey('Compteur eau Sol P41', 17); // R
+            setEauKey('Compteur eau Nid P41', 18); // S
+            // Compatibilité avec les noms actuels de l'app contrôle soir : les noms sans parc = premier parc
+            if (eau11h['Compteur eau Sol P40'] !== undefined) eau11h['Compteur eau Sol'] = eau11h['Compteur eau Sol P40'];
+            if (eau11h['Compteur eau Nid P40'] !== undefined) eau11h['Compteur eau Nid'] = eau11h['Compteur eau Nid P40'];
+          } else if (ferme === 'SG2') {
+            // Colonnes P,Q,R,S : compteur 50 Sol/Nid puis compteur 51 Sol/Nid
+            setEauKey('Compteur eau Sol P50', 15); // P
+            setEauKey('Compteur eau Nid P50', 16); // Q
+            setEauKey('Compteur eau Sol P51', 17); // R
+            setEauKey('Compteur eau Nid P51', 18); // S
+            // Compatibilité avec les noms actuels de l'app contrôle soir : les noms sans parc = premier parc
+            if (eau11h['Compteur eau Sol P50'] !== undefined) eau11h['Compteur eau Sol'] = eau11h['Compteur eau Sol P50'];
+            if (eau11h['Compteur eau Nid P50'] !== undefined) eau11h['Compteur eau Nid'] = eau11h['Compteur eau Nid P50'];
+          } else if (ferme === 'NT1') {
+            // NT1 : colonnes P,Q = compteur eau Sol/Nid pour tout le bâtiment
+            setEauKey('Compteur eau Sol', 15); // P
+            setEauKey('Compteur eau Nid', 16); // Q
+          } else if (['NV1','NV2'].includes(ferme)) {
+            // NV1 / NV2 : colonnes O,P = compteur eau Sol/Nid pour tout le bâtiment
+            setEauKey('Compteur eau Sol', 14); // O
+            setEauKey('Compteur eau Nid', 15); // P
+          } else {
+            // Sécurité pour les autres fichiers ayant la même structure P/Q
+            setEauKey('Compteur eau Sol', 15); // P
+            setEauKey('Compteur eau Nid', 16); // Q
+            if (eau11h['Compteur eau Sol'] !== undefined) eau11h["Compteur d'eau"] = eau11h['Compteur eau Sol'];
+          }
+
+          // Compteurs aliment relevés vers 11h
+          if (ferme === 'SG1') {
+            setAlimentKey('Compteur aliment P40', 4); // E
+            setAlimentKey('Compteur aliment P41', 8); // I
+            if (aliment11h['Compteur aliment P40'] !== undefined) aliment11h['Compteur aliment'] = aliment11h['Compteur aliment P40'];
+          } else if (ferme === 'SG2') {
+            setAlimentKey('Compteur aliment P50', 4); // E
+            setAlimentKey('Compteur aliment P51', 8); // I
+            if (aliment11h['Compteur aliment P50'] !== undefined) aliment11h['Compteur aliment'] = aliment11h['Compteur aliment P50'];
+          } else if (ferme === 'NT1' || ferme === 'NT2' || ferme === 'NV1' || ferme === 'NV2') {
+            setAlimentKey('Compteur aliment', 4); // E
+          } else {
+            // Sécurité pour les autres fichiers ayant la même structure
+            setAlimentKey('Compteur aliment', 4); // E
+          }
+        }
+
+        resolve({
+          ok: true,
+          ferme: ferme,
+          filename: file.name,
+          date: datePonte || new Date().toLocaleDateString('fr-FR'),
+          dateKey: dateKeyUTC(datePonteObj),
+          eau11h: eau11h,
+          aliment11h: aliment11h,
+          ponte: ponte ?? '–',
+          sol: sol ?? '–',
+          declasse: declasse ?? '–',
+          mortalite: mortalite,
+          dureeIA: dureeIA ?? '–'
+        });
+
+      } catch(err) {
+        resolve({ ok: false, filename: file.name, error: err.message });
+      }
+    };
+    reader.readAsBinaryString(file);
+  });
+}
+
+// ─── Traitement des fichiers déposés ─────────────────────────────────────
+async function traiterFichiers(files) {
+  for (const file of files) {
+    if (!file.name.match(/\.xlsx?$/i)) continue;
+    const result = await lireExcel(file);
+    // Remplacer si même ferme déjà présente
+    const idx = pendingData.findIndex(d => d.ferme === result.ferme);
+    if (idx >= 0) pendingData[idx] = result;
+    else pendingData.push(result);
+  }
+  renderPending();
+}
+
+// ─── Affichage des fichiers en attente ────────────────────────────────────
+
+function formatNombreFr(v) {
+  const n = cleanNumber(v);
+  if (n === null) return '–';
+  return new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(n);
+}
+function formatEau11h(eau, ferme) {
+  if (!eau || Object.keys(eau).length === 0) return '–';
+
+  if (ferme === 'SG1') {
+    const p40s = eau['Compteur eau Sol P40'];
+    const p40n = eau['Compteur eau Nid P40'];
+    const p41s = eau['Compteur eau Sol P41'];
+    const p41n = eau['Compteur eau Nid P41'];
+    return `P40 Sol ${formatNombreFr(p40s)} / Nid ${formatNombreFr(p40n)}<br>P41 Sol ${formatNombreFr(p41s)} / Nid ${formatNombreFr(p41n)}`;
+  }
+
+  if (ferme === 'SG2') {
+    const p50s = eau['Compteur eau Sol P50'];
+    const p50n = eau['Compteur eau Nid P50'];
+    const p51s = eau['Compteur eau Sol P51'];
+    const p51n = eau['Compteur eau Nid P51'];
+    return `P50 Sol ${formatNombreFr(p50s)} / Nid ${formatNombreFr(p50n)}<br>P51 Sol ${formatNombreFr(p51s)} / Nid ${formatNombreFr(p51n)}`;
+  }
+
+  const sol = eau['Compteur eau Sol'] ?? eau["Compteur d'eau"];
+  const nid = eau['Compteur eau Nid'];
+  if (sol !== undefined || nid !== undefined) {
+    return `Sol ${formatNombreFr(sol)} / Nid ${formatNombreFr(nid)}`;
+  }
+
+  return Object.entries(eau)
+    .filter(([k]) => !['Compteur eau Sol', 'Compteur eau Nid', "Compteur d'eau"].includes(k))
+    .map(([k, v]) => `${k.replace(/^Compteur eau /, '')} ${formatNombreFr(v)}`)
+    .join('<br>') || '–';
+}
+
+function formatAliment11h(aliment, ferme) {
+  if (!aliment || Object.keys(aliment).length === 0) return '–';
+
+  if (ferme === 'SG1') {
+    const p40 = aliment['Compteur aliment P40'];
+    const p41 = aliment['Compteur aliment P41'];
+    return `P40 ${formatNombreFr(p40)}<br>P41 ${formatNombreFr(p41)}`;
+  }
+
+  if (ferme === 'SG2') {
+    const p50 = aliment['Compteur aliment P50'];
+    const p51 = aliment['Compteur aliment P51'];
+    return `P50 ${formatNombreFr(p50)}<br>P51 ${formatNombreFr(p51)}`;
+  }
+
+  const val = aliment['Compteur aliment'];
+  if (val !== undefined) return formatNombreFr(val);
+
+  return Object.entries(aliment)
+    .filter(([k]) => k !== 'Compteur aliment')
+    .map(([k, v]) => `${k.replace(/^Compteur aliment /, '')} ${formatNombreFr(v)}`)
+    .join('<br>') || '–';
+}
+
+function renderPending() {
+  const list = document.getElementById('pendingList');
+  const bar = document.getElementById('sendBar');
+  list.innerHTML = '';
+
+  if (pendingData.length === 0) { bar.style.display = 'none'; return; }
+  bar.style.display = 'flex';
+
+  pendingData.forEach((d, idx) => {
+    const div = document.createElement('div');
+    div.className = 'pending-item' + (d.ok === false ? ' error' : '');
+    if (d.ok === false) {
+      div.innerHTML = `
+        <div class="ferme-tag">?</div>
+        <div style="flex:1;color:var(--danger);font-size:0.85rem">
+          Erreur lecture : <b>${d.filename}</b><br><small>${d.error}</small>
+        </div>
+        <span class="remove" onclick="removePending(${idx})">✕</span>`;
+    } else {
+      div.innerHTML = `
+        <div class="ferme-tag">${d.ferme}</div>
+        <div class="values">
+          <div class="val"><label>Ponte</label><span>${d.ponte !== '–' ? d.ponte+'%' : '–'}</span></div>
+          <div class="val"><label>Au sol</label><span>${d.sol !== '–' ? d.sol+'%' : '–'}</span></div>
+          <div class="val"><label>Déclassés</label><span>${d.declasse !== '–' ? d.declasse+'%' : '–'}</span></div>
+          <div class="val"><label>Mortalité</label><span>${d.mortalite}</span></div>
+          <div class="val"><label>Durée IA</label><span>${d.dureeIA}</span></div>
+          <div class="val eau"><label>Eau 11h</label><span>${formatEau11h(d.eau11h, d.ferme)}</span></div>
+          <div class="val aliment"><label>Aliment 11h</label><span>${formatAliment11h(d.aliment11h, d.ferme)}</span></div>
+        </div>
+        <div class="status">${d.date} · ${d.filename.substring(0,30)}${d.filename.length>30?'…':''}</div>
+        <span class="remove" onclick="removePending(${idx})">✕</span>`;
+    }
+    list.appendChild(div);
+  });
+}
+
+function removePending(idx) {
+  pendingData.splice(idx, 1);
+  renderPending();
+}
+
+// ─── Envoi vers Firebase ──────────────────────────────────────────────────
+async function envoyerTout() {
+  const btn = document.getElementById('btnEnvoyer');
+  const status = document.getElementById('sendStatus');
+  btn.disabled = true;
+  status.className = '';
+  status.textContent = 'Envoi en cours…';
+
+  const fallbackDateKey = today.toISOString().split('T')[0]; // YYYY-MM-DD
+  let errors = 0;
+
+  for (const d of pendingData) {
+    if (!d.ok) continue;
+    const dateKey = d.dateKey || fallbackDateKey;
+    try {
+      await db.ref(`suivi_quotidien/${dateKey}/${d.ferme}`).set({
+        date: d.date,
+        dateKey: dateKey,
+        eau11h: d.eau11h || {},
+        aliment11h: d.aliment11h || {},
+        ponte: d.ponte,
+        sol: d.sol,
+        declasse: d.declasse,
+        mortalite: d.mortalite,
+        dureeIA: d.dureeIA,
+        updatedAt: new Date().toISOString()
+      });
+    } catch(e) {
+      errors++;
+    }
+  }
+
+  if (errors === 0) {
+    status.className = 'ok';
+    status.textContent = `✓ ${pendingData.filter(d=>d.ok).length} ferme(s) envoyée(s)`;
+    pendingData = [];
+    renderPending();
+    chargerDashboard();
+  } else {
+    status.className = 'err';
+    status.textContent = `${errors} erreur(s) — vérifiez la connexion Firebase`;
+  }
+  btn.disabled = false;
+}
+
+// ─── Dashboard Firebase ───────────────────────────────────────────────────
+function badgePonte(v) {
+  if (v === '–' || v === null) return '<span class="badge">–</span>';
+  const n = parseFloat(v);
+  if (n > 85) return `<span class="badge ok">${v}%</span>`;
+  if (n >= 80) return `<span class="badge warn">${v}%</span>`;
+  return `<span class="badge danger">${v}%</span>`;
+}
+function badgeSol(v) {
+  if (v === '–' || v === null) return '<span class="badge">–</span>';
+  const n = parseFloat(v);
+  if (n < 12) return `<span class="badge ok">${v}%</span>`;
+  if (n <= 16) return `<span class="badge warn">${v}%</span>`;
+  return `<span class="badge danger">${v}%</span>`;
+}
+function badgeDeclasse(v) {
+  if (v === '–' || v === null) return '<span class="badge">–</span>';
+  const n = parseFloat(v);
+  if (n < 3) return `<span class="badge ok">${v}%</span>`;
+  if (n <= 4) return `<span class="badge warn">${v}%</span>`;
+  return `<span class="badge danger">${v}%</span>`;
+}
+
+function chargerDashboard() {
+  const dateKey = today.toISOString().split('T')[0];
+  db.ref(`suivi_quotidien/${dateKey}`).on('value', snap => {
+    const data = snap.val();
+    const tbody = document.getElementById('dashboardBody');
+    const table = document.getElementById('dashboardTable');
+    const empty = document.getElementById('emptyState');
+    tbody.innerHTML = '';
+
+    if (!data) { table.style.display = 'none'; empty.style.display = 'block'; return; }
+
+    table.style.display = 'table';
+    empty.style.display = 'none';
+
+    const fermes = Object.keys(data).sort();
+    fermes.forEach(ferme => {
+      const d = data[ferme];
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${ferme}</td>
+        <td>${d.date || '–'}</td>
+        <td>${badgePonte(d.ponte)}</td>
+        <td>${badgeSol(d.sol)}</td>
+        <td>${badgeDeclasse(d.declasse)}</td>
+        <td>${d.mortalite ?? '–'}</td>
+        <td>${d.dureeIA || '–'}</td>
+        <td>${formatEau11h(d.eau11h, ferme)}</td>
+        <td>${formatAliment11h(d.aliment11h, ferme)}</td>`;
+      tbody.appendChild(tr);
+    });
+  });
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────
+chargerDashboard();
+</script>
+</body>
+</html>
