@@ -1,0 +1,1321 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portail AFR Élevage</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1e3a5f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="icone-afr.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="icone-afr.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="icone-afr.png">
+  <link rel="apple-touch-icon" sizes="120x120" href="icone-afr.png">
+  <style>
+    :root {
+      --primary: #1e3a5f;
+      --accent: #c53030;
+      --bg: #ffffff;
+      --card-bg: #ffffff;
+      --text: #1a202c;
+      --text-light: #718096;
+      --shadow: 0 4px 15px rgba(0,0,0,0.1);
+      --radius: 16px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 15px;
+    }
+
+    .header { text-align: center; margin-bottom: 25px; margin-top: 10px; }
+    .logo { max-width: 180px; height: auto; margin-bottom: 10px; }
+    h1 { font-size: 1.4rem; color: var(--accent); font-weight: 800; letter-spacing: 1px; }
+
+    .menu { width: 100%; max-width: 500px; display: flex; flex-direction: column; gap: 25px; }
+
+    .menu-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      position: relative;
+    }
+
+    .menu > .menu-grid::before {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 34px;
+      bottom: 0;
+      width: 3px;
+      transform: translateX(-50%);
+      background: linear-gradient(to bottom, rgba(197,48,48,0.15), var(--accent), rgba(197,48,48,0.15));
+      border-radius: 999px;
+      z-index: 0;
+    }
+
+    .menu > .menu-grid > .grid-item {
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Style des titres centrés au-dessus des boutons */
+    .section-header {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .section-title {
+      font-size: 0.85rem;
+      color: var(--primary);
+      font-weight: 700;
+      text-transform: uppercase;
+      display: inline-block;
+      position: relative;
+      padding-bottom: 4px;
+    }
+
+    .section-title::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 25%;
+      width: 50%;
+      height: 3px;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+
+    .grid-item {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .menu-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 12px;
+      background: var(--card-bg);
+      border: 1px solid #edf2f7;
+      border-radius: var(--radius);
+      padding: 20px 10px;
+      text-decoration: none;
+      color: var(--text);
+      box-shadow: var(--shadow);
+      transition: all 0.2s ease;
+      height: 100%;
+    }
+
+    .menu-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+
+
+    .btn-logo {
+      width: 100px;
+      height: 100px;
+      object-fit: contain;
+      background: #ffffff;
+      border: 1px solid #f0f0f0;
+      border-radius: 12px;
+      padding: 5px;
+    }
+
+    .btn-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 2px;
+    }
+
+    .btn-desc {
+      font-size: 0.75rem;
+      color: var(--text-light);
+      line-height: 1.2;
+    }
+
+    .separator {
+      height: 1px;
+      background: linear-gradient(to right, transparent, #cbd5e0, transparent);
+      margin: 5px 0;
+    }
+
+    .footer { margin-top: auto; padding: 30px 0; text-align: center; color: var(--text-light); font-size: 0.8rem; }
+    .version { margin-top: 5px; opacity: 0.7; }
+
+    .animate { opacity: 0; transform: translateY(20px); animation: slideIn 0.4s ease forwards; }
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.2s; }
+
+    @keyframes slideIn { to { opacity: 1; transform: translateY(0); } }
+
+    /* ══════════════════════════════════════════════
+       ASSISTANT AFR — Bulle flottante
+    ══════════════════════════════════════════════ */
+    .fab-assistant {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 62px;
+      height: 62px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #1e3a5f 0%, #c53030 100%);
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(30,58,95,0.35);
+      z-index: 998;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 26px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      animation: fabBounce 1s ease 0.6s both;
+    }
+    .fab-assistant:hover {
+      transform: scale(1.08);
+      box-shadow: 0 10px 28px rgba(30,58,95,0.45);
+    }
+    .fab-assistant:active { transform: scale(0.95); }
+    .fab-assistant.hidden { opacity: 0; pointer-events: none; transform: scale(0.5); }
+
+    @keyframes fabBounce {
+      0%   { opacity: 0; transform: translateY(20px) scale(0.7); }
+      60%  { opacity: 1; transform: translateY(-4px) scale(1.05); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .fab-pulse::before {
+      content: "";
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      background: rgba(197,48,48,0.4);
+      z-index: -1;
+      animation: pulse 2s ease-out infinite;
+    }
+    @keyframes pulse {
+      0%   { transform: scale(1); opacity: 0.6; }
+      100% { transform: scale(1.6); opacity: 0; }
+    }
+
+    /* Panel chat */
+    .chat-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(10,20,30,0.35);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+      z-index: 999;
+    }
+    .chat-overlay.open { opacity: 1; pointer-events: auto; }
+
+    .chat-panel {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 380px;
+      max-width: calc(100vw - 40px);
+      height: 560px;
+      max-height: calc(100vh - 40px);
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 20px 50px rgba(30,58,95,0.25);
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transform: translateY(20px) scale(0.95);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease;
+    }
+    .chat-panel.open {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+      pointer-events: auto;
+    }
+    @media (max-width: 640px) {
+      .chat-panel {
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        max-width: 100%;
+        max-height: 100%;
+        border-radius: 0;
+      }
+    }
+
+    .chat-header {
+      background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
+      padding: 16px 18px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    .chat-header-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .chat-header-info { flex: 1; min-width: 0; }
+    .chat-header-title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+    .chat-header-status {
+      font-size: 11px;
+      opacity: 0.8;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 2px;
+    }
+    .chat-status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #4ade80;
+      box-shadow: 0 0 0 2px rgba(74,222,128,0.25);
+    }
+    .chat-close {
+      background: rgba(255,255,255,0.15);
+      border: none;
+      color: #fff;
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+    .chat-close:hover { background: rgba(255,255,255,0.25); }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 14px;
+      background: #fafbfc;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .chat-messages::-webkit-scrollbar { width: 6px; }
+    .chat-messages::-webkit-scrollbar-thumb { background: #cbd5e0; border-radius: 3px; }
+
+    .chat-msg {
+      max-width: 85%;
+      padding: 10px 13px;
+      font-size: 13px;
+      line-height: 1.5;
+      border-radius: 14px;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+      animation: msgIn 0.25s ease both;
+    }
+    @keyframes msgIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .chat-msg.assistant {
+      background: #fff;
+      color: #1a202c;
+      border: 1px solid #e2e8f0;
+      border-bottom-left-radius: 4px;
+      align-self: flex-start;
+    }
+    .chat-msg.user {
+      background: #1e3a5f;
+      color: #fff;
+      border-bottom-right-radius: 4px;
+      align-self: flex-end;
+    }
+    .chat-msg.error {
+      background: #fef2f2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+      border-bottom-left-radius: 4px;
+      align-self: flex-start;
+    }
+
+    .chat-typing {
+      display: inline-flex;
+      gap: 4px;
+      padding: 4px 0;
+    }
+    .chat-typing span {
+      width: 6px;
+      height: 6px;
+      background: #94a3b8;
+      border-radius: 50%;
+      animation: typing 1.2s infinite;
+    }
+    .chat-typing span:nth-child(2) { animation-delay: 0.15s; }
+    .chat-typing span:nth-child(3) { animation-delay: 0.3s; }
+    @keyframes typing {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+      30% { transform: translateY(-4px); opacity: 1; }
+    }
+
+    .chat-suggestions {
+      padding: 10px 14px 4px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      background: #fafbfc;
+      flex-shrink: 0;
+      border-top: 1px solid #eef2f7;
+    }
+    .chat-suggestions.hidden { display: none; }
+    .chat-suggestion {
+      background: #fff;
+      color: #1e3a5f;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 7px 11px;
+      border-radius: 999px;
+      border: 1px solid #e2e8f0;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .chat-suggestion:hover {
+      border-color: #1e3a5f;
+      background: #f0f7ff;
+    }
+
+    .chat-input-bar {
+      padding: 10px 12px 12px;
+      background: #fff;
+      border-top: 1px solid #eef2f7;
+      flex-shrink: 0;
+    }
+    .chat-input-wrap {
+      background: #f7fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 4px 4px 4px 14px;
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      transition: border-color 0.15s;
+    }
+    .chat-input-wrap:focus-within {
+      border-color: #1e3a5f;
+      background: #fff;
+    }
+    .chat-input {
+      flex: 1;
+      border: none;
+      outline: none;
+      background: transparent;
+      font: inherit;
+      font-size: 13px;
+      color: #1a202c;
+      padding: 9px 0;
+      resize: none;
+      max-height: 100px;
+      min-height: 20px;
+      line-height: 1.4;
+    }
+    .chat-send {
+      background: #1e3a5f;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .chat-send:hover:not(:disabled) { background: #2c5282; }
+    .chat-send:active:not(:disabled) { transform: scale(0.92); }
+    .chat-send:disabled { background: #cbd5e0; cursor: not-allowed; }
+
+    .chat-clear-btn {
+      background: none;
+      border: none;
+      color: #94a3b8;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      cursor: pointer;
+      padding: 4px 8px;
+      margin: 4px auto 0;
+      display: block;
+      font-family: inherit;
+    }
+    .chat-clear-btn:hover { color: #c53030; }
+
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <img src="AFR_ELEVAGE.png" alt="AFR Élevage" class="logo">
+  <a href="https://blp-47.github.io/AFR/TableauDeBord.html" style="text-decoration: none;"><h1>PORTAIL AFR</h1></a>
+</div>
+
+<div class="menu">
+
+  <!-- Messagerie AFR -->
+  <a href="https://blp-47.github.io/AFR/messagerie.html" class="menu-btn animate" style="padding: 20px 10px; max-width: 500px;">
+    <img src="logo_messagerie.png" alt="Messagerie" class="btn-logo" style="width: 130px; height: 130px;">
+    <div class="btn-desc">Communication interne</div>
+  </a>
+
+  <div class="separator animate"></div>
+  
+  <div class="menu-grid animate">
+    <div class="grid-item">
+      <div class="section-header">
+        <div class="section-title">Gironde</div>
+      </div>
+      <a href="Controles%20AFR.html" class="menu-btn">
+        <img src="logo_controles33.png" alt="33" class="btn-logo">
+        <div class="btn-title">AFR 33</div>
+        <div class="btn-desc">Contrôles Soir</div>
+      </a>
+      <a href="https://blp-47.github.io/AFR-NT2/Semence.html" class="menu-btn">
+        <img src="https://blp-47.github.io/AFR/logo_semence33.png" alt="Semence 33" class="btn-logo">
+        <div class="btn-title">AFR 33</div>
+        <div class="btn-desc">Suivi Mâles</div>
+      </a>
+    </div>
+
+    <div class="grid-item">
+      <div class="section-header">
+        <div class="section-title">Landes</div>
+      </div>
+      <a href="ControlesSG.html" class="menu-btn">
+        <img src="logo_controles40.png" alt="40" class="btn-logo">
+        <div class="btn-title">AFR 40</div>
+        <div class="btn-desc">Contrôles Soir</div>
+      </a>
+      <a href="https://blp-47.github.io/AFR/SemenceSG.html" class="menu-btn">
+        <img src="https://blp-47.github.io/AFR/logo_semence40.png" alt="Semence 40" class="btn-logo">
+        <div class="btn-title">AFR 40</div>
+        <div class="btn-desc">Suivi Mâles</div>
+      </a>
+    </div>
+  </div>
+
+  <div class="separator animate delay-1"></div>
+
+  <div class="menu-section animate delay-2">
+    <div class="section-header">
+      <div class="section-title">AFR - Tous les sites</div>
+    </div>
+    <div class="menu-grid">
+      <a href="Signalements.html" class="menu-btn">
+        <img src="logo_signalements.png" alt="Signalements" class="btn-logo">
+        <div class="btn-content">
+          <div class="btn-title">Signalements</div>
+          <div class="btn-desc">Pannes, incidents, maintenance</div>
+        </div>
+      </a>
+      <a href="dératisation.html" class="menu-btn">
+        <img src="logo_dératisation.png" alt="Dératisation" class="btn-logo">
+        <div class="btn-content">
+          <div class="btn-title">Dératisation</div>
+          <div class="btn-desc">Contrôle des appâts</div>
+        </div>
+      </a>
+      <a href="https://blp-47.github.io/AFR/gestion_stocks.html" class="menu-btn">
+        <img src="https://blp-47.github.io/AFR/logo_stock.png" alt="Stock" class="btn-logo">
+        <div class="btn-content">
+          <div class="btn-title">Stock ↔</div>
+          <div class="btn-desc">Gestion du stock</div>
+        </div>
+      </a>
+      <a href="https://blp-47.github.io/AFR/ProduitsChimiques.html" class="menu-btn">
+        <img src="https://blp-47.github.io/AFR/logo_produits.png" alt="Produits Chimiques" class="btn-logo">
+        <div class="btn-content">
+          <div class="btn-title">Produits Chimiques</div>
+          <div class="btn-desc">Fiches & sécurité</div>
+        </div>
+      </a>
+      <a href="https://blp-47.github.io/AFR/procedures.html" class="menu-btn">
+        <img src="https://blp-47.github.io/AFR/logo_bibliotheque.png" alt="Bibliothèque-Procédure" class="btn-logo">
+        <div class="btn-content">
+          <div class="btn-title">Bibliothèque-Procédure</div>
+          <div class="btn-desc">Documents & procédures</div>
+        </div>
+      </a>
+      <a href="https://blp-47.github.io/AFR/afr_visites_audit_v4.html" class="menu-btn">
+        <img src="https://blp-47.github.io/AFR/auditinterne.png" alt="Audit Interne" class="btn-logo">
+        <div class="btn-content">
+          <div class="btn-title">Audit Interne</div>
+          <div class="btn-desc">Visites terrain & actions correctives</div>
+        </div>
+      </a>
+      <a href="https://blp-47.github.io/AFR/AFRVehicules.html" class="menu-btn" style="grid-column: 1 / -1; max-width: 242px; justify-self: center; width: 100%;">
+        <img src="https://blp-47.github.io/AFR/vehicules.png" alt="Véhicules" class="btn-logo">
+        <div class="btn-content">
+          <div class="btn-title">Véhicules</div>
+          <div class="btn-desc">Gestion du parc véhicules</div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══ ASSISTANT AFR — Bouton flottant + Panneau chat ═══ -->
+<button class="fab-assistant fab-pulse" id="fabAssistant" onclick="openChat()" aria-label="Ouvrir l'assistant AFR">
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+  </svg>
+</button>
+
+<div class="chat-overlay" id="chatOverlay" onclick="closeChat()"></div>
+
+<div class="chat-panel" id="chatPanel" role="dialog" aria-label="Assistant AFR">
+  <div class="chat-header">
+    <div class="chat-header-avatar">🤖</div>
+    <div class="chat-header-info">
+      <div class="chat-header-title">Assistant AFR</div>
+      <div class="chat-header-status"><span class="chat-status-dot"></span>En ligne · Cloudflare + Firebase du jour</div>
+    </div>
+    <button class="chat-close" onclick="closeChat()" aria-label="Fermer">✕</button>
+  </div>
+
+  <div class="chat-messages" id="chatMessages"></div>
+
+  <div class="chat-suggestions" id="chatSuggestions">
+    <button class="chat-suggestion" onclick="sendQuickAssistantQuestion('Fais le débrief du jour AFR : ponte, contrôles du soir, problèmes ouverts et anomalies du jour.')">📋 Débrief du jour</button>
+    <button class="chat-suggestion" onclick="sendQuickAssistantQuestion('Résume la semence du jour.')">🧪 Semence</button>
+    <button class="chat-suggestion" onclick="sendQuickAssistantQuestion('Quelles actions d\'audit sont en retard ?')">⚠️ Actions</button>
+    <button class="chat-suggestion" onclick="sendQuickAssistantQuestion('Y a-t-il des anomalies eau ou aliment ?')">💧 Eau/Aliment</button>
+    <button class="chat-suggestion" onclick="sendQuickAssistantQuestion('Quels signalements sont ouverts ?')">📢 Signalements</button>
+    <button class="chat-suggestion" onclick="sendQuickAssistantQuestion('Tendance ponte et mortalité sur 3 jours ?')">📈 Ponte</button>
+  </div>
+
+  <div class="chat-input-bar">
+    <div class="chat-input-wrap">
+      <textarea id="assistant-input" class="chat-input" rows="1" placeholder="Pose une question AFR..."></textarea>
+      <button class="chat-send" id="chatSend" onclick="sendAssistantQuestion()" aria-label="Envoyer">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
+      </button>
+    </div>
+    <button class="chat-clear-btn" onclick="clearAssistantBox()">Effacer la conversation</button>
+  </div>
+</div>
+
+<div class="footer">
+  <div>AFR Élevage © 2025</div>
+  <div class="version">v1.7 Cloudflare + Firebase jour</div>
+</div>
+
+
+<script>
+  // ══════════════════════════════════════════════
+  //  ASSISTANT AFR — Gestion du chat
+  // ══════════════════════════════════════════════
+  const CHAT_STORE_KEY = 'afr_chat_history_v1';
+  window.chatHistory = [];
+  window.chatIsLoading = false;
+
+  // Charge l'historique depuis localStorage
+  try {
+    const saved = localStorage.getItem(CHAT_STORE_KEY);
+    if (saved) window.chatHistory = JSON.parse(saved) || [];
+  } catch (e) { window.chatHistory = []; }
+
+  window.saveChatHistory = function () {
+    try { localStorage.setItem(CHAT_STORE_KEY, JSON.stringify(window.chatHistory.slice(-50))); } catch (e) {}
+  };
+
+  function escapeHtml(value) {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  window.renderChat = function () {
+    const container = document.getElementById('chatMessages');
+    const suggestions = document.getElementById('chatSuggestions');
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (!window.chatHistory.length) {
+      const hour = new Date().getHours();
+      const greet = hour < 12 ? 'Bonjour' : (hour < 18 ? 'Bon après-midi' : 'Bonsoir');
+      container.innerHTML = `<div class="chat-msg assistant">${greet} 👋 Pose-moi une question sur la ferme, la semence, les contrôles ou les actions audit.</div>`;
+      if (suggestions) suggestions.classList.remove('hidden');
+    } else {
+      window.chatHistory.forEach(m => {
+        const div = document.createElement('div');
+        div.className = 'chat-msg ' + (m.role === 'user' ? 'user' : (m.error ? 'error' : 'assistant'));
+        div.innerHTML = escapeHtml(m.content).replace(/\n/g, '<br>');
+        container.appendChild(div);
+      });
+      if (suggestions) suggestions.classList.add('hidden');
+    }
+    container.scrollTop = container.scrollHeight;
+  };
+
+  window.showTyping = function () {
+    const container = document.getElementById('chatMessages');
+    if (!container) return;
+    const div = document.createElement('div');
+    div.className = 'chat-msg assistant';
+    div.id = 'chatTyping';
+    div.innerHTML = '<div class="chat-typing"><span></span><span></span><span></span></div>';
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+  };
+  window.hideTyping = function () {
+    const el = document.getElementById('chatTyping');
+    if (el) el.remove();
+  };
+
+  window.openChat = function () {
+    document.getElementById('chatPanel').classList.add('open');
+    document.getElementById('chatOverlay').classList.add('open');
+    document.getElementById('fabAssistant').classList.remove('fab-pulse');
+    document.getElementById('fabAssistant').classList.add('hidden');
+    window.renderChat();
+    setTimeout(() => {
+      const input = document.getElementById('assistant-input');
+      if (input && window.innerWidth > 640) input.focus();
+    }, 300);
+  };
+
+  window.closeChat = function () {
+    document.getElementById('chatPanel').classList.remove('open');
+    document.getElementById('chatOverlay').classList.remove('open');
+    document.getElementById('fabAssistant').classList.remove('hidden');
+  };
+
+  window.clearAssistantBox = function () {
+    if (!confirm('Effacer toute la conversation ?')) return;
+    window.chatHistory = [];
+    window.saveChatHistory();
+    window.renderChat();
+  };
+
+  // Auto-resize du textarea + envoi sur Entrée
+  document.addEventListener('DOMContentLoaded', () => {
+    const input = document.getElementById('assistant-input');
+    if (input) {
+      input.addEventListener('input', () => {
+        input.style.height = 'auto';
+        input.style.height = Math.min(input.scrollHeight, 100) + 'px';
+      });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          if (window.sendAssistantQuestion) window.sendAssistantQuestion();
+        }
+      });
+    }
+    window.renderChat();
+  });
+</script>
+
+
+<script type="module">
+  // ══════════════════════════════════════════════
+  //  ASSISTANT AFR — Cloudflare Workers AI + données Firebase du jour
+  //  Le token Cloudflare reste caché dans le Worker.
+  // ══════════════════════════════════════════════
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+  const AFR_ASSISTANT_WORKER_URL = "https://assistant-afr.blpottier47.workers.dev";
+  const AFR_CONTEXT_CACHE_MS = 2 * 60 * 1000;
+  const AFR_MAX_CONTEXT_CHARS = 22000;
+  const AFR_PAGE_CONTEXT_CHARS = 2800;
+  const AFR_MAX_FIREBASE_RECORDS_PER_SECTION = 16;
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCSw10bFLStcem4A_CO4IXmKeQbLH9NXsM",
+    authDomain: "afr-nt2.firebaseapp.com",
+    databaseURL: "https://afr-nt2-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "afr-nt2",
+    storageBucket: "afr-nt2.firebasestorage.app",
+    messagingSenderId: "169851474976",
+    appId: "1:169851474976:web:be14c24366b0af024f9845",
+    measurementId: "G-HYBY42TVJZ"
+  };
+
+  const firebaseApp = initializeApp(firebaseConfig);
+  const afrDb = getDatabase(firebaseApp);
+
+  const AFR_CONTEXT_PAGES = [
+    { title: "Bibliothèque-Procédure", url: "procedures.html", keywords: ["procedure", "procédure", "document", "bibliotheque", "bibliothèque", "qualite", "qualité", "plan", "fichier"] },
+    { title: "Produits Chimiques", url: "ProduitsChimiques.html", keywords: ["produit", "chimique", "fds", "securite", "sécurité", "dilution", "dosage", "spectragen", "th5", "bio vx", "hydrosept"] },
+    { title: "Signalements", url: "Signalements.html", keywords: ["signalement", "panne", "incident", "maintenance", "probleme", "problème", "anomalie"] },
+    { title: "Dératisation", url: "dératisation.html", keywords: ["deratisation", "dératisation", "appat", "appât", "rongeur", "souris", "rat"] },
+    { title: "Gestion stock", url: "gestion_stocks.html", keywords: ["stock", "inventaire", "commande", "quantite", "quantité"] },
+    { title: "Audit Interne", url: "afr_visites_audit_v4.html", keywords: ["audit", "visite", "action", "corrective", "non conformite", "non-conformité", "retard"] },
+    { title: "Véhicules", url: "AFRVehicules.html", keywords: ["vehicule", "véhicule", "voiture", "camion", "entretien", "kilometrage", "kilométrage"] },
+    { title: "Contrôles Soir AFR 33", url: "Controles%20AFR.html", keywords: ["controle", "contrôle", "soir", "eau", "aliment", "mortalite", "mortalité", "33", "nt", "nv", "st"] },
+    { title: "Contrôles Soir AFR 40", url: "ControlesSG.html", keywords: ["controle", "contrôle", "soir", "eau", "aliment", "mortalite", "mortalité", "40", "sg"] },
+    { title: "Suivi Mâles AFR 40", url: "SemenceSG.html", keywords: ["semence", "males", "mâles", "prelevement", "prélèvement", "sg", "40"] },
+    { title: "Suivi Mâles AFR 33", url: "https://blp-47.github.io/AFR-NT2/Semence.html", keywords: ["semence", "males", "mâles", "prelevement", "prélèvement", "nt", "nv", "st", "33"] }
+  ];
+
+  // Chemins possibles dans la Realtime Database. Les chemins inexistants ou interdits sont ignorés.
+  // L'objectif est de récupérer les vraies données du jour au lieu de laisser le modèle inventer.
+  const AFR_FIREBASE_SOURCES = [
+    { path: "signalements", type: "signalements", label: "Signalements" },
+    { path: "Signalements", type: "signalements", label: "Signalements" },
+    { path: "anomalies", type: "signalements", label: "Anomalies" },
+    { path: "incidents", type: "signalements", label: "Incidents" },
+
+    { path: "controles", type: "controles", label: "Contrôles" },
+    { path: "controlesSoir", type: "controles", label: "Contrôles soir" },
+    { path: "controles_soir", type: "controles", label: "Contrôles soir" },
+    { path: "controleSoir", type: "controles", label: "Contrôles soir" },
+    { path: "historiqueControles", type: "controles", label: "Historique contrôles" },
+    { path: "HistoriqueControles", type: "controles", label: "Historique contrôles" },
+    { path: "controlesAFR", type: "controles", label: "Contrôles AFR 33" },
+    { path: "controlesSG", type: "controles", label: "Contrôles SG" },
+    { path: "ControlesSG", type: "controles", label: "Contrôles SG" },
+
+    { path: "suiviQuotidien", type: "ponte", label: "Suivi quotidien" },
+    { path: "suivi_quotidien", type: "ponte", label: "Suivi quotidien" },
+    { path: "SuiviQuotidien", type: "ponte", label: "Suivi quotidien" },
+    { path: "ponte", type: "ponte", label: "Ponte" },
+    { path: "pontes", type: "ponte", label: "Ponte" },
+    { path: "suiviPonte", type: "ponte", label: "Suivi ponte" },
+    { path: "ponteData", type: "ponte", label: "Données ponte" },
+
+    { path: "actionsAudit", type: "audit", label: "Actions audit" },
+    { path: "auditActions", type: "audit", label: "Actions audit" },
+    { path: "audits", type: "audit", label: "Audits" },
+    { path: "visitesAudit", type: "audit", label: "Visites audit" },
+    { path: "visites_audit", type: "audit", label: "Visites audit" }
+  ];
+
+  function normalizeForSearch(value) {
+    return String(value || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+  }
+
+  function getTodayKey() {
+    const d = new Date();
+    const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 10);
+  }
+
+  function frenchDateFromKey(yyyyMmDd) {
+    const [y, m, d] = String(yyyyMmDd || "").split("-");
+    return d && m && y ? `${d}/${m}/${y}` : yyyyMmDd;
+  }
+
+  function truncateText(value, maxChars) {
+    const text = String(value || "").trim();
+    if (text.length <= maxChars) return text;
+    return text.slice(0, maxChars) + "\n[Texte tronqué]";
+  }
+
+  function htmlToReadableText(html) {
+    const doc = new DOMParser().parseFromString(String(html || ""), "text/html");
+    doc.querySelectorAll("script, style, noscript, svg, canvas").forEach(el => el.remove());
+    return (doc.body ? doc.body.innerText : doc.documentElement.innerText || "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function scoreContextPage(page, question) {
+    const q = normalizeForSearch(question);
+    let score = 0;
+    for (const kw of page.keywords || []) {
+      if (q.includes(normalizeForSearch(kw))) score += 3;
+    }
+    for (const word of q.split(/[^a-z0-9]+/).filter(w => w.length >= 4)) {
+      if (normalizeForSearch(page.title).includes(word)) score += 2;
+    }
+    return score;
+  }
+
+  async function fetchTextFile(url) {
+    const response = await fetch(url, { cache: "no-store" });
+    if (!response.ok) throw new Error(url + " : HTTP " + response.status);
+    return await response.text();
+  }
+
+  function parseDateToKey(value) {
+    if (value === null || value === undefined || value === "") return "";
+
+    if (typeof value === "number") {
+      const millis = value > 100000000000 ? value : (value > 1000000000 ? value * 1000 : 0);
+      if (!millis) return "";
+      const d = new Date(millis);
+      if (Number.isNaN(d.getTime())) return "";
+      const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+      return local.toISOString().slice(0, 10);
+    }
+
+    const raw = String(value).trim();
+    if (!raw) return "";
+
+    let m = raw.match(/(20\d{2})[-/_.](\d{1,2})[-/_.](\d{1,2})/);
+    if (m) return `${m[1]}-${String(m[2]).padStart(2, "0")}-${String(m[3]).padStart(2, "0")}`;
+
+    m = raw.match(/(\d{1,2})[-/_.](\d{1,2})[-/_.](20\d{2})/);
+    if (m) return `${m[3]}-${String(m[2]).padStart(2, "0")}-${String(m[1]).padStart(2, "0")}`;
+
+    const d = new Date(raw);
+    if (!Number.isNaN(d.getTime())) {
+      const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+      return local.toISOString().slice(0, 10);
+    }
+    return "";
+  }
+
+  function getPrimitiveEntries(obj, prefix = "", depth = 0, out = []) {
+    if (!obj || typeof obj !== "object" || depth > 4) return out;
+    for (const [key, value] of Object.entries(obj)) {
+      const k = prefix ? `${prefix}.${key}` : key;
+      if (value === null || value === undefined || value === "") continue;
+      if (["string", "number", "boolean"].includes(typeof value)) {
+        out.push([k, value]);
+      } else if (typeof value === "object" && !Array.isArray(value)) {
+        getPrimitiveEntries(value, k, depth + 1, out);
+      }
+      if (out.length > 120) break;
+    }
+    return out;
+  }
+
+  function getRecordDateKeys(record) {
+    const keys = new Set();
+    const pathKey = parseDateToKey(record.path || "");
+    if (pathKey) keys.add(pathKey);
+
+    for (const [key, value] of getPrimitiveEntries(record.data)) {
+      const nKey = normalizeForSearch(key);
+      if (
+        nKey.includes("date") ||
+        nKey.includes("jour") ||
+        nKey.includes("created") ||
+        nKey.includes("creation") ||
+        nKey.includes("timestamp") ||
+        nKey.includes("time") ||
+        nKey.includes("heure")
+      ) {
+        const parsed = parseDateToKey(value);
+        if (parsed) keys.add(parsed);
+      }
+    }
+    return Array.from(keys);
+  }
+
+  function recordIsToday(record, todayKey) {
+    return getRecordDateKeys(record).includes(todayKey);
+  }
+
+  function isRecordLike(obj) {
+    if (!obj || typeof obj !== "object" || Array.isArray(obj)) return false;
+    const entries = getPrimitiveEntries(obj);
+    if (entries.length < 2) return false;
+    const combinedKeys = normalizeForSearch(entries.map(([k]) => k).join(" "));
+    return /date|jour|ferme|site|batiment|bâtiment|parc|statut|etat|état|signal|anomal|probleme|problème|comment|observation|ponte|tri|sol|mort|eau|aliment|audit|action|controle|contrôle/.test(combinedKeys);
+  }
+
+  function flattenFirebaseData(data, rootPath, source) {
+    const records = [];
+    const seen = new Set();
+
+    function walk(node, path, depth) {
+      if (records.length >= 1200 || depth > 8 || node === null || node === undefined) return;
+      if (isRecordLike(node)) {
+        const signature = path + "|" + JSON.stringify(getPrimitiveEntries(node).slice(0, 25));
+        if (!seen.has(signature)) {
+          seen.add(signature);
+          records.push({ path, data: node, source });
+        }
+      }
+      if (typeof node === "object" && !Array.isArray(node)) {
+        for (const [key, value] of Object.entries(node)) {
+          if (records.length >= 1200) break;
+          walk(value, `${path}/${key}`, depth + 1);
+        }
+      }
+    }
+
+    walk(data, rootPath, 0);
+    return records;
+  }
+
+  async function readFirebaseSource(source) {
+    try {
+      const snap = await get(ref(afrDb, source.path));
+      if (!snap.exists()) return { source, records: [], error: "vide" };
+      const records = flattenFirebaseData(snap.val(), source.path, source);
+      return { source, records, error: "" };
+    } catch (e) {
+      return { source, records: [], error: e && e.message ? e.message : String(e) };
+    }
+  }
+
+  async function loadFirebaseRecords(types = []) {
+    const wanted = types.length ? new Set(types) : null;
+    const sources = AFR_FIREBASE_SOURCES.filter(s => !wanted || wanted.has(s.type));
+    const results = await Promise.all(sources.map(readFirebaseSource));
+    const records = [];
+    const errors = [];
+    for (const result of results) {
+      if (result.records.length) records.push(...result.records);
+      if (result.error && result.error !== "vide") errors.push(`${result.source.path}: ${result.error}`);
+    }
+    return { records, errors };
+  }
+
+  function recordText(record) {
+    return normalizeForSearch(getPrimitiveEntries(record.data).map(([k, v]) => `${k}:${v}`).join(" ") + " " + record.path);
+  }
+
+  function recordIsOpen(record) {
+    const text = recordText(record);
+    const closed = /\b(resolu|resolue|résolu|résolue|ferme|fermee|fermée|clos|cloture|clôture|termine|terminee|terminé|terminée|traite|traité|archive|archivé|annule|annulé)\b/.test(text);
+    if (closed) return false;
+    const explicitlyOpen = /\b(ouvert|ouverte|en cours|a faire|à faire|non resolu|non résolu|non traite|non traité|pending|open)\b/.test(text);
+    if (explicitlyOpen) return true;
+    const hasStatusField = getPrimitiveEntries(record.data).some(([k]) => /statut|status|etat|état|resolu|résolu/.test(normalizeForSearch(k)));
+    return !hasStatusField;
+  }
+
+  function recordLooksLikeProblem(record) {
+    const text = recordText(record);
+    if (/\b(anomal|probleme|problème|panne|incident|fuite|casse|mort|mortalite|mortalité|alerte|defaut|défaut|bloque|bloqué|retard|urgence|non conforme|non-conforme)\b/.test(text)) return true;
+
+    return getPrimitiveEntries(record.data).some(([k, v]) => {
+      const nk = normalizeForSearch(k);
+      const sv = String(v || "").trim();
+      return /observation|commentaire|remarque|probleme|problème|anomalie/.test(nk) && sv.length >= 3 && !/^(non|ras|r\.a\.s\.?|ok)$/i.test(sv);
+    });
+  }
+
+  function recordIsOverdueOrOpenAction(record, todayKey) {
+    if (!recordIsOpen(record)) return false;
+    const dates = getRecordDateKeys(record);
+    if (dates.includes(todayKey)) return true;
+    const text = recordText(record);
+    return /\b(retard|echeance|échéance|a faire|à faire|action corrective|non conforme|non-conforme)\b/.test(text);
+  }
+
+  function formatRecord(record, maxChars = 900) {
+    const entries = getPrimitiveEntries(record.data);
+    const priority = [
+      "date", "jour", "heure", "ferme", "site", "batiment", "bâtiment", "parc", "allee", "allée", "lot",
+      "statut", "status", "etat", "état", "titre", "objet", "type", "categorie", "catégorie",
+      "description", "probleme", "problème", "anomalie", "observation", "commentaire", "remarque",
+      "ponte", "tri", "sol", "mortalite", "mortalité", "mort", "eau", "aliment", "conso", "compteur",
+      "action", "responsable", "echeance", "échéance"
+    ];
+
+    const scored = entries
+      .map(([k, v]) => {
+        const nk = normalizeForSearch(k);
+        let score = 0;
+        for (let i = 0; i < priority.length; i++) {
+          if (nk.includes(normalizeForSearch(priority[i]))) score += 100 - i;
+        }
+        return { k, v, score };
+      })
+      .filter(x => String(x.v).trim() !== "")
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 26);
+
+    const dates = getRecordDateKeys(record).join(", ") || "date non détectée";
+    const pairs = scored.map(x => `${x.k}: ${String(x.v).replace(/\s+/g, " ").slice(0, 180)}`).join(" | ");
+    return truncateText(`- Source ${record.source.label} (${record.path}) | dates détectées: ${dates} | ${pairs}`, maxChars);
+  }
+
+  function sectionText(title, records, emptyText, maxRecords = AFR_MAX_FIREBASE_RECORDS_PER_SECTION) {
+    const unique = [];
+    const seen = new Set();
+    for (const r of records) {
+      const s = JSON.stringify(getPrimitiveEntries(r.data).slice(0, 18));
+      if (!seen.has(s)) {
+        seen.add(s);
+        unique.push(r);
+      }
+      if (unique.length >= maxRecords) break;
+    }
+
+    if (!unique.length) return `### ${title}\n${emptyText}`;
+    return `### ${title} (${unique.length}${records.length > unique.length ? "+" : ""})\n` + unique.map(r => formatRecord(r)).join("\n");
+  }
+
+  function isDailyBriefQuestion(question) {
+    const q = normalizeForSearch(question);
+    return /\b(debrief|débrief|brief|briefing|resume.*jour|résume.*jour|bilan.*jour|journee|journée|aujourd'hui|aujourdhui)\b/.test(q);
+  }
+
+  async function buildDailyDebriefContext(question) {
+    const todayKey = getTodayKey();
+    const todayFr = frenchDateFromKey(todayKey);
+    const { records, errors } = await loadFirebaseRecords(["signalements", "controles", "ponte", "audit"]);
+
+    const todayRecords = records.filter(r => recordIsToday(r, todayKey));
+    const todayPonte = todayRecords.filter(r => r.source.type === "ponte");
+    const todayControles = todayRecords.filter(r => r.source.type === "controles");
+    const todayControleProblems = todayControles.filter(recordLooksLikeProblem);
+    const todayOpenSignalements = todayRecords.filter(r => r.source.type === "signalements" && recordIsOpen(r));
+    const todayClosedSignalements = todayRecords.filter(r => r.source.type === "signalements" && !recordIsOpen(r));
+    const openAuditActions = records.filter(r => r.source.type === "audit" && recordIsOverdueOrOpenAction(r, todayKey));
+
+    const availableSources = [...new Set(records.map(r => r.source.path))].sort().join(", ") || "aucune source Firebase lisible";
+
+    return truncateText([
+      `DATE DU JOUR À UTILISER : ${todayKey} (${todayFr})`,
+      "",
+      "CONSIGNES STRICTES POUR LE DÉBRIEF DU JOUR :",
+      "- Ne parler que des données datées d'aujourd'hui pour la ponte, les contrôles du soir et les signalements.",
+      "- Pour les signalements/anomalies, ne citer que ceux déclarés aujourd'hui ET encore ouverts/non résolus.",
+      "- Ne jamais citer d'anciens cas résolus, même s'ils existent dans Firebase.",
+      "- Si une rubrique est vide, écrire clairement qu'aucune donnée du jour n'a été trouvée dans cette rubrique. Ne pas inventer de panne, de nombre ou de site.",
+      "- Le format attendu : Ponte du jour, Contrôles du soir, Problèmes/anomalies ouverts du jour, Actions à suivre, Conclusion courte.",
+      "",
+      `SOURCES FIREBASE LUES : ${availableSources}`,
+      errors.length ? `ERREURS DE LECTURE FIREBASE : ${errors.slice(0, 8).join(" ; ")}` : "ERREURS DE LECTURE FIREBASE : aucune erreur bloquante signalée.",
+      "",
+      sectionText("PONTE DU JOUR", todayPonte, "Aucun enregistrement de ponte daté d'aujourd'hui trouvé dans Firebase."),
+      "",
+      sectionText("CONTRÔLES DU SOIR DU JOUR", todayControles, "Aucun contrôle du soir daté d'aujourd'hui trouvé dans Firebase."),
+      "",
+      sectionText("PROBLÈMES/OBSERVATIONS DANS LES CONTRÔLES DU SOIR DU JOUR", todayControleProblems, "Aucun problème/observation du jour détecté dans les contrôles du soir."),
+      "",
+      sectionText("SIGNALEMENTS / ANOMALIES DÉCLARÉS AUJOURD'HUI ET ENCORE OUVERTS", todayOpenSignalements, "Aucun signalement/anomalie déclaré aujourd'hui et encore ouvert trouvé dans Firebase."),
+      "",
+      todayClosedSignalements.length
+        ? `### SIGNALEMENTS DU JOUR DÉJÀ RÉSOLUS À NE PAS METTRE EN AVANT\n${todayClosedSignalements.slice(0, 10).map(r => formatRecord(r, 600)).join("\n")}`
+        : "### SIGNALEMENTS DU JOUR DÉJÀ RÉSOLUS À NE PAS METTRE EN AVANT\nAucun signalement résolu du jour détecté.",
+      "",
+      sectionText("ACTIONS AUDIT OUVERTES / EN RETARD À SUIVRE", openAuditActions, "Aucune action audit ouverte ou en retard détectée dans les chemins Firebase consultés.", 10)
+    ].join("\n"), AFR_MAX_CONTEXT_CHARS);
+  }
+
+  async function buildTargetedFirebaseContext(question) {
+    const q = normalizeForSearch(question);
+    const types = [];
+    if (/signal|anomal|panne|incident|maintenance/.test(q)) types.push("signalements");
+    if (/controle|contrôle|soir|eau|aliment|mortalite|mortalité/.test(q)) types.push("controles");
+    if (/ponte|tri|sol|suivi quotidien/.test(q)) types.push("ponte");
+    if (/audit|action|retard|corrective/.test(q)) types.push("audit");
+    if (!types.length) return "";
+
+    const todayKey = getTodayKey();
+    const { records, errors } = await loadFirebaseRecords(types);
+    let selected = records;
+
+    if (types.includes("signalements")) {
+      selected = selected.filter(r => recordIsOpen(r) || recordIsToday(r, todayKey)).slice(0, 30);
+    } else {
+      selected = selected.filter(r => recordIsToday(r, todayKey)).slice(0, 30);
+    }
+
+    if (!selected.length && !errors.length) return "";
+
+    return [
+      `### Données Firebase ciblées — ${frenchDateFromKey(todayKey)}`,
+      "Consigne : ne pas inventer si la liste ci-dessous est vide.",
+      selected.length ? selected.map(r => formatRecord(r)).join("\n") : "Aucun enregistrement pertinent trouvé dans Firebase pour cette question.",
+      errors.length ? `Erreurs de lecture : ${errors.slice(0, 6).join(" ; ")}` : ""
+    ].join("\n");
+  }
+
+  async function loadDocumentsAfrJson(question) {
+    try {
+      const response = await fetch("documents-afr.json", { cache: "no-store" });
+      if (!response.ok) return "";
+      const json = await response.json();
+      const docs = Array.isArray(json) ? json : (Array.isArray(json.documents) ? json.documents : []);
+      if (!docs.length) return "";
+
+      const qNorm = normalizeForSearch(question);
+      const scored = docs.map(doc => {
+        const title = doc.titre || doc.title || doc.nom || doc.name || "Document AFR";
+        const body = doc.texte || doc.contenu || doc.content || doc.resume || doc.résumé || "";
+        const haystack = normalizeForSearch(title + " " + body);
+        let score = 0;
+        for (const word of qNorm.split(/[^a-z0-9]+/).filter(w => w.length >= 4)) {
+          if (haystack.includes(word)) score++;
+        }
+        return { title, body, url: doc.url || doc.lien || "", score };
+      })
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 6);
+
+      return scored.map(doc =>
+        `### ${doc.title}${doc.url ? " — " + doc.url : ""}\n${truncateText(doc.body, 2500)}`
+      ).join("\n\n");
+    } catch (e) {
+      return "";
+    }
+  }
+
+  async function buildPageContext(question) {
+    const q = String(question || "");
+    const scoredPages = AFR_CONTEXT_PAGES
+      .map(page => ({ ...page, score: scoreContextPage(page, q) }))
+      .sort((a, b) => b.score - a.score);
+
+    const selectedPages = scoredPages.some(p => p.score > 0)
+      ? scoredPages.filter(p => p.score > 0).slice(0, 4)
+      : scoredPages.slice(0, 3);
+
+    const pageContexts = [];
+    for (const page of selectedPages) {
+      try {
+        const raw = await fetchTextFile(page.url);
+        const clean = htmlToReadableText(raw);
+        if (clean) pageContexts.push(`### ${page.title} (${page.url})\n${truncateText(clean, AFR_PAGE_CONTEXT_CHARS)}`);
+      } catch (e) {
+        pageContexts.push(`### ${page.title} (${page.url})\nPage non accessible depuis le navigateur : ${e.message}`);
+      }
+    }
+    return pageContexts.join("\n\n");
+  }
+
+  async function buildAfrContext(question) {
+    const now = Date.now();
+    const cacheKey = normalizeForSearch(question).slice(0, 120) + "|" + getTodayKey();
+
+    if (
+      window.__afrAssistantContextCache &&
+      window.__afrAssistantContextCache.key === cacheKey &&
+      now - window.__afrAssistantContextCache.ts < AFR_CONTEXT_CACHE_MS
+    ) {
+      return window.__afrAssistantContextCache.value;
+    }
+
+    const q = String(question || "");
+    let context = "";
+
+    if (isDailyBriefQuestion(q)) {
+      context = await buildDailyDebriefContext(q);
+    } else {
+      const intro = [
+        "Contexte général AFR :",
+        "- AFR Élevage utilise le portail GitHub Pages blp-47.github.io/AFR pour accéder aux applications internes.",
+        "- Les fermes/sites cités dans les applications sont notamment NT, NV, ST, SG et VS.",
+        "- Répondre uniquement à partir du contexte fourni ci-dessous. Si une information manque, le dire clairement.",
+        "- Ne pas inventer de données Firebase, de panne, de ponte, de contrôle ou de signalement si ce n'est pas explicitement indiqué dans le contexte.",
+        ""
+      ].join("\n");
+
+      const [firebaseContext, docsJsonContext, pageContext] = await Promise.all([
+        buildTargetedFirebaseContext(q),
+        loadDocumentsAfrJson(q),
+        buildPageContext(q)
+      ]);
+
+      context = intro;
+      if (firebaseContext) context += "DONNÉES FIREBASE :\n" + firebaseContext + "\n\n";
+      if (docsJsonContext) context += "DOCUMENTS AFR INDEXÉS (documents-afr.json) :\n" + docsJsonContext + "\n\n";
+      context += "PAGES DU PORTAIL CONSULTÉES :\n" + pageContext;
+      context = truncateText(context, AFR_MAX_CONTEXT_CHARS);
+    }
+
+    window.__afrAssistantContextCache = { key: cacheKey, ts: now, value: context };
+    return context;
+  }
+
+  async function askAssistantReal(question) {
+    const q = String(question || '').trim();
+    if (!q || window.chatIsLoading) return;
+    window.chatIsLoading = true;
+
+    window.chatHistory.push({ role: 'user', content: q });
+    window.saveChatHistory();
+    window.renderChat();
+    window.showTyping();
+
+    const sendBtn = document.getElementById('chatSend');
+    if (sendBtn) sendBtn.disabled = true;
+
+    try {
+      const contexte = await buildAfrContext(q);
+      const finalQuestion = isDailyBriefQuestion(q)
+        ? q + "\n\nImportant : fais le débrief uniquement avec les données du jour présentes dans le contexte. Ne cite aucun ancien cas résolu. Si une rubrique est vide, dis-le au lieu d'inventer."
+        : q;
+
+      const response = await fetch(AFR_ASSISTANT_WORKER_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: finalQuestion, contexte })
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || data.error) {
+        throw new Error(data.error || ("Erreur HTTP " + response.status));
+      }
+
+      const answer = data.answer || "Aucune réponse.";
+      window.hideTyping();
+      window.chatHistory.push({ role: 'assistant', content: answer });
+      window.saveChatHistory();
+      window.renderChat();
+    } catch (err) {
+      const msg = err?.message || 'Erreur inconnue.';
+      window.hideTyping();
+      window.chatHistory.push({ role: 'assistant', content: 'Erreur : ' + msg, error: true });
+      window.saveChatHistory();
+      window.renderChat();
+    } finally {
+      window.chatIsLoading = false;
+      if (sendBtn) sendBtn.disabled = false;
+    }
+  }
+
+  window.sendAssistantQuestion = async function () {
+    const input = document.getElementById('assistant-input');
+    const q = input ? input.value.trim() : '';
+    if (!q) return;
+    if (input) {
+      input.value = '';
+      input.style.height = 'auto';
+    }
+    await askAssistantReal(q);
+  };
+
+  window.sendQuickAssistantQuestion = async function (question) {
+    await askAssistantReal(question);
+  };
+</script>
+</body>
+</html>
