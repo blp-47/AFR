@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Historique Contrôles">
+  <title>Historique Contrôles du Soir — AFR</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <style>
+    :root {
+      --blue:#1a3a6b;
+      --blue2:#284f88;
+      --red:#c8192c;
+      --green:#2e7d32;
+      --orange:#f08c00;
+      --bg:#f4f6fb;
+      --card:#ffffff;
+      --text:#1f2937;
+      --muted:#6b7280;
+      --border:#d8deea;
+      --shadow:0 10px 30px rgba(17,24,39,.08);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      -webkit-font-smoothing:antialiased;
+    }
+    a{color:inherit}
+    .top{
+      position:sticky;
+      top:0;
+      z-index:20;
+      background:linear-gradient(135deg,var(--blue),var(--blue2));
+      color:#fff;
+      padding:calc(12px + env(safe-area-inset-top)) 14px 14px;
+      box-shadow:0 3px 16px rgba(26,58,107,.22);
+    }
+    .top-row{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      max-width:1180px;
+      margin:auto;
+    }
+    .home{
+      width:42px;height:42px;
+      display:flex;align-items:center;justify-content:center;
+      border-radius:14px;
+      background:rgba(255,255,255,.14);
+      text-decoration:none;
+      font-size:1.15rem;
+      flex:0 0 auto;
+    }
+    h1{
+      margin:0;
+      font-size:1.28rem;
+      line-height:1.1;
+      letter-spacing:-.02em;
+    }
+    .subtitle{
+      margin-top:3px;
+      color:rgba(255,255,255,.75);
+      font-size:.82rem;
+    }
+    main{
+      max-width:1180px;
+      margin:0 auto;
+      padding:16px 14px 32px;
+    }
+    .toolbar{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:12px;
+      margin-bottom:14px;
+    }
+    .panel{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:22px;
+      box-shadow:var(--shadow);
+      padding:14px;
+    }
+    .controls{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:10px;
+    }
+    label{
+      display:block;
+      font-size:.72rem;
+      color:var(--muted);
+      font-weight:800;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      margin:0 0 6px;
+    }
+    input,select,button{
+      font:inherit;
+    }
+    input[type=date],select{
+      width:100%;
+      border:2px solid var(--border);
+      border-radius:14px;
+      padding:12px 13px;
+      background:#fff;
+      color:var(--text);
+      font-weight:650;
+      outline:none;
+    }
+    input[type=date]:focus,select:focus{
+      border-color:var(--blue);
+      box-shadow:0 0 0 3px rgba(26,58,107,.12);
+    }
+    .button-row{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:8px;
+    }
+    button,.btn{
+      border:0;
+      border-radius:14px;
+      padding:12px 13px;
+      font-weight:800;
+      cursor:pointer;
+      text-align:center;
+      text-decoration:none;
+      background:#eef2f8;
+      color:var(--blue);
+    }
+    .primary{
+      background:var(--blue);
+      color:#fff;
+    }
+    .danger{
+      background:var(--red);
+      color:#fff;
+    }
+    .ghost{
+      background:#fff;
+      border:2px solid var(--border);
+    }
+    .app-links{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:8px;
+      margin-top:10px;
+    }
+    .summary{
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:10px;
+    }
+    .stat{
+      border:1px solid var(--border);
+      border-radius:18px;
+      padding:13px;
+      background:#fff;
+    }
+    .stat .num{
+      font-size:1.6rem;
+      line-height:1;
+      font-weight:900;
+      color:var(--blue);
+    }
+    .stat .lab{
+      margin-top:4px;
+      font-size:.78rem;
+      color:var(--muted);
+      font-weight:700;
+    }
+    .statusbar{
+      margin:12px 0;
+      color:var(--muted);
+      font-size:.9rem;
+      min-height:22px;
+    }
+    .site-block{
+      margin-top:18px;
+    }
+    .site-title{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      margin:18px 0 10px;
+      color:var(--blue);
+      font-weight:900;
+      font-size:1.05rem;
+      letter-spacing:.02em;
+      text-transform:uppercase;
+    }
+    .site-title:after{
+      content:"";
+      height:2px;
+      background:var(--border);
+      flex:1;
+    }
+    .empty{
+      padding:18px;
+      border:2px dashed var(--border);
+      border-radius:20px;
+      color:var(--muted);
+      background:#fff;
+      text-align:center;
+      font-weight:650;
+    }
+    .record{
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:24px;
+      box-shadow:var(--shadow);
+      overflow:hidden;
+      margin-bottom:14px;
+    }
+    .record-head{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:10px;
+      padding:15px;
+      border-left:6px solid var(--green);
+      background:linear-gradient(180deg,#fff,#fbfcff);
+    }
+    .record.problem .record-head{border-left-color:var(--red)}
+    .record.unknown .record-head{border-left-color:var(--orange)}
+    .record-title{
+      display:flex;
+      align-items:center;
+      flex-wrap:wrap;
+      gap:8px;
+    }
+    .bat{
+      font-size:1.55rem;
+      font-weight:950;
+      color:var(--blue);
+      letter-spacing:-.03em;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:5px;
+      border-radius:999px;
+      padding:5px 9px;
+      font-size:.76rem;
+      font-weight:850;
+      background:#e9f6eb;
+      color:var(--green);
+    }
+    .pill.problem{background:#fff0f0;color:var(--red)}
+    .pill.unknown{background:#fff7e6;color:#9a5a00}
+    .meta{
+      display:flex;
+      flex-wrap:wrap;
+      gap:7px 12px;
+      color:var(--muted);
+      font-size:.88rem;
+      font-weight:650;
+    }
+    .comment{
+      margin-top:8px;
+      border-left:4px solid var(--border);
+      background:#f6f8fc;
+      border-radius:12px;
+      padding:10px;
+      color:#374151;
+      font-size:.9rem;
+    }
+    .table-wrap{
+      width:100%;
+      overflow:auto;
+    }
+    table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:760px;
+    }
+    th{
+      background:#eef2f8;
+      color:var(--blue);
+      font-size:.76rem;
+      text-transform:uppercase;
+      letter-spacing:.06em;
+      text-align:left;
+      padding:11px 12px;
+      border-bottom:1px solid var(--border);
+      white-space:nowrap;
+    }
+    td{
+      padding:11px 12px;
+      border-bottom:1px solid #edf0f6;
+      vertical-align:top;
+      font-size:.92rem;
+    }
+    tr:last-child td{border-bottom:0}
+    .etat{
+      color:var(--muted);
+      font-size:.85rem;
+    }
+    .ok-text{color:var(--green);font-weight:850}
+    .pb-text{color:var(--red);font-weight:850}
+    .unknown-text{color:#9a5a00;font-weight:850}
+    .small-note{
+      color:var(--muted);
+      font-size:.82rem;
+      margin-top:4px;
+    }
+    .conso-line{
+      margin-top:7px;
+      padding:7px 9px;
+      border-radius:12px;
+      background:#f0f8f2;
+      color:#1f6b2d;
+      font-size:.84rem;
+      font-weight:750;
+      line-height:1.25;
+    }
+    .conso-line.eau{background:#eef6ff;color:#1a4f88}
+    .conso-line.aliment{background:#fff8e8;color:#895600}
+    .conso-line.negative{background:#fff0f0;color:var(--red)}
+    .conso-line small{font-weight:650;opacity:.86}
+    .print-only{display:none}
+    @media (min-width:760px){
+      .toolbar{grid-template-columns:1.25fr .75fr;align-items:start}
+      .controls{grid-template-columns:1.1fr .9fr auto}
+      .button-row{grid-template-columns:repeat(4,auto)}
+      .summary{grid-template-columns:repeat(4,1fr)}
+      .record-head{grid-template-columns:1fr auto;align-items:start}
+    }
+    @media print{
+      .top,.toolbar,.statusbar,.app-links,.no-print{display:none!important}
+      body{background:#fff}
+      main{padding:0;max-width:none}
+      .record{box-shadow:none;border:1px solid #ccc;break-inside:avoid}
+      .record-head{border-left-width:4px}
+      table{min-width:0}
+      th,td{font-size:10px;padding:5px 6px}
+      .print-only{display:block}
+      .site-title{font-size:13px;margin:10px 0 5px}
+    }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <div class="top-row">
+      <a class="home" href="https://blp-47.github.io/AFR/index.html" title="Accueil">🏠</a>
+      <div>
+        <h1>Historique Contrôles du Soir</h1>
+        <div class="subtitle">Affichage complet par date — AFR 33 + AFR 40 / SG</div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="toolbar">
+      <div class="panel">
+        <div class="controls">
+          <div>
+            <label for="dateInput">Date du contrôle</label>
+            <input type="date" id="dateInput">
+          </div>
+          <div>
+            <label for="siteFilter">Site</label>
+            <select id="siteFilter">
+              <option value="all">Tous les sites</option>
+              <option value="33">AFR 33 — NT / NV / ST</option>
+              <option value="40">AFR 40 — SG</option>
+            </select>
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <button class="primary" onclick="loadSelectedDate()">Charger</button>
+          </div>
+        </div>
+        <div class="button-row" style="margin-top:10px">
+          <button class="ghost" onclick="moveDate(-1)">← Veille</button>
+          <button class="ghost" onclick="setToday()">Aujourd’hui</button>
+          <button class="ghost" onclick="moveDate(1)">Lendemain →</button>
+          <button class="danger" onclick="window.print()">🖨 Imprimer</button>
+        </div>
+        <div class="app-links no-print">
+          <a class="btn" href="Controles_AFR.html">Ouvrir contrôle 33</a>
+          <a class="btn" href="ControlesSG.html">Ouvrir contrôle SG</a>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="summary">
+          <div class="stat"><div class="num" id="statTotal">0</div><div class="lab">Bâtiments</div></div>
+          <div class="stat"><div class="num" id="statOk">0</div><div class="lab">Sans problème</div></div>
+          <div class="stat"><div class="num" id="statPb">0</div><div class="lab">Avec problème</div></div>
+          <div class="stat"><div class="num" id="statPoints">0</div><div class="lab">Points contrôlés</div></div>
+        </div>
+        <div style="margin-top:10px">
+          <button class="primary" style="width:100%" onclick="exportExcel()">📥 Export Excel</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="statusbar" id="status">Chargement…</div>
+    <div class="print-only" id="printTitle"></div>
+    <section id="results"></section>
+  </main>
+
+<script>
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyDJdHx6xKy43aTPdjoSB8dZjkOIjXyGyh8",
+  authDomain:        "afr-nt2.firebaseapp.com",
+  databaseURL:       "https://afr-nt2-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:         "afr-nt2",
+  storageBucket:     "afr-nt2.firebasestorage.app",
+  messagingSenderId: "169851474976",
+  appId:             "1:169851474976:web:be14c24366b0af024f9845",
+  measurementId:     "G-HYBY42TVJZ"
+};
+
+firebase.initializeApp(FIREBASE_CONFIG);
+const db = firebase.firestore();
+const rtdb = firebase.database();
+const suivi11hCache = {};
+
+const SOURCES = [
+  {
+    siteKey: '33',
+    siteTitle: 'AFR 33 — NT / NV / ST',
+    collection: 'controles_afr33',
+    order: ['NT1','NT2','NV1','NV2','ST1','ST2','ST3'],
+    priority: 1
+  },
+  {
+    siteKey: '40',
+    siteTitle: 'AFR 40 — SG',
+    collection: 'controles_afr40sg',
+    order: ['SG1','SG2','SG3'],
+    priority: 1
+  },
+  {
+    siteKey: '40',
+    siteTitle: 'AFR 40 — SG',
+    collection: 'controles',
+    order: ['SG1','SG2','SG3'],
+    priority: 2,
+    legacy: true
+  }
+];
+
+let currentRecords = [];
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&','&amp;')
+    .replaceAll('<','&lt;')
+    .replaceAll('>','&gt;')
+    .replaceAll('"','&quot;')
+    .replaceAll("'","&#039;");
+}
+
+
+function parseNumberFR(value) {
+  if (value === null || value === undefined || value === '') return null;
+  if (typeof value === 'number' && isFinite(value)) return value;
+  const n = parseFloat(String(value).replace(/\s/g, '').replace(',', '.').replace(/[^0-9.\-]/g, ''));
+  return Number.isFinite(n) ? n : null;
+}
+
+function formatNumberFR(value) {
+  const n = parseNumberFR(value);
+  if (n === null) return '—';
+  return new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 }).format(n);
+}
+
+function isWaterControlName(name) {
+  return /^Compteur\s+eau\s+(Sol|Nid)/i.test(name || '');
+}
+
+function isAlimentControlName(name) {
+  return /^Compteur\s+aliment/i.test(name || '');
+}
+
+function parcSuffix(name) {
+  const m = String(name || '').match(/\bP\d+\b/i);
+  return m ? m[0].toUpperCase() : '';
+}
+
+function getEau11hKey(ctrlName) {
+  if (!isWaterControlName(ctrlName)) return null;
+  const type = /\bSol\b/i.test(ctrlName) ? 'Sol' : 'Nid';
+  const suffix = parcSuffix(ctrlName);
+  return suffix ? `Compteur eau ${type} ${suffix}` : `Compteur eau ${type}`;
+}
+
+function getAliment11hKey(ctrlName) {
+  if (!isAlimentControlName(ctrlName)) return null;
+  const suffix = parcSuffix(ctrlName);
+  return suffix ? `Compteur aliment ${suffix}` : 'Compteur aliment';
+}
+
+function getObjectValueAny(obj, keys) {
+  for (const k of keys) {
+    if (obj && obj[k] !== undefined && obj[k] !== null && obj[k] !== '') return obj[k];
+  }
+  return null;
+}
+
+function getEauBaseFromMap(ctrlName, bat, eauMap) {
+  if (!eauMap) return null;
+  const key = getEau11hKey(ctrlName);
+  if (key && eauMap[key] !== undefined) return eauMap[key];
+
+  // Compatibilité si un ancien contrôle SG n'avait pas encore P40/P41/P50/P51 dans le nom.
+  const type = /\bSol\b/i.test(ctrlName || '') ? 'Sol' : (/\bNid\b/i.test(ctrlName || '') ? 'Nid' : '');
+  if (!type) return null;
+  if (eauMap[`Compteur eau ${type}`] !== undefined) return eauMap[`Compteur eau ${type}`];
+  if (bat === 'SG1') return getObjectValueAny(eauMap, [`Compteur eau ${type} P40`, `Compteur eau ${type} P41`]);
+  if (bat === 'SG2') return getObjectValueAny(eauMap, [`Compteur eau ${type} P50`, `Compteur eau ${type} P51`]);
+  return null;
+}
+
+function getAlimentBaseFromMap(ctrlName, bat, alimentMap) {
+  if (!alimentMap) return null;
+  const key = getAliment11hKey(ctrlName);
+  if (key && alimentMap[key] !== undefined) return alimentMap[key];
+  if (alimentMap['Compteur aliment'] !== undefined) return alimentMap['Compteur aliment'];
+  if (bat === 'SG1') return getObjectValueAny(alimentMap, ['Compteur aliment P40', 'Compteur aliment P41']);
+  if (bat === 'SG2') return getObjectValueAny(alimentMap, ['Compteur aliment P50', 'Compteur aliment P51']);
+  return null;
+}
+
+function getEauConsoData(data) {
+  if (!data) return null;
+  const conso = parseNumberFR(getObjectValueAny(data, ['consoEau1118', 'consoEau11h', '_histConsoEauL']));
+  const base = parseNumberFR(getObjectValueAny(data, ['eau11h', 'eau11hValue', '_histEau11h']));
+  const soir = parseNumberFR(data.value);
+  if (conso === null || base === null) return null;
+  return { conso, base, soir };
+}
+
+function getAlimentConsoData(data) {
+  if (!data) return null;
+  const kg = parseNumberFR(getObjectValueAny(data, ['consoAlimentKg', '_histConsoAlimentKg']));
+  const unites = parseNumberFR(getObjectValueAny(data, ['consoAlimentUnites', '_histConsoAlimentUnites']));
+  const base = parseNumberFR(getObjectValueAny(data, ['aliment11h', 'aliment11hValue', '_histAliment11h']));
+  const soir = parseNumberFR(data.value);
+  if (kg === null || unites === null || base === null) return null;
+  return { kg, unites, base, soir };
+}
+
+function consoExtraHtml(data) {
+  const parts = [];
+  const eau = getEauConsoData(data);
+  if (eau) {
+    const neg = eau.conso < 0 ? ' negative' : '';
+    const detail = eau.soir !== null ? ` <small>(${formatNumberFR(eau.soir)} - ${formatNumberFR(eau.base)} = ${formatNumberFR(eau.conso)} L)</small>` : ` <small>(relevé 11h : ${formatNumberFR(eau.base)})</small>`;
+    parts.push(`<div class="conso-line eau${neg}">💧 Bu depuis 11h : ${formatNumberFR(eau.conso)} L${detail}</div>`);
+  }
+  const alim = getAlimentConsoData(data);
+  if (alim) {
+    const neg = alim.kg < 0 ? ' negative' : '';
+    const detail = alim.soir !== null
+      ? ` <small>((${formatNumberFR(alim.soir)} - ${formatNumberFR(alim.base)}) × 10 kg = ${formatNumberFR(alim.unites)} unité(s) × 10 kg)</small>`
+      : ` <small>(${formatNumberFR(alim.unites)} unité(s) × 10 kg)</small>`;
+    parts.push(`<div class="conso-line aliment${neg}">🌾 Aliment consommé depuis 11h : ${formatNumberFR(alim.kg)} kg${detail}</div>`);
+  }
+  return parts.join('');
+}
+
+async function fetchSuivi11h(dateStr, bat) {
+  if (!dateStr || !bat) return { eau11h: {}, aliment11h: {} };
+  const cacheKey = `${dateStr}/${bat}`;
+  if (suivi11hCache[cacheKey]) return suivi11hCache[cacheKey];
+  try {
+    const snap = await rtdb.ref(`suivi_quotidien/${dateStr}/${bat}`).once('value');
+    const val = snap.val() || {};
+    const out = { eau11h: val.eau11h || {}, aliment11h: val.aliment11h || {} };
+    suivi11hCache[cacheKey] = out;
+    return out;
+  } catch (e) {
+    console.warn('Impossible de charger le suivi quotidien 11h', dateStr, bat, e);
+    return { eau11h: {}, aliment11h: {} };
+  }
+}
+
+async function enrichRecordWithSuivi11h(record) {
+  const suivi = await fetchSuivi11h(record.date, record.bat);
+  Object.keys(record.formData || {}).forEach(k => {
+    const idx = parseInt(k, 10);
+    if (Number.isNaN(idx)) return;
+    const ctrl = record.controles[idx] || {};
+    const data = record.formData[k] || {};
+    const soir = parseNumberFR(data.value);
+
+    if (isWaterControlName(ctrl.name)) {
+      let base = parseNumberFR(getObjectValueAny(data, ['eau11h', 'eau11hValue']));
+      if (base === null) base = parseNumberFR(getEauBaseFromMap(ctrl.name, record.bat, suivi.eau11h));
+      if (base !== null) {
+        data._histEau11h = base;
+        let conso = parseNumberFR(getObjectValueAny(data, ['consoEau1118', 'consoEau11h']));
+        if (conso === null && soir !== null) conso = Math.round((soir - base) * 100) / 100;
+        if (conso !== null) data._histConsoEauL = conso;
+      }
+    }
+
+    if (isAlimentControlName(ctrl.name)) {
+      let base = parseNumberFR(getObjectValueAny(data, ['aliment11h', 'aliment11hValue']));
+      if (base === null) base = parseNumberFR(getAlimentBaseFromMap(ctrl.name, record.bat, suivi.aliment11h));
+      if (base !== null) {
+        data._histAliment11h = base;
+        let unites = parseNumberFR(data.consoAlimentUnites);
+        if (unites === null && soir !== null) unites = Math.round((soir - base) * 100) / 100;
+        if (unites !== null) {
+          data._histConsoAlimentUnites = unites;
+          data._histConsoAlimentKg = Math.round((unites * 10) * 100) / 100;
+        }
+      }
+    }
+  });
+  return record;
+}
+
+function formatDateInput(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function displayDate(dateStr) {
+  if (!dateStr) return '—';
+  const [y,m,d] = dateStr.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+function setStatus(text, isError=false) {
+  const el = document.getElementById('status');
+  el.textContent = text;
+  el.style.color = isError ? 'var(--red)' : 'var(--muted)';
+}
+
+function normalizeFormData(formData) {
+  const out = {};
+  Object.entries(formData || {}).forEach(([k,v]) => {
+    out[String(parseInt(k, 10))] = v || {};
+  });
+  return out;
+}
+
+function normalizeRecord(raw, batKey, source) {
+  const bat = raw.bat || batKey;
+  const formData = normalizeFormData(raw.formData);
+  const controles = Array.isArray(raw.controles) ? raw.controles : [];
+  const pbCount = Object.values(formData).filter(d => d && d.status === 'problem').length;
+  const okCount = Object.values(formData).filter(d => d && d.status === 'ok').length;
+  const pointCount = Math.max(controles.length, Object.keys(formData).length);
+
+  return {
+    siteKey: source.siteKey,
+    siteTitle: source.siteTitle,
+    collection: source.collection,
+    legacy: !!source.legacy,
+    priority: source.priority || 1,
+    bat,
+    date: raw.date || document.getElementById('dateInput').value,
+    heure: raw.heure || '—',
+    op: raw.op || '—',
+    commentaire: raw.commentaire || '',
+    controles,
+    formData,
+    pbCount,
+    okCount,
+    pointCount,
+    status: pointCount === 0 ? 'unknown' : (pbCount > 0 ? 'problem' : 'ok')
+  };
+}
+
+async function loadSourceForDate(source, dateStr) {
+  const snap = await db.collection(source.collection).doc(dateStr).get();
+  if (!snap.exists) return [];
+
+  const data = snap.data() || {};
+  const records = [];
+
+  Object.entries(data).forEach(([key, value]) => {
+    if (!value || typeof value !== 'object' || !value.formData) return;
+    const bat = value.bat || key;
+
+    if (source.order.length && !source.order.includes(bat) && source.legacy) return;
+
+    records.push(normalizeRecord(value, bat, source));
+  });
+
+  return records;
+}
+
+function orderIndex(record) {
+  const src = SOURCES.find(s => s.siteKey === record.siteKey && s.order.includes(record.bat));
+  if (!src) return 999;
+  const idx = src.order.indexOf(record.bat);
+  return idx < 0 ? 999 : idx;
+}
+
+function sortRecords(records) {
+  return records.sort((a,b) => {
+    if (a.siteKey !== b.siteKey) return a.siteKey.localeCompare(b.siteKey);
+    const ai = orderIndex(a);
+    const bi = orderIndex(b);
+    if (ai !== bi) return ai - bi;
+    return a.bat.localeCompare(b.bat);
+  });
+}
+
+function dedupeRecords(records) {
+  const map = new Map();
+  records.forEach(rec => {
+    const key = `${rec.siteKey}|${rec.bat}`;
+    const prev = map.get(key);
+    if (!prev || rec.priority < prev.priority) map.set(key, rec);
+  });
+  return Array.from(map.values());
+}
+
+function filteredRecords() {
+  const filter = document.getElementById('siteFilter').value;
+  return currentRecords.filter(r => filter === 'all' || r.siteKey === filter);
+}
+
+async function loadSelectedDate() {
+  const dateStr = document.getElementById('dateInput').value;
+  const siteFilter = document.getElementById('siteFilter').value;
+  if (!dateStr) {
+    setStatus('Choisis une date.', true);
+    return;
+  }
+
+  setStatus('Chargement des contrôles Firestore…');
+  document.getElementById('results').innerHTML = '';
+
+  try {
+    const sources = SOURCES.filter(s => siteFilter === 'all' || s.siteKey === siteFilter);
+    const loaded = (await Promise.all(sources.map(s => loadSourceForDate(s, dateStr)))).flat();
+    const deduped = sortRecords(dedupeRecords(loaded));
+    if (deduped.length) setStatus('Chargement des relevés 11h eau/aliment depuis Suivi Quotidien…');
+    currentRecords = await Promise.all(deduped.map(enrichRecordWithSuivi11h));
+    render();
+    setStatus(currentRecords.length ? `Données chargées pour le ${displayDate(dateStr)} avec consommations 11h→soir.` : `Aucun contrôle trouvé pour le ${displayDate(dateStr)}.`);
+  } catch (e) {
+    console.error(e);
+    setStatus('Erreur de lecture Firestore : vérifie la connexion ou les règles Firestore.', true);
+    document.getElementById('results').innerHTML = '<div class="empty">Impossible de charger les contrôles.</div>';
+  }
+}
+
+function updateStats(records) {
+  const total = records.length;
+  const ok = records.filter(r => r.status === 'ok').length;
+  const pb = records.filter(r => r.status === 'problem').length;
+  const points = records.reduce((sum,r) => sum + r.pointCount, 0);
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statOk').textContent = ok;
+  document.getElementById('statPb').textContent = pb;
+  document.getElementById('statPoints').textContent = points;
+}
+
+function statusPill(record) {
+  if (record.status === 'problem') return `<span class="pill problem">⚠ ${record.pbCount} problème(s)</span>`;
+  if (record.status === 'ok') return `<span class="pill">✅ OK</span>`;
+  return `<span class="pill unknown">À vérifier</span>`;
+}
+
+function rowStatus(data) {
+  if (!data || !data.status) return '<span class="unknown-text">Non renseigné</span>';
+  if (data.status === 'problem') return '<span class="pb-text">⚠ Problème</span>';
+  return '<span class="ok-text">✓ OK</span>';
+}
+
+function rowValue(data) {
+  const value = data && data.value ? escapeHtml(data.value) : '—';
+  const note = data && data.note ? `<div class="small-note">Note : ${escapeHtml(data.note)}</div>` : '';
+  return `${value}${note}${consoExtraHtml(data)}`;
+}
+
+function exportConsoFields(data) {
+  const eau = getEauConsoData(data);
+  const alim = getAlimentConsoData(data);
+  return {
+    EauReleve11h: eau ? eau.base : '',
+    EauConsoL: eau ? eau.conso : '',
+    AlimentReleve11h: alim ? alim.base : '',
+    AlimentUnites: alim ? alim.unites : '',
+    AlimentConsoKg: alim ? alim.kg : '',
+    CalculConso: alim ? `(${formatNumberFR(alim.soir)} - ${formatNumberFR(alim.base)}) × 10 = ${formatNumberFR(alim.kg)} kg` : (eau ? `${formatNumberFR(eau.soir)} - ${formatNumberFR(eau.base)} = ${formatNumberFR(eau.conso)} L` : '')
+  };
+}
+
+function renderRecord(record) {
+  const rows = [];
+  const keys = Object.keys(record.formData).map(k => parseInt(k,10)).filter(n => !Number.isNaN(n));
+  const max = Math.max(record.controles.length, keys.length ? Math.max(...keys) + 1 : 0);
+
+  for (let i = 0; i < max; i++) {
+    const ctrl = record.controles[i] || {};
+    const data = record.formData[String(i)] || {};
+    rows.push(`
+      <tr>
+        <td><strong>${escapeHtml(ctrl.name || `Point ${i + 1}`)}</strong></td>
+        <td class="etat">${escapeHtml(ctrl.etat || '')}</td>
+        <td>${rowStatus(data)}</td>
+        <td>${rowValue(data)}</td>
+      </tr>
+    `);
+  }
+
+  const legacyChip = record.legacy ? '<span class="pill unknown">ancien stockage</span>' : '';
+  const comment = record.commentaire ? `<div class="comment">💬 ${escapeHtml(record.commentaire)}</div>` : '';
+
+  return `
+    <article class="record ${record.status}">
+      <div class="record-head">
+        <div>
+          <div class="record-title">
+            <span class="bat">${escapeHtml(record.bat)}</span>
+            ${statusPill(record)}
+            <span class="pill unknown">${escapeHtml(record.siteTitle)}</span>
+            ${legacyChip}
+          </div>
+          <div class="meta">
+            <span>📅 ${displayDate(record.date)}</span>
+            <span>🕒 ${escapeHtml(record.heure)}</span>
+            <span>👤 ${escapeHtml(record.op)}</span>
+            <span>📍 ${escapeHtml(record.collection)}</span>
+          </div>
+          ${comment}
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Point de contrôle</th>
+              <th>État attendu</th>
+              <th>Résultat</th>
+              <th>Valeur / note</th>
+            </tr>
+          </thead>
+          <tbody>${rows.join('')}</tbody>
+        </table>
+      </div>
+    </article>
+  `;
+}
+
+function renderSite(title, records) {
+  const html = records.length
+    ? records.map(renderRecord).join('')
+    : `<div class="empty">Aucun contrôle enregistré sur ce site pour cette date.</div>`;
+
+  return `
+    <section class="site-block">
+      <div class="site-title">${escapeHtml(title)}</div>
+      ${html}
+    </section>
+  `;
+}
+
+function render() {
+  const records = filteredRecords();
+  updateStats(records);
+
+  const dateStr = document.getElementById('dateInput').value;
+  document.getElementById('printTitle').innerHTML = `<h2>Historique contrôles du soir — ${displayDate(dateStr)}</h2>`;
+
+  const filter = document.getElementById('siteFilter').value;
+  let html = '';
+
+  if (filter === 'all' || filter === '33') {
+    html += renderSite('AFR 33 — NT / NV / ST', records.filter(r => r.siteKey === '33'));
+  }
+  if (filter === 'all' || filter === '40') {
+    html += renderSite('AFR 40 — SG', records.filter(r => r.siteKey === '40'));
+  }
+
+  document.getElementById('results').innerHTML = html || '<div class="empty">Aucun contrôle à afficher.</div>';
+}
+
+function moveDate(delta) {
+  const input = document.getElementById('dateInput');
+  const [y,m,d] = input.value.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  dt.setDate(dt.getDate() + delta);
+  input.value = formatDateInput(dt);
+  loadSelectedDate();
+}
+
+function setToday() {
+  document.getElementById('dateInput').value = formatDateInput(new Date());
+  loadSelectedDate();
+}
+
+function exportExcel() {
+  const records = filteredRecords();
+  if (!records.length) {
+    setStatus('Aucune donnée à exporter pour cette sélection.', true);
+    return;
+  }
+
+  const rows = [];
+  records.forEach(record => {
+    const keys = Object.keys(record.formData).map(k => parseInt(k,10)).filter(n => !Number.isNaN(n));
+    const max = Math.max(record.controles.length, keys.length ? Math.max(...keys) + 1 : 0);
+    for (let i = 0; i < max; i++) {
+      const ctrl = record.controles[i] || {};
+      const data = record.formData[String(i)] || {};
+      rows.push({
+        Date: record.date,
+        Site: record.siteTitle,
+        Batiment: record.bat,
+        Heure: record.heure,
+        Operateur: record.op,
+        CommentaireControle: record.commentaire || '',
+        Point: ctrl.name || `Point ${i + 1}`,
+        EtatAttendu: ctrl.etat || '',
+        Statut: data.status === 'problem' ? 'Problème' : (data.status === 'ok' ? 'OK' : 'Non renseigné'),
+        Valeur: data.value || '',
+        Note: data.note || '',
+        ...exportConsoFields(data),
+        CollectionFirestore: record.collection
+      });
+    }
+  });
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = [
+    {wch:12},{wch:22},{wch:10},{wch:10},{wch:18},{wch:25},
+    {wch:32},{wch:30},{wch:14},{wch:24},{wch:28},
+    {wch:14},{wch:14},{wch:17},{wch:15},{wch:16},{wch:38},{wch:22}
+  ];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Historique');
+  const dateStr = document.getElementById('dateInput').value;
+  XLSX.writeFile(wb, `Historique_Controles_${dateStr}.xlsx`);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('dateInput').value = formatDateInput(new Date());
+  document.getElementById('siteFilter').addEventListener('change', loadSelectedDate);
+  document.getElementById('dateInput').addEventListener('change', loadSelectedDate);
+  loadSelectedDate();
+});
+</script>
+</body>
+</html>
