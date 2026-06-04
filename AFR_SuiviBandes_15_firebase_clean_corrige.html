@@ -1,0 +1,2791 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AFR — Suivi Bandes</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy:   #1B3A6B;
+  --navy2:  #0f2447;
+  --teal:   #0E6B8A;
+  --teal2:  #0a8fab;
+  --bg:     #EDF0F5;
+  --card:   #FFFFFF;
+  --border: #D8DDE6;
+  --text:   #1A2233;
+  --muted:  #6B7C93;
+  --green:  #1E7E34;
+  --gbg:    #E8F5E9;
+  --orange: #C84B00;
+  --obg:    #FFF3E0;
+  --red:    #B71C1C;
+  --rbg:    #FFEBEE;
+  --blue:   #0D47A1;
+  --bbg:    #E3F2FD;
+  --grey:   #546E7A;
+  --gbg2:   #ECEFF1;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+
+body {
+  font-family: 'Barlow', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 14px;
+}
+
+/* ─── HEADER ─── */
+header {
+  background: linear-gradient(135deg, var(--navy2) 0%, var(--navy) 60%, var(--teal) 100%);
+  color: #fff;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 58px;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.25);
+}
+
+.hdr-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.hdr-logo {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hdr-duck {
+  font-size: 24px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+
+.hdr-sep {
+  width: 1px;
+  height: 28px;
+  background: rgba(255,255,255,0.25);
+}
+
+.hdr-sub {
+  font-size: 12px;
+  opacity: 0.7;
+  letter-spacing: 0.5px;
+  font-weight: 300;
+}
+
+.hdr-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.date-display {
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 13px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: capitalize;
+}
+
+/* ─── MAIN ─── */
+main {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 18px 24px;
+}
+
+/* ─── UPLOAD ─── */
+.upload-zone {
+  background: var(--card);
+  border: 2.5px dashed var(--border);
+  border-radius: 14px;
+  padding: 38px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  margin-bottom: 16px;
+  position: relative;
+}
+
+.upload-zone:hover,
+.upload-zone.dragover {
+  border-color: var(--teal2);
+  background: #F0F8FF;
+}
+
+.upload-zone input[type="file"] { display: none }
+
+.up-icon {
+  font-size: 46px;
+  display: block;
+  margin-bottom: 10px;
+  filter: grayscale(0.2);
+}
+
+.up-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--navy);
+  letter-spacing: 0.3px;
+  margin-bottom: 4px;
+}
+
+.up-sub {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.up-sub strong {
+  color: var(--teal);
+  font-weight: 600;
+}
+
+/* ─── STATUS CHIPS ─── */
+.status-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 3px 11px;
+  border-radius: 20px;
+  font-family: 'Barlow Condensed', sans-serif;
+  letter-spacing: 0.4px;
+  border: 1.5px solid;
+}
+
+.chip-ok     { border-color: var(--green); color: var(--green); background: var(--gbg); }
+.chip-err    { border-color: var(--red);   color: var(--red);   background: var(--rbg); }
+.chip-load   { border-color: #B08000;      color: #7D5800;      background: #FFF9C4;   }
+
+/* ─── CONTROLS BAR ─── */
+.ctrl-bar {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+
+.ctrl-label {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+input[type="date"] {
+  border: 1.5px solid var(--border);
+  border-radius: 7px;
+  padding: 5px 10px;
+  font-size: 13px;
+  font-family: 'Barlow', sans-serif;
+  color: var(--text);
+  background: var(--bg);
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s;
+}
+input[type="date"]:focus { border-color: var(--teal); }
+
+.btn {
+  padding: 6px 14px;
+  border-radius: 7px;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'Barlow Condensed', sans-serif;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-transform: uppercase;
+}
+
+.btn-primary { background: var(--navy); color: #fff; }
+.btn-primary:hover { background: var(--navy2); }
+.btn-today { background: var(--teal); color: #fff; }
+.btn-today:hover { background: var(--teal2); }
+
+.btn-ghost {
+  background: transparent;
+  border: 1.5px solid var(--border);
+  color: var(--navy);
+}
+.btn-ghost:hover { background: #fff; border-color: var(--teal); }
+
+.ctrl-spacer { flex: 1; }
+
+.save-note {
+  font-size: 11px;
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* ─── SUMMARY STRIP ─── */
+.summary-strip {
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy2) 100%);
+  border-radius: 12px;
+  padding: 14px 20px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 12px rgba(27,58,107,0.3);
+}
+
+.sum-item {
+  text-align: center;
+  padding: 0 12px;
+  border-right: 1px solid rgba(255,255,255,0.15);
+}
+.sum-item:last-child { border-right: none; }
+
+.sum-val {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+}
+
+.sum-lbl {
+  font-size: 10px;
+  color: rgba(255,255,255,0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-top: 3px;
+}
+
+.sum-sub {
+  font-size: 11px;
+  color: rgba(255,255,255,0.5);
+  font-weight: 300;
+}
+
+/* ─── DASHBOARD GRID ─── */
+.dashboard {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+/* ─── BAT CARD ─── */
+.bat-card {
+  background: var(--card);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  transition: box-shadow 0.2s, transform 0.15s;
+  border: 1px solid var(--border);
+}
+
+.bat-card:hover {
+  box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+  transform: translateY(-2px);
+}
+
+.card-head {
+  padding: 13px 16px;
+  background: linear-gradient(135deg, var(--navy) 0%, var(--teal) 100%);
+  color: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.card-bat-name {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  line-height: 1;
+}
+
+.card-bat-lot {
+  font-size: 10.5px;
+  opacity: 0.75;
+  margin-top: 3px;
+  font-weight: 300;
+}
+
+.card-bat-souche {
+  font-size: 10px;
+  opacity: 0.65;
+  margin-top: 1px;
+}
+
+.card-right {
+  text-align: right;
+}
+
+.card-age {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.card-age-unit {
+  font-size: 11px;
+  opacity: 0.7;
+  font-weight: 300;
+}
+
+.card-date-str {
+  font-size: 10px;
+  opacity: 0.6;
+  margin-top: 2px;
+}
+
+/* ─── CARD BODY ─── */
+.card-body {
+  padding: 4px 0;
+}
+
+.ind-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 16px;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+}
+
+.ind-row:last-child { border-bottom: none; }
+.ind-row:hover { background: #FAFBFD; }
+
+.ind-left {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-shrink: 0;
+}
+
+.ind-icon {
+  font-size: 17px;
+  width: 22px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.ind-name {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 500;
+  letter-spacing: 0.2px;
+}
+
+.ind-right {
+  text-align: right;
+  min-width: 0;
+  flex: 1;
+}
+
+.ind-main {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.1;
+}
+
+.ind-sub {
+  font-size: 10.5px;
+  color: var(--muted);
+  margin-top: 2px;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+/* ─── BADGES ─── */
+.badge {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: 'Barlow Condensed', sans-serif;
+  letter-spacing: 0.3px;
+}
+
+.b-green  { background: var(--gbg); color: var(--green); }
+.b-orange { background: var(--obg); color: var(--orange); }
+.b-red    { background: var(--rbg); color: var(--red); }
+.b-blue   { background: var(--bbg); color: var(--blue); }
+.b-grey   { background: var(--gbg2); color: var(--grey); }
+
+/* ─── ALERTE CARD ─── */
+.card-alert {
+  border-top: 3px solid var(--orange);
+}
+.card-alert .card-head {
+  background: linear-gradient(135deg, #7B3500 0%, var(--orange) 100%);
+}
+
+.card-warn {
+  background: #FFF9C4;
+  border: 1px solid #F9A825;
+  border-radius: 8px;
+  margin: 8px 12px 4px;
+  padding: 7px 12px;
+  font-size: 11px;
+  color: #5D4037;
+}
+
+/* ─── NO DATA STATE ─── */
+.no-data {
+  text-align: center;
+  padding: 48px 20px;
+  grid-column: 1 / -1;
+}
+
+.no-data-icon { font-size: 52px; margin-bottom: 12px; }
+.no-data-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--navy);
+  margin-bottom: 6px;
+}
+.no-data-sub { font-size: 13px; color: var(--muted); }
+
+/* ─── PROGRESS BARS ─── */
+.prog-wrap {
+  margin-top: 4px;
+}
+
+.prog-bar {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border);
+  overflow: hidden;
+  width: 80px;
+}
+
+.prog-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.5s ease;
+}
+
+/* ─── BANDEAU ALERTES ─── */
+.alert-panel {
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.alert-head {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--navy);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.alert-count {
+  background: var(--red);
+  color: #fff;
+  border-radius: 10px;
+  padding: 1px 9px;
+  font-size: 12px;
+}
+
+.alert-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 14px;
+  border-radius: 9px;
+  font-size: 13px;
+  border-left: 4px solid;
+  background: var(--card);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  cursor: pointer;
+  transition: transform 0.12s;
+}
+.alert-row:hover { transform: translateX(2px); }
+
+.alert-row.red    { border-color: var(--red);    background: var(--rbg); }
+.alert-row.orange { border-color: var(--orange); background: var(--obg); }
+
+.alert-ico { font-size: 18px; }
+.alert-bat {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800;
+  font-size: 16px;
+  letter-spacing: 0.5px;
+  min-width: 42px;
+}
+.alert-row.red .alert-bat    { color: var(--red); }
+.alert-row.orange .alert-bat { color: var(--orange); }
+.alert-txt { color: var(--text); }
+
+.alert-ok {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 16px;
+  border-radius: 9px;
+  background: var(--gbg);
+  border-left: 4px solid var(--green);
+  font-size: 13px;
+  color: var(--green);
+  font-weight: 600;
+}
+
+/* ─── MODALE DÉTAIL ─── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15,36,71,0.55);
+  backdrop-filter: blur(3px);
+  z-index: 500;
+  display: none;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 28px 16px;
+  overflow-y: auto;
+}
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: var(--bg);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 920px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  overflow: hidden;
+  animation: modalIn 0.25s ease;
+}
+@keyframes modalIn { from { opacity:0; transform: translateY(20px);} to {opacity:1; transform:none;} }
+
+.modal-head {
+  background: linear-gradient(135deg, var(--navy) 0%, var(--teal) 100%);
+  color: #fff;
+  padding: 16px 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.modal-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+.modal-sub { font-size: 12px; opacity: 0.75; font-weight: 300; }
+.modal-close {
+  background: rgba(255,255,255,0.15);
+  border: none;
+  color: #fff;
+  width: 34px; height: 34px;
+  border-radius: 8px;
+  font-size: 20px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.modal-close:hover { background: rgba(255,255,255,0.3); }
+
+.modal-body { padding: 18px 22px 24px; }
+
+.chart-block {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 16px 16px;
+  margin-bottom: 16px;
+}
+.chart-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--navy);
+  margin-bottom: 8px;
+}
+.chart-canvas-wrap { position: relative; height: 220px; }
+
+.bat-card { cursor: pointer; }
+.card-hint {
+  font-size: 9px;
+  opacity: 0.55;
+  text-align: right;
+  padding: 4px 16px 6px;
+  font-style: italic;
+}
+
+/* ─── BENCHMARK ─── */
+.benchmark {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  overflow-x: auto;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+.benchmark h3 {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 15px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.8px; color: var(--navy); margin-bottom: 10px;
+}
+.bench-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.bench-table th, .bench-table td { padding: 7px 10px; text-align: right; white-space: nowrap; }
+.bench-table th {
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
+  text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;
+  color: var(--muted); border-bottom: 2px solid var(--border); cursor: pointer; user-select: none;
+}
+.bench-table th:hover { color: var(--teal); }
+.bench-table th:first-child, .bench-table td:first-child { text-align: left; }
+.bench-table td { border-bottom: 1px solid var(--border); }
+.bench-table tr:hover td { background: #FAFBFD; }
+.bench-bat { font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:15px; color:var(--navy); cursor:pointer; }
+.bench-bat:hover { color: var(--teal); }
+.cell-pos { color: var(--green); font-weight:600; }
+.cell-neg { color: var(--red); font-weight:600; }
+
+/* ─── SETTINGS ─── */
+.set-grp { margin-bottom: 16px; }
+.set-grp-title {
+  font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:13px;
+  text-transform:uppercase; letter-spacing:0.6px; color:var(--navy);
+  border-bottom:1px solid var(--border); padding-bottom:4px; margin-bottom:8px;
+  display:flex; align-items:center; gap:7px;
+}
+.set-row { display:flex; align-items:center; justify-content:space-between; padding:5px 0; gap:12px; }
+.set-row label { font-size:13px; color:var(--text); flex:1; }
+.set-row input { width:78px; padding:4px 8px; border:1.5px solid var(--border); border-radius:6px; font-size:13px; text-align:right; font-family:inherit; }
+.set-actions { display:flex; gap:10px; margin-top:8px; }
+
+
+/* ─── MODULES SANTÉ / ALERTES / OBSERVATIONS ─── */
+.health-box {
+  margin: 10px 12px 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #FAFBFD;
+}
+.health-top { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:7px; }
+.health-score { font-family:'Barlow Condensed',sans-serif; font-size:26px; font-weight:800; line-height:1; }
+.health-score small { font-size:14px; color:var(--muted); font-weight:600; }
+.health-label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.7px; }
+.health-badges { display:flex; flex-wrap:wrap; gap:5px; }
+.score-green { color:var(--green); }
+.score-orange { color:var(--orange); }
+.score-red { color:var(--red); }
+.mini-bar { height:6px; border-radius:99px; overflow:hidden; background:var(--border); }
+.mini-fill { height:100%; border-radius:99px; transition:width .4s; }
+.card-actions { display:flex; gap:8px; padding:8px 12px 10px; border-top:1px solid var(--border); background:#FAFBFD; }
+.btn-small { padding:5px 10px; font-size:11px; }
+.obs-list { margin-top:8px; display:flex; flex-direction:column; gap:6px; }
+.obs-item { padding:7px 9px; border-left:3px solid var(--teal); background:#F6FBFD; border-radius:7px; font-size:12px; }
+.obs-date { font-family:'Barlow Condensed',sans-serif; font-weight:700; color:var(--navy); margin-right:6px; }
+.obs-tags { display:flex; flex-wrap:wrap; gap:6px; margin:8px 0; }
+.obs-chip { border:1px solid var(--border); border-radius:20px; padding:5px 10px; cursor:pointer; background:#fff; font-size:12px; }
+.obs-chip:hover, .obs-chip.active { border-color:var(--teal); color:var(--teal); background:#F0F8FF; }
+.obs-text { width:100%; min-height:88px; border:1.5px solid var(--border); border-radius:8px; padding:9px; font-family:inherit; resize:vertical; }
+.meeting-list { display:flex; flex-direction:column; gap:9px; }
+.meeting-item { padding:10px 12px; border-radius:9px; background:#fff; border-left:4px solid var(--teal); box-shadow:0 1px 4px rgba(0,0,0,.05); }
+.meeting-item strong { font-family:'Barlow Condensed',sans-serif; font-size:16px; color:var(--navy); }
+.history-active { color:var(--red); font-weight:700; }
+.history-ok { color:var(--green); font-weight:700; }
+.firebase-note { background:var(--bbg); border-left:4px solid var(--blue); padding:10px 12px; border-radius:8px; font-size:12px; margin-top:10px; }
+.report-page { font-family:Arial,sans-serif; color:#1A2233; padding:24px; }
+.report-title { font-size:24px; font-weight:800; color:#1B3A6B; margin-bottom:4px; }
+.report-section { margin-top:18px; break-inside:avoid; }
+.report-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+.report-card { border:1px solid #D8DDE6; border-radius:10px; padding:10px; break-inside:avoid; }
+.report-card h3 { margin:0 0 6px; color:#1B3A6B; }
+@media print { .card-actions, #alert-history { display:none !important; } }
+
+@media print {
+  header, .upload-zone, .status-bar, .ctrl-bar, .card-hint, .benchmark { display:none !important; }
+  body { background:#fff; }
+  main { max-width:100%; padding:0; }
+  .bat-card { break-inside: avoid; box-shadow:none; border:1px solid #ccc; }
+  .alert-panel { break-inside: avoid; }
+  .dashboard { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 640px) {
+  header { height: auto; padding: 10px 14px; flex-wrap: wrap; gap: 6px; }
+  .hdr-sub { display: none; }
+  .summary-strip { grid-template-columns: repeat(3, 1fr); }
+  .sum-item:nth-child(4), .sum-item:nth-child(5) { border-top: 1px solid rgba(255,255,255,0.15); }
+  .dashboard { grid-template-columns: 1fr; }
+  .ctrl-bar { gap: 8px; }
+  .save-note { display: none; }
+}
+
+/* ─── SHIMMER ─── */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+.shimmer {
+  background: linear-gradient(90deg, #EDF0F5 25%, #DDE2EA 50%, #EDF0F5 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 4px;
+}
+
+/* ─── SECTION TITLE ─── */
+.section-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--muted);
+  padding: 3px 16px 2px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.ind-divider {
+  padding: 2px 16px;
+  background: var(--bg);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+}
+
+/* ─── PESÉES ─── */
+.ind-pes { padding-top: 9px; padding-bottom: 9px; }
+.pes-right {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.pes-val b { color: var(--teal); font-weight: 700; }
+.pes-empty { color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════ HEADER ═══════════ -->
+<header>
+  <div class="hdr-brand">
+    <div class="hdr-logo">
+      <span class="hdr-duck">🦆</span>
+      AFR
+    </div>
+    <div class="hdr-sep"></div>
+    <div class="hdr-sub">Suivi des Bandes — Extraction Excel</div>
+  </div>
+  <div class="hdr-right">
+    <div class="date-display" id="hdr-date">—</div>
+  </div>
+</header>
+
+<!-- ═══════════ MAIN ═══════════ -->
+<main>
+
+  <!-- Upload zone -->
+  <div class="upload-zone" id="upload-zone">
+    <input type="file" id="file-input" multiple accept=".xlsx,.xls">
+    <span class="up-icon">📂</span>
+    <div class="up-title">Déposer les fichiers Excel des bâtiments</div>
+    <div class="up-sub">
+      Glisser-déposer ou cliquer · Accepte plusieurs fichiers simultanément<br>
+      <strong>NT1 · NV1 · NV2 · SG1 · SG2 · VS · ST…</strong>
+    </div>
+  </div>
+
+  <!-- Status chips -->
+  <div class="status-bar" id="status-bar"></div>
+
+  <!-- Controls -->
+  <div class="ctrl-bar" id="ctrl-bar" style="display:none">
+    <span class="ctrl-label">📅 Date à afficher :</span>
+    <input type="date" id="date-picker">
+    <button class="btn btn-primary" onclick="applyDate()">Afficher</button>
+    <button class="btn btn-today" onclick="goToday()">Aujourd'hui</button>
+    <div class="ctrl-spacer"></div>
+    <button class="btn btn-ghost" onclick="toggleBenchmark()">📊 Comparatif</button>
+    <button class="btn btn-ghost" onclick="openMorningMeeting()">☀️ Réunion du matin</button>
+    <button class="btn btn-ghost" onclick="toggleAlertHistory()">🕘 Historique alertes</button>
+    <button class="btn btn-ghost" onclick="exportExcel()">📑 Excel</button>
+    <button class="btn btn-ghost" onclick="exportBandReportPDF()">🖨️ Rapport PDF</button>
+    <button class="btn btn-ghost" onclick="syncFirebase()">🔥 Firebase</button>
+    <button class="btn btn-ghost" onclick="openSettings()">⚙️</button>
+    <span class="save-note" id="save-note"></span>
+  </div>
+
+  <!-- Comparatif inter-bâtiments -->
+  <div class="benchmark" id="benchmark" style="display:none"></div>
+
+  <!-- Summary strip -->
+  <div class="summary-strip" id="summary-strip" style="display:none">
+    <div class="sum-item">
+      <div class="sum-val" id="s-eff">—</div>
+      <div class="sum-lbl">Effectif total</div>
+    </div>
+    <div class="sum-item">
+      <div class="sum-val" id="s-mort">—</div>
+      <div class="sum-lbl">Morts / jour</div>
+      <div class="sum-sub" id="s-mort-pct"></div>
+    </div>
+    <div class="sum-item">
+      <div class="sum-val" id="s-ponte">—</div>
+      <div class="sum-lbl">Œufs totaux</div>
+      <div class="sum-sub" id="s-tp">—</div>
+    </div>
+    <div class="sum-item">
+      <div class="sum-val" id="s-oac">—</div>
+      <div class="sum-lbl">OAC</div>
+    </div>
+    <div class="sum-item">
+      <div class="sum-val" id="s-eau">—</div>
+      <div class="sum-lbl">Eau totale (L)</div>
+    </div>
+  </div>
+
+  <!-- Bandeau alertes -->
+  <div class="alert-panel" id="alert-panel" style="display:none"></div>
+
+  <!-- Historique alertes -->
+  <div class="benchmark" id="alert-history" style="display:none"></div>
+
+  <!-- Dashboard grid -->
+  <div class="dashboard" id="dashboard">
+    <div class="no-data">
+      <div class="no-data-icon">📊</div>
+      <div class="no-data-title">Aucun fichier chargé</div>
+      <div class="no-data-sub">Déposez les fichiers Excel de suivi de chaque bâtiment ci-dessus</div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ═══════════ MODALE DÉTAIL ═══════════ -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title" id="modal-title">—</div>
+        <div class="modal-sub" id="modal-sub"></div>
+      </div>
+      <button class="modal-close" onclick="closeDetail()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<!-- ═══════════ RÉGLAGES SEUILS ═══════════ -->
+<div class="modal-overlay" id="settings-overlay">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-head">
+      <div><div class="modal-title">⚙️ Seuils d'alerte</div>
+      <div class="modal-sub">Variations jour le jour · enregistrés sur cet appareil</div></div>
+      <button class="modal-close" onclick="closeSettings()">✕</button>
+    </div>
+    <div class="modal-body" id="settings-body"></div>
+  </div>
+</div>
+
+<!-- ═══════════ OBSERVATIONS + RÉUNION ═══════════ -->
+<div class="modal-overlay" id="obs-overlay">
+  <div class="modal" style="max-width:620px">
+    <div class="modal-head">
+      <div><div class="modal-title" id="obs-title">📝 Observation</div>
+      <div class="modal-sub">Enregistrée localement par bâtiment et par date</div></div>
+      <button class="modal-close" onclick="closeObservation()">✕</button>
+    </div>
+    <div class="modal-body" id="obs-body"></div>
+  </div>
+</div>
+<div class="modal-overlay" id="meeting-overlay">
+  <div class="modal" style="max-width:760px">
+    <div class="modal-head">
+      <div><div class="modal-title">☀️ Réunion du matin</div>
+      <div class="modal-sub" id="meeting-sub">Synthèse automatique</div></div>
+      <button class="modal-close" onclick="closeMorningMeeting()">✕</button>
+    </div>
+    <div class="modal-body" id="meeting-body"></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ══════════════════════════════════════════════════════
+// CONFIGURATION DES COLONNES PAR TYPE DE BÂTIMENT
+// Indices 0-based à partir de col A
+// Feuilles : "ID", "NB ♀", "Relevés", "Ponte"
+// Données démarrent ligne Excel 12 → index 11 (0-based)
+// ══════════════════════════════════════════════════════
+const DATA_START = 11;
+
+const CONFIGS = {
+  // ─── NT (ex: NT1) ───
+  // Aliment : 3 colonnes par parc (N°, grs♀, IA) + col TARE globale
+  // Eau     : litres TOTAL à idx 22
+  NT: {
+    nbF: {
+      date:2, age:3,
+      mort_p1:5, fin_p1:9,
+      mort_p2:11, fin_p2:15,
+      mort_glob:17, fin_glob:21
+    },
+    releves: {
+      date:2, age:3,
+      alim_KG:10, alim_grsF:12,
+      livraison:13,
+      eau_L_SOL:19, eau_L_NIDS:20,
+      eau_L_total:22, eau_mLF:23,
+      poids_p1:32, cv_p1:33, poids_p2:34, cv_p2:35
+    },
+    ponte: {
+      date:2, age:3,
+      sol:7, nids:10, total:11,
+      decl_total:18, oac:19
+    }
+  },
+
+  // ─── NV (ex: NV1, NV2) ───
+  // Aliment : 3 colonnes par parc, sans col TARE → décalage -1
+  // Eau     : litres TOTAL à idx 21
+  NV: {
+    nbF: {
+      date:2, age:3,
+      mort_p1:5, fin_p1:9,
+      mort_p2:11, fin_p2:15,
+      mort_glob:17, fin_glob:21
+    },
+    releves: {
+      date:2, age:3,
+      alim_KG:10, alim_grsF:11,
+      livraison:12,
+      eau_L_SOL:18, eau_L_NIDS:19,
+      eau_L_total:21, eau_mLF:22,
+      poids_p1:31, cv_p1:32, poids_p2:33, cv_p2:34
+    },
+    ponte: {
+      date:2, age:3,
+      sol:7, nids:10, total:11,
+      decl_total:18, oac:19
+    }
+  },
+
+  // ─── SG (ex: SG1, SG2) ───
+  // Aliment : 4 colonnes par parc (N°, Tarage, grs♀, IA) → décalage +1
+  // Ponte   : colonnes différentes (nids=13, total=14, oac=22)
+  // Eau     : litres TOTAL à idx 22
+  SG: {
+    nbF: {
+      date:2, age:3,
+      mort_p1:5, fin_p1:9,
+      mort_p2:11, fin_p2:15,
+      mort_glob:17, fin_glob:21
+    },
+    releves: {
+      date:2, age:3,
+      alim_KG:12, alim_grsF:13,
+      livraison:14,
+      eau_L_SOL:19, eau_L_NIDS:20,
+      eau_L_total:22, eau_mLF:23,
+      poids_p1:32, cv_p1:33, poids_p2:34, cv_p2:35
+    },
+    ponte: {
+      date:2, age:3,
+      sol:7, nids:13, total:14,
+      decl_total:21, oac:22
+    }
+  }
+};
+
+// ══════════════════════════════════════════════════════
+// ÉTAT GLOBAL
+// ══════════════════════════════════════════════════════
+const store = {};      // { batiment: { batiment, lot, souche, inuav, type, naissance, ... rows... } }
+let targetKey = '';    // jour affiché, format "AAAA-MM-JJ"
+
+// ══════════════════════════════════════════════════════
+// UPLOAD
+// ══════════════════════════════════════════════════════
+const uploadZone = document.getElementById('upload-zone');
+const fileInput  = document.getElementById('file-input');
+
+uploadZone.addEventListener('click',      () => fileInput.click());
+uploadZone.addEventListener('dragover',   e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+uploadZone.addEventListener('dragleave',  () => uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop',       e => { e.preventDefault(); uploadZone.classList.remove('dragover'); handleFiles([...e.dataTransfer.files]); });
+fileInput.addEventListener('change',      e => handleFiles([...e.target.files]));
+
+async function handleFiles(files) {
+  const xlsxFiles = files.filter(f => /\.xlsx?$/i.test(f.name));
+  if (!xlsxFiles.length) { alert('Aucun fichier .xlsx trouvé.'); return; }
+
+  document.getElementById('ctrl-bar').style.display = 'flex';
+
+  const promises = xlsxFiles.map(f => parseExcel(f));
+  await Promise.all(promises);
+
+  // Après chargement, afficher automatiquement le dernier jour réellement renseigné
+  // dans les fichiers, pas le jour courant si les résultats du jour ne sont pas encore saisis.
+  const latestKey = latestAvailableDataKey();
+  if (latestKey) {
+    targetKey = latestKey;
+    document.getElementById('date-picker').value = targetKey;
+  }
+
+  renderAll();
+}
+
+async function parseExcel(file) {
+  const bar = document.getElementById('status-bar');
+  const chipId = 'chip-' + file.name.replace(/[^a-z0-9]/gi, '_');
+
+  // Chip loading
+  let chip = document.getElementById(chipId);
+  if (!chip) { chip = document.createElement('div'); chip.id = chipId; bar.appendChild(chip); }
+  chip.className = 'chip chip-load';
+  chip.textContent = '⏳ ' + file.name;
+
+  try {
+    const buf  = await file.arrayBuffer();
+    const wb   = XLSX.read(buf, { type: 'array', cellDates: true });
+
+    // ─ ID sheet
+    const idR = sheetRows(wb, 'ID');
+    const batiment  = idR[3]?.[2];
+    const lot       = idR[5]?.[2];
+    const lotOrvia  = idR[5]?.[5];
+    const souche    = idR[1]?.[3];
+    const inuav     = idR[1]?.[6];
+    const naissance = idR[7]?.[2];
+    const transfert = idR[7]?.[5];
+
+    if (!batiment) throw new Error('Feuille ID introuvable ou vide');
+
+    // ─ Detect type
+    let type = null;
+    const b = batiment.toUpperCase();
+    if      (b.startsWith('NT')) type = 'NT';
+    else if (b.startsWith('NV')) type = 'NV';
+    else if (b.startsWith('SG')) type = 'SG';
+    else if (b.startsWith('ST')) type = 'NT';  // analogie NT
+    else if (b.startsWith('VS')) type = 'NV';  // analogie NV (à confirmer)
+    else throw new Error(`Type inconnu : ${batiment}`);
+
+    // ─ Parse sheets
+    const theoRows = wb.Sheets['THÉORIES'] ? sheetRows(wb, 'THÉORIES') : [];
+    const theory = {};   // age (semaine) → cibles souche
+    for (let i = 8; i < theoRows.length; i++) {   // données dès ligne 9 (idx 8)
+      const age = theoRows[i]?.[1];
+      if (typeof age !== 'number') continue;
+      theory[Math.round(age)] = {
+        ponteOrvia: theoRows[i][13],
+        ponteAfr:   theoRows[i][15],
+        mortSem:    theoRows[i][7],
+        viab:       theoRows[i][8],
+        poidsOeuf:  theoRows[i][11],
+        otvOrvia:   theoRows[i][18],   // Cumul œufs/♀ ORVIA
+        otvAfr:     theoRows[i][19]    // Cumul œufs/♀ AFR
+      };
+    }
+
+    store[batiment] = {
+      batiment, lot, lotOrvia, souche, inuav, type,
+      naissance: naissance instanceof Date ? naissance : null,
+      transfert: transfert instanceof Date ? transfert : null,
+      nbFRows:     sheetRows(wb, 'NB ♀'),
+      relevesRows: sheetRows(wb, 'Relevés'),
+      ponteRows:   sheetRows(wb, 'Ponte'),
+      reportNBRows: wb.Sheets['Report (NB)'] ? sheetRows(wb, 'Report (NB)') : [],
+      theory,
+      cfg:         CONFIGS[type],
+      filename:    file.name
+    };
+
+    chip.className = 'chip chip-ok';
+    chip.textContent = `✓ ${batiment} · ${lot || '?'}`;
+
+  } catch (err) {
+    chip.className = 'chip chip-err';
+    chip.textContent = `✗ ${file.name.split('/').pop()} — ${err.message}`;
+    console.error(file.name, err);
+  }
+}
+
+function sheetRows(wb, sheetName) {
+  const ws = wb.Sheets[sheetName];
+  if (!ws) throw new Error(`Feuille "${sheetName}" introuvable`);
+  // Forcer le début de plage en A1 : certains onglets (ex. Report (NB))
+  // ont un !ref démarrant en colonne B, ce qui décalerait tous les index.
+  const ref = ws['!ref'];
+  if (ref) {
+    const range = XLSX.utils.decode_range(ref);
+    range.s.c = 0;
+    range.s.r = 0;
+    return XLSX.utils.sheet_to_json(ws, { header:1, defval:null, range: XLSX.utils.encode_range(range) });
+  }
+  return XLSX.utils.sheet_to_json(ws, { header:1, defval:null });
+}
+
+// ══════════════════════════════════════════════════════
+// DATES
+// Les dates Excel sont des formules ; SheetJS les lit comme
+// des objets Date à minuit UTC. On compare donc toujours par
+// clé "AAAA-MM-JJ" calculée sur les composantes UTC, ce qui
+// élimine tout décalage lié au fuseau horaire du navigateur.
+// ══════════════════════════════════════════════════════
+function cellKey(v) {
+  if (v == null) return null;
+  let ms;
+  if (v instanceof Date) {
+    if (isNaN(v.getTime())) return null;
+    ms = v.getTime();
+  } else if (typeof v === 'number') {
+    ms = Math.round((v - 25569) * 86400000);
+  } else {
+    return null;
+  }
+  // Arrondi au jour le plus proche : corrige la dérive fractionnaire
+  // (ex. 2026-06-02T21:59:39Z) que SheetJS introduit sur les dates
+  // issues de formules Excel en cascade =cellule_précédente+1
+  const d = new Date(Math.round(ms / 86400000) * 86400000);
+  return d.getUTCFullYear() + '-' +
+         String(d.getUTCMonth()+1).padStart(2,'0') + '-' +
+         String(d.getUTCDate()).padStart(2,'0');
+}
+
+// Clé du jour courant (heure locale du navigateur)
+function todayKey() {
+  const n = new Date();
+  return n.getFullYear() + '-' +
+         String(n.getMonth()+1).padStart(2,'0') + '-' +
+         String(n.getDate()).padStart(2,'0');
+}
+
+function findDateRow(rows, col, key) {
+  for (let i = DATA_START; i < rows.length; i++) {
+    if (rows[i] && cellKey(rows[i][col]) === key) return i;
+  }
+  return -1;
+}
+
+function findLastDataRow(rows, col, fallbackCol) {
+  let last = DATA_START;
+  for (let i = DATA_START; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row) continue;
+    const v = row[col];
+    const f = fallbackCol != null ? row[fallbackCol] : null;
+    if ((v != null && v !== 0 && v !== '') ||
+        (f != null && f !== 0 && f !== '')) {
+      last = i;
+    }
+  }
+  return last;
+}
+
+// Dernière pesée à la ligne demandée ou avant
+function findLastWeighing(rows, fromRow, poidsCol, cvCol) {
+  const top = Math.min(fromRow, rows.length - 1);
+  for (let i = top; i >= DATA_START; i--) {
+    const v = rows[i]?.[poidsCol];
+    if (typeof v === 'number' && v > 100) {  // poids en grammes
+      return {
+        rowIdx: i,
+        poids: v,
+        cv: (cvCol != null && typeof rows[i][cvCol] === 'number') ? rows[i][cvCol] : null,
+        dateKey: cellKey(rows[i][2])
+      };
+    }
+  }
+  return null;
+}
+
+// "AAAA-MM-JJ" → "JJ/MM/AAAA"
+function keyToFr(key, withYear=true) {
+  if (!key) return '—';
+  const [y,m,d] = key.split('-');
+  return withYear ? `${d}/${m}/${y}` : `${d}/${m}`;
+}
+
+// ══════════════════════════════════════════════════════
+// EXTRACTION DONNÉES D'UNE JOURNÉE
+// ══════════════════════════════════════════════════════
+function extractDay(bat, key) {
+  const { nbFRows, relevesRows, ponteRows, cfg } = bat;
+  const c = cfg;
+
+  // NB ♀ : recherche de la ligne par clé date UTC
+  let rowI = findDateRow(nbFRows, c.nbF.date, key);
+  const exact = rowI >= 0;
+  if (rowI < 0) rowI = findLastDataRow(nbFRows, c.nbF.fin_glob, c.nbF.mort_glob);
+
+  // Relevés & Ponte : même index de ligne que NB ♀
+  // (les 3 feuilles sont synchronisées ligne à ligne par construction)
+  const nbf = nbFRows[rowI]     || [];
+  const rel = relevesRows[rowI] || [];
+  const pte = ponteRows[rowI]   || [];
+
+  const num = (row, idx) => {
+    if (!row || idx == null) return null;
+    const v = row[idx];
+    return (typeof v === 'number' && isFinite(v)) ? v : null;
+  };
+
+  // ─ Effectifs
+  const fin_glob  = num(nbf, c.nbF.fin_glob);
+  const mort_glob = num(nbf, c.nbF.mort_glob);
+  const age       = num(nbf, c.nbF.age);
+  const fin_p1    = num(nbf, c.nbF.fin_p1);
+  const fin_p2    = num(nbf, c.nbF.fin_p2);
+
+  // ─ Aliment
+  const alim_KG   = num(rel, c.releves.alim_KG);
+  const alim_grsF = num(rel, c.releves.alim_grsF);
+  const livraison = num(rel, c.releves.livraison);
+
+  // ─ Eau
+  const eau_L_SOL  = num(rel, c.releves.eau_L_SOL);
+  const eau_L_NIDS = num(rel, c.releves.eau_L_NIDS);
+  const eau_L_tot  = num(rel, c.releves.eau_L_total);
+  const eau_mLF    = num(rel, c.releves.eau_mLF);
+
+  // ─ Ponte
+  const ponte_sol   = num(pte, c.ponte.sol);
+  const ponte_nids  = num(pte, c.ponte.nids);
+  const ponte_total = num(pte, c.ponte.total);
+  const decl_total  = num(pte, c.ponte.decl_total);
+  const oac         = num(pte, c.ponte.oac);
+
+  // ─ Calculés
+  const mort_pct    = (fin_glob > 0 && mort_glob != null) ? (mort_glob / fin_glob * 100) : null;
+  const taux_ponte  = (fin_glob > 0 && ponte_total > 0)   ? (ponte_total / fin_glob * 100) : null;
+  const pct_nids    = (ponte_total > 0 && ponte_nids > 0)  ? (ponte_nids / ponte_total * 100) : null;
+  const decl_pct    = (ponte_total > 0 && decl_total != null) ? (decl_total / ponte_total * 100) : null;
+
+  // ─ Pesées (dernière pesée à cette ligne ou avant ; poids en grammes)
+  const pes_p1 = findLastWeighing(relevesRows, rowI, c.releves.poids_p1, c.releves.cv_p1);
+  const pes_p2 = findLastWeighing(relevesRows, rowI, c.releves.poids_p2, c.releves.cv_p2);
+
+  // ─ Perte cumulée réelle (Report NB) pour la semaine affichée
+  const perte = lookupPerte(bat, age);
+  // ─ Production cumulée OAC /♀ vs objectif
+  const otv = lookupOTV(bat, age);
+
+  // Clé date réelle de la ligne trouvée
+  const actualKey = cellKey(nbFRows[rowI]?.[c.nbF.date]);
+
+  return {
+    fin_glob, mort_glob, mort_pct, age,
+    fin_p1, fin_p2,
+    alim_KG, alim_grsF, livraison,
+    eau_L_SOL, eau_L_NIDS, eau_L_tot, eau_mLF,
+    ponte_sol, ponte_nids, ponte_total, decl_total, decl_pct, oac,
+    taux_ponte, pct_nids,
+    pes_p1, pes_p2,
+    perte, otv, rowIdx: rowI,
+    actualKey,
+    isEstimated: actualKey !== key
+  };
+}
+
+// ══════════════════════════════════════════════════════
+// EXTRACTION SÉRIE COMPLÈTE (pour courbes & tendances)
+// ══════════════════════════════════════════════════════
+function numAt(row, idx) {
+  if (!row || idx == null) return null;
+  const v = row[idx];
+  return (typeof v === 'number' && isFinite(v)) ? v : null;
+}
+
+function extractSeries(bat) {
+  const { nbFRows, relevesRows, ponteRows, cfg } = bat;
+  const c = cfg;
+  const today = todayKey();
+  const out = [];
+  for (let i = DATA_START; i < nbFRows.length; i++) {
+    const key = cellKey(nbFRows[i]?.[c.nbF.date]);
+    if (!key) continue;
+    if (key > today) break;                 // pas de futur
+    const fin = numAt(nbFRows[i], c.nbF.fin_glob);
+    if (!fin || fin <= 0) continue;         // ligne sans effectif réel
+    const age      = numAt(nbFRows[i], c.nbF.age);
+    const mort     = numAt(nbFRows[i], c.nbF.mort_glob);
+    const ponteTot = numAt(ponteRows[i], c.ponte.total);
+    const oac      = numAt(ponteRows[i], c.ponte.oac);
+    const eauL     = numAt(relevesRows[i], c.releves.eau_L_total);
+    const eauMlF   = numAt(relevesRows[i], c.releves.eau_mLF);
+    const alimKG   = numAt(relevesRows[i], c.releves.alim_KG);
+    const alimGrsF = numAt(relevesRows[i], c.releves.alim_grsF);
+    const poids1 = numAt(relevesRows[i], c.releves.poids_p1);
+    const poids2 = numAt(relevesRows[i], c.releves.poids_p2);
+    const cv1 = numAt(relevesRows[i], c.releves.cv_p1);
+    const cv2 = numAt(relevesRows[i], c.releves.cv_p2);
+    const tp = (fin > 0 && ponteTot > 0) ? ponteTot / fin * 100 : null;
+    out.push({
+      key, age, fin,
+      mort, mortPct: (fin > 0 && mort != null) ? mort / fin * 100 : null,
+      ponteTot, oac, tp, eauL, eauMlF, alimKG, alimGrsF,
+      poids1, poids2, cv1, cv2
+    });
+  }
+  return out;
+}
+
+// Perte cumulée réelle (onglet Report (NB), grille hebdomadaire)
+// colonnes : age=2, PERTE LOT=5, PERTE TH=6, écart=7  (valeurs en fraction)
+function lookupPerte(bat, age) {
+  const r = bat.reportNBRows;
+  if (!r || !r.length || age == null) return null;
+  let best = null;
+  for (let i = 7; i < r.length; i++) {   // données dès ligne 8 (idx 7)
+    const a = r[i]?.[2];
+    if (typeof a !== 'number' || a > age) continue;
+    const lot = r[i]?.[5];
+    if (typeof lot === 'number' && lot > 0) {
+      best = {
+        age: a,
+        lot,
+        th:    (typeof r[i][6] === 'number') ? r[i][6] : null,
+        ecart: (typeof r[i][7] === 'number') ? r[i][7] : null
+      };
+    }
+  }
+  return best;
+}
+
+// Production cumulée OAC /♀ : LOT réel depuis Report (NB) idx 18,
+// objectif ORVIA recalculé depuis THÉORIES (indépendant du sélecteur de norme)
+function lookupOTV(bat, age) {
+  const r = bat.reportNBRows;
+  if (!r || !r.length || age == null) return null;
+  let best = null;
+  for (let i = 7; i < r.length; i++) {
+    const a = r[i]?.[2];
+    if (typeof a !== 'number' || a > age) continue;
+    const lot = r[i]?.[18];
+    const ec  = r[i]?.[20];   // écart présent = semaine complétée
+    if (typeof lot === 'number' && lot > 0 && typeof ec === 'number') {
+      best = { age:a, lot };
+    }
+  }
+  if (!best) return null;
+  // Objectif ORVIA depuis THÉORIES (Cumul œufs ORVIA)
+  const th = bat.theory[Math.round(best.age)];
+  best.th    = (th && typeof th.otvOrvia === 'number') ? th.otvOrvia : null;
+  best.ecart = (best.th != null) ? best.lot - best.th : null;
+  return best;
+}
+
+// ══════════════════════════════════════════════════════
+// SEUILS D'ALERTE (paramétrables via ⚙️)
+// ══════════════════════════════════════════════════════
+const DEFAULT_THRESHOLDS = {
+  eauDropO: 10, eauDropR: 15, eauRise: 20,   // % eau vs moy 7j
+  alimVar: 12,                                // % aliment vs moy 7j
+  ponteDropO: 5, ponteDropR: 8,               // points de ponte vs moy 7j
+  mortMult: 2.5, mortFloorO: 5, mortFloorR: 8, mortAbs: 12,  // pic mortalité
+  ratioVar: 25                                // % ratio eau/aliment vs base 7j
+};
+const REFORM_AGE = 70; // Âge de réforme forcé pour les prévisions fin de lot
+let TH = loadThresholds();
+function loadThresholds() {
+  try { const v = JSON.parse(localStorage.getItem('afr_th') || 'null'); return v ? {...DEFAULT_THRESHOLDS, ...v} : {...DEFAULT_THRESHOLDS}; }
+  catch { return {...DEFAULT_THRESHOLDS}; }
+}
+function saveThresholds() {
+  try { localStorage.setItem('afr_th', JSON.stringify(TH)); } catch {}
+}
+
+// ══════════════════════════════════════════════════════
+// DÉTECTION D'ANOMALIES — variations jour le jour uniquement
+// (hausses/baisses actionnables : eau, aliment, ponte, mortalité)
+// ══════════════════════════════════════════════════════
+function avgOf(arr, sel) {
+  const v = arr.map(sel).filter(x => x != null && isFinite(x));
+  return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
+}
+
+// Ligne considérée comme réellement renseignée : on ne se base pas seulement
+// sur l'effectif, car les lignes futures peuvent déjà contenir des formules.
+function hasDailyDataPoint(x) {
+  return !!x && (
+    (x.eauL != null && x.eauL > 0) ||
+    (x.alimKG != null && x.alimKG > 0) ||
+    (x.alimGrsF != null && x.alimGrsF > 0) ||
+    (x.ponteTot != null && x.ponteTot > 0) ||
+    (x.oac != null && x.oac > 0)
+  );
+}
+
+function latestAvailableDataKey() {
+  let best = null;
+  Object.keys(store).forEach(bn => {
+    const s = extractSeries(store[bn]).filter(hasDailyDataPoint);
+    if (s.length) {
+      const k = s[s.length - 1].key;
+      if (!best || k > best) best = k;
+    }
+  });
+  return best;
+}
+
+function rowHasDailyData(bat, rowI) {
+  if (rowI == null || rowI < DATA_START) return false;
+  const c = bat.cfg;
+  const rel = bat.relevesRows[rowI] || [];
+  const pte = bat.ponteRows[rowI] || [];
+  const vals = [
+    numAt(rel, c.releves.eau_L_total),
+    numAt(rel, c.releves.alim_KG),
+    numAt(rel, c.releves.alim_grsF),
+    numAt(pte, c.ponte.total),
+    numAt(pte, c.ponte.oac)
+  ];
+  return vals.some(v => v != null && v > 0);
+}
+
+function findLastDailyDataRowOnOrBefore(bat, key) {
+  const c = bat.cfg;
+  for (let i = bat.nbFRows.length - 1; i >= DATA_START; i--) {
+    const k = cellKey(bat.nbFRows[i]?.[c.nbF.date]);
+    if (!k || k > key) continue;
+    if (rowHasDailyData(bat, i)) return i;
+  }
+  return -1;
+}
+
+function medianOf(arr, sel) {
+  const v = arr.map(sel).filter(x => x != null && isFinite(x)).sort((a,b)=>a-b);
+  if (!v.length) return null;
+  const m = Math.floor(v.length/2);
+  return v.length % 2 ? v[m] : (v[m-1]+v[m])/2;
+}
+function clamp(n, min=0, max=100) { return Math.max(min, Math.min(max, n)); }
+function scoreFromDrop(devPct, orange, red) {
+  if (devPct == null) return { score:100, detail:null };
+  if (devPct >= 0) return { score:100, detail:null };
+  const drop = Math.abs(devPct);
+  const score = drop <= orange ? 100 - drop*1.5 : drop >= red ? Math.max(25, 100 - drop*4) : 100 - drop*3;
+  return { score:clamp(score), detail:`-${drop.toFixed(0)} %` };
+}
+function selectedSeries(bat) {
+  return extractSeries(bat).filter(x => x.key <= targetKey && hasDailyDataPoint(x));
+}
+function getHealthScore(bat) {
+  const s = selectedSeries(bat);
+  const d = extractDay(bat, targetKey);
+  const last = s[s.length-1] || null;
+  const win = s.slice(-8, -1);
+  const parts = [];
+  const avgEau = avgOf(win.filter(x => x.eauL > 0), x => x.eauL);
+  const avgAlim = avgOf(win.filter(x => x.alimGrsF > 0), x => x.alimGrsF);
+  const avgTp = avgOf(win, x => x.tp);
+  const avgMort = avgOf(win, x => x.mort);
+  const push = (name, score, detail, weight) => parts.push({ name, score:clamp(score), detail, weight });
+  if (avgEau && d.eau_L_tot > 0) {
+    const dev = (d.eau_L_tot - avgEau) / avgEau * 100;
+    const sc = scoreFromDrop(dev, TH.eauDropO, TH.eauDropR);
+    push('eau', sc.score, sc.detail || `${dev>=0?'+':''}${dev.toFixed(0)} %`, 1.2);
+  }
+  if (avgAlim && d.alim_grsF > 0) {
+    const dev = (d.alim_grsF - avgAlim) / avgAlim * 100;
+    const sc = scoreFromDrop(dev, TH.alimVar*0.7, TH.alimVar*1.3);
+    push('aliment', sc.score, sc.detail || `${dev>=0?'+':''}${dev.toFixed(0)} %`, 1.0);
+  }
+  if (avgTp != null && d.taux_ponte != null) {
+    const drop = avgTp - d.taux_ponte;
+    push('ponte', clamp(100 - Math.max(0, drop)*7), drop>0 ? `-${drop.toFixed(1)} pts` : null, 1.2);
+  }
+  if (avgMort != null && d.mort_glob != null) {
+    const thMort = d.perte && d.perte.th != null && d.fin_glob ? (d.perte.th * d.fin_glob / Math.max(1, d.age || 1) / 7) : avgMort;
+    const base = Math.max(1, thMort || avgMort || 1);
+    const ratio = d.mort_glob / base;
+    push('mortalité', clamp(100 - Math.max(0, ratio-1)*28 - Math.max(0, (d.mort_glob||0)-TH.mortFloorO)*2), ratio>1.2 ? `x${ratio.toFixed(1)} obj` : null, 1.1);
+  }
+  if (d.otv && d.otv.ecart != null) push('OAC/♀', clamp(100 + d.otv.ecart*2.5), `${d.otv.ecart>=0?'+':''}${d.otv.ecart.toFixed(1)}`, 1.0);
+  const weights = [];
+  [d.pes_p1, d.pes_p2].forEach(p => { if (p && p.cv != null) weights.push(p.cv); });
+  if (weights.length) {
+    const cv = avgOf(weights, x=>x);
+    push('poids/CV', clamp(100 - Math.max(0, cv-9)*8), `CV ${fmt(cv,1)}%`, .8);
+  }
+  if (!parts.length) return { score:100, cls:'green', issues:['données insuffisantes'], parts:[] };
+  const totalW = parts.reduce((a,b)=>a+b.weight,0);
+  const score = Math.round(parts.reduce((a,b)=>a+b.score*b.weight,0)/totalW);
+  const issues = parts.filter(p => p.score < 88).sort((a,b)=>a.score-b.score).slice(0,2).map(p => p.name + (p.detail ? ` ${p.detail}` : ''));
+  return { score, cls: score>=85?'green':score>=70?'orange':'red', issues: issues.length ? issues : ['RAS'], parts };
+}
+function isStrictDown(vals) {
+  const v = vals.filter(x => x != null && isFinite(x));
+  return v.length === vals.length && v.every((x,i)=> i===0 || x < v[i-1]);
+}
+function detectTrendAlerts(bat) {
+  const s = selectedSeries(bat);
+  if (s.length < 4) return [];
+  const alerts = [];
+  const last = s[s.length-1];
+  const last3 = s.slice(-3), last4=s.slice(-4);
+  if (last3.length===3 && isStrictDown(last3.map(x=>x.eauL))) {
+    const start = last3[0].eauL, end = last.eauL;
+    const abs = start - end;
+    const pctDrop = start > 0 ? abs / start * 100 : 0;
+    // Évite les fausses alertes sur une petite baisse normale de quelques litres.
+    if (pctDrop >= 5 && abs >= 50) alerts.push({level:'orange', icon:'💧', bat:bat.batiment, dateKey:last.key, type:'Tendance eau', txt:`Eau en baisse 3 jours de suite (${fmt(start)} → ${fmt(end)} L, -${pctDrop.toFixed(1)} %)`});
+  }
+  if (last3.length===3 && isStrictDown(last3.map(x=>x.alimGrsF))) {
+    const start = last3[0].alimGrsF, end = last.alimGrsF;
+    const abs = start - end;
+    const pctDrop = start > 0 ? abs / start * 100 : 0;
+    if (pctDrop >= 3 && abs >= 3) alerts.push({level:'orange', icon:'🌾', bat:bat.batiment, dateKey:last.key, type:'Tendance aliment', txt:`Aliment en baisse 3 jours (${fmt(start,1)} → ${fmt(end,1)} g/♀, -${pctDrop.toFixed(1)} %)`});
+  }
+  if (last4.length===4 && isStrictDown(last4.map(x=>x.tp))) alerts.push({level:'orange', icon:'🥚', bat:bat.batiment, dateKey:last.key, type:'Tendance ponte', txt:`Ponte qui décroche progressivement (${fmt(last4[0].tp,1)} → ${fmt(last.tp,1)} %)`});
+  const mortRep = s.slice(-5).filter(x => (x.mort||0) > 0);
+  if (mortRep.length >= 3) alerts.push({level:'orange', icon:'💀', bat:bat.batiment, dateKey:last.key, type:'Mortalité répétée', txt:`Mortalité faible mais répétée : ${mortRep.length} jours sur 5`});
+  return alerts;
+}
+function detectInputErrors(bat) {
+  const s = selectedSeries(bat);
+  const d = extractDay(bat, targetKey);
+  const prev = s.length >= 2 ? s[s.length-2] : null;
+  const out = [];
+  const add = txt => out.push({level:'red', icon:'✍️', bat:bat.batiment, dateKey:targetKey, type:'Saisie', txt});
+  if (d.isEstimated) add(`Date demandée non saisie : affichage du ${keyToFr(d.actualKey)}`);
+  if (prev && prev.eauL > 0 && d.eau_L_tot === 0) add(`Eau à 0 alors que la veille = ${fmt(prev.eauL)} L`);
+  if (d.ponte_total != null && d.oac != null && d.ponte_total < d.oac) add(`Ponte totale (${fmt(d.ponte_total)}) inférieure à OAC (${fmt(d.oac)})`);
+  if (prev && d.fin_glob != null && prev.fin != null && d.fin_glob > prev.fin) add(`Effectif qui remonte (${fmt(prev.fin)} → ${fmt(d.fin_glob)})`);
+  if (prev && prev.alimKG > 0 && (d.alim_KG === 0 || d.alim_KG > prev.alimKG*2.2)) add(`Consommation aliment impossible ou suspecte (${fmt(d.alim_KG)} kg)`);
+  return out;
+}
+function getRecentOtvPerformance(bat, currentAge) {
+  // Compare la progression réelle récente OAC/♀ à la progression théorique.
+  // Sert uniquement à pondérer la courbe restante, pas à prolonger le taux de ponte actuel en ligne droite.
+  const r = bat.reportNBRows || [];
+  const pts = [];
+  for (let i = 7; i < r.length; i++) {
+    const age = r[i]?.[2];
+    const lot = r[i]?.[18];
+    const ec  = r[i]?.[20];
+    if (typeof age !== 'number' || typeof lot !== 'number' || lot <= 0) continue;
+    if (currentAge != null && age > currentAge) continue;
+    if (typeof ec !== 'number') continue; // semaine réellement complétée
+    const th = bat.theory[Math.round(age)]?.otvOrvia;
+    if (typeof th !== 'number') continue;
+    pts.push({ age, lot, th });
+  }
+  if (pts.length < 2) return { factor: 1, source: 'courbe théorique' };
+  const recent = pts.slice(-4); // environ 3 dernières semaines d'évolution
+  const first = recent[0], last = recent[recent.length - 1];
+  const realDelta = last.lot - first.lot;
+  const thDelta = last.th - first.th;
+  if (!(realDelta > 0) || !(thDelta > 0)) return { factor: 1, source: 'courbe théorique' };
+  // On limite l'effet pour éviter qu'une semaine exceptionnelle fausse toute la fin de lot.
+  const raw = realDelta / thDelta;
+  const factor = clamp(raw, 0.75, 1.15);
+  return { factor, source: `${recent.length} semaines récentes`, raw };
+}
+
+function getInitialFemales(bat, series) {
+  // Référence femelles de départ : on évite d'utiliser l'effectif du jour,
+  // sinon la mortalité ne pénalise pas assez les œufs manquants.
+  const vals = (series || []).map(x => x.fin).filter(x => x != null && isFinite(x) && x > 0);
+  if (!vals.length) return null;
+  return Math.max(...vals);
+}
+function normalizeRatio(v) {
+  if (v == null || !isFinite(v)) return null;
+  // Les fichiers peuvent stocker une viabilité en fraction (0,94) ou en % (94).
+  if (v > 1.5) return v / 100;
+  return v;
+}
+function getTheoryRowAtOrBefore(bat, age) {
+  const ages = Object.keys(bat.theory || {}).map(Number).filter(a => isFinite(a)).sort((a,b)=>a-b);
+  if (!ages.length) return null;
+  let best = ages[0];
+  for (const a of ages) { if (a <= age) best = a; else break; }
+  return { age: best, row: bat.theory[best] };
+}
+function getTheoryOtvAtAge(bat, age) {
+  const exact = bat.theory?.[Math.round(age)]?.otvOrvia;
+  if (typeof exact === 'number') return exact;
+  const best = getTheoryRowAtOrBefore(bat, age);
+  return (best && typeof best.row.otvOrvia === 'number') ? best.row.otvOrvia : null;
+}
+function getTheoryLiveRatio(bat, age, fallbackLoss) {
+  const best = getTheoryRowAtOrBefore(bat, Math.round(age || 0));
+  const th = best ? best.row : null;
+  const via = th ? normalizeRatio(th.viab) : null;
+  if (via != null && via > 0 && via <= 1.2) return clamp(via, 0.01, 1.05);
+  if (fallbackLoss != null && isFinite(fallbackLoss)) return clamp(1 - fallbackLoss, 0.01, 1.05);
+  return null;
+}
+function getMortalityProjectionFactor(bat, series, d, endAge) {
+  // Projection corrigée : la mortalité future augmente avec l'âge.
+  // On combine : pertes déjà réelles + tendance récente + viabilité théorique restante.
+  const initialFemales = getInitialFemales(bat, series);
+  const last = series[series.length - 1];
+  const currentFemales = d.fin_glob || last.fin || 0;
+  const currentAge = last.age || d.age || endAge;
+  const daysLeft = Math.max(0, Math.round((endAge - currentAge) * 7));
+  const currentLoss = initialFemales ? Math.max(0, initialFemales - currentFemales) : 0;
+  const recentMort = series.slice(-14).filter(x => x.mort != null);
+  const avgMortDay = avgOf(recentMort, x => x.mort) || 0;
+
+  const currentLiveActual = initialFemales ? clamp(currentFemales / initialFemales, 0.01, 1.05) : null;
+  const currentLiveTheo = getTheoryLiveRatio(bat, d.otv?.age ?? currentAge, d.perte?.th);
+  const endLiveTheo = getTheoryLiveRatio(bat, endAge, null) || currentLiveTheo;
+
+  // Mortalité attendue restante selon la viabilité théorique entre l'âge actuel et 70 sem.
+  let theoFutureDeaths = 0;
+  if (initialFemales && currentLiveTheo != null && endLiveTheo != null) {
+    theoFutureDeaths = Math.max(0, initialFemales * (currentLiveTheo - endLiveTheo));
+  }
+
+  // Tendance récente aggravée avec l'âge : le multiplicateur démarre à 1 et monte progressivement.
+  // Cela évite une prévision trop optimiste quand la mortalité actuelle est faible.
+  const weeksLeft = Math.max(0, endAge - currentAge);
+  const ageAccelerationEnd = clamp(1 + weeksLeft * 0.045, 1.05, 2.35);
+  const avgAgeAcceleration = (1 + ageAccelerationEnd) / 2;
+  const recentFutureDeaths = avgMortDay * daysLeft * avgAgeAcceleration;
+
+  // Plancher de vieillissement : même avec peu de morts récents, on garde une hausse minimale avec l'âge.
+  const ageingFloorDeaths = initialFemales
+    ? initialFemales * 0.00018 * daysLeft * avgAgeAcceleration
+    : 0;
+
+  const projectedFutureDeaths = Math.max(theoFutureDeaths, recentFutureDeaths, ageingFloorDeaths);
+  const projectedFinalFemales = Math.max(0, currentFemales - projectedFutureDeaths);
+  const finalLiveActual = initialFemales ? clamp(projectedFinalFemales / initialFemales, 0.01, 1.05) : null;
+
+  if (currentLiveActual == null || finalLiveActual == null || currentLiveTheo == null || endLiveTheo == null) {
+    return {
+      factor: 1,
+      impactOtv: 0,
+      avgMortDay,
+      initialFemales,
+      projectedFinalFemales,
+      finalLossPct: initialFemales ? (currentLoss + projectedFutureDeaths) / initialFemales * 100 : null,
+      projectedFutureDeaths,
+      ageAccelerationEnd,
+      source: 'mortalité âge estimée'
+    };
+  }
+
+  // On compare l'effectif vivant moyen restant réel/projeté au vivant moyen théorique.
+  const avgLiveActual = (currentLiveActual + finalLiveActual) / 2;
+  const avgLiveTheo = (currentLiveTheo + endLiveTheo) / 2;
+  const raw = avgLiveTheo > 0 ? avgLiveActual / avgLiveTheo : 1;
+  const factor = clamp(raw, 0.60, 1.03);
+  return {
+    factor,
+    impactOtv: null,
+    avgMortDay,
+    initialFemales,
+    projectedFinalFemales,
+    finalLossPct: initialFemales ? (currentLoss + projectedFutureDeaths) / initialFemales * 100 : null,
+    projectedFutureDeaths,
+    ageAccelerationEnd,
+    currentLiveActual,
+    finalLiveActual,
+    currentLiveTheo,
+    endLiveTheo,
+    source: `mortalité âge ×${fmt(ageAccelerationEnd,2)}`
+  };
+}
+function projectionFinLot(bat) {
+  const s = selectedSeries(bat).filter(x => x.age != null);
+  const d = extractDay(bat, targetKey);
+  if (!s.length || !d.otv) return null;
+  const last = s[s.length-1];
+  const endAge = REFORM_AGE;
+  const endTh = getTheoryOtvAtAge(bat, endAge);
+  const currentTh = d.otv.th;
+  let projectedOtv = null;
+  let perf = { factor: 1, source: 'courbe théorique' };
+  let mortProj = { factor: 1, impactOtv: 0, finalLossPct: null, initialFemales: null, projectedFinalFemales: null, avgMortDay: 0, source: 'mortalité non pondérée' };
+
+  if (endTh != null && currentTh != null) {
+    // Méthode corrigée :
+    // 1) on part du cumul réel actuel ;
+    // 2) on ajoute la courbe théorique restante, donc la ponte baisse avec l'âge ;
+    // 3) on applique la performance récente ;
+    // 4) on applique un coefficient d'effectif vivant prévu, pour que la mortalité actuelle
+    //    et la mortalité à venir réduisent bien les OAC/♀ de fin de lot.
+    perf = getRecentOtvPerformance(bat, d.otv.age ?? last.age);
+    mortProj = getMortalityProjectionFactor(bat, s, d, endAge);
+    const remainingTheo = Math.max(0, endTh - currentTh);
+    const beforeMort = d.otv.lot + remainingTheo * perf.factor;
+    projectedOtv = d.otv.lot + remainingTheo * perf.factor * mortProj.factor;
+    mortProj.impactOtv = projectedOtv - beforeMort;
+  } else {
+    // Secours si les objectifs théoriques ne sont pas disponibles.
+    const recent = s.slice(-21).filter(x => x.oac != null && x.fin > 0);
+    const avgOacPerF = avgOf(recent, x => x.oac / x.fin) || 0;
+    const daysLeftFallback = Math.max(0, Math.round((endAge - (last.age||endAge)) * 7));
+    const avgMortDay = avgOf(s.slice(-14), x => x.mort) || 0;
+    const projectedFemalesAvg = Math.max(1, ((d.fin_glob || last.fin || 1) + Math.max(0, (d.fin_glob || last.fin || 1) - avgMortDay * daysLeftFallback)) / 2);
+    const liveFactor = (d.fin_glob || last.fin) ? projectedFemalesAvg / (d.fin_glob || last.fin) : 1;
+    projectedOtv = d.otv.lot + avgOacPerF * daysLeftFallback * liveFactor;
+    perf.source = 'moyenne journalière, faute de courbe théorique';
+    mortProj = getMortalityProjectionFactor(bat, s, d, endAge);
+  }
+
+  const daysLeft = Math.max(0, Math.round((endAge - (last.age||endAge)) * 7));
+  const retard = endTh != null ? projectedOtv - endTh : null;
+  const initialFemales = mortProj.initialFemales || getInitialFemales(bat, s) || d.fin_glob || last.fin;
+  const mortFinal = mortProj.projectedFinalFemales != null && initialFemales
+    ? Math.round(initialFemales - mortProj.projectedFinalFemales)
+    : Math.round(s.reduce((a,x)=>a+(x.mort||0),0) + (avgOf(s.slice(-14), x => x.mort)||0) * daysLeft);
+  const missingEggs = retard != null && initialFemales ? Math.round(Math.min(0, retard) * initialFemales) : null;
+  return {
+    endAge, projectedOtv, retard, mortFinal, missingEggs, endTh, currentTh,
+    perfFactor: perf.factor, perfSource: perf.source,
+    mortFactor: mortProj.factor, mortImpactOtv: mortProj.impactOtv,
+    mortFinalPct: mortProj.finalLossPct,
+    mortAvgDay: mortProj.avgMortDay,
+    mortFutureDeaths: mortProj.projectedFutureDeaths,
+    mortAgeAccel: mortProj.ageAccelerationEnd,
+    projectedFinalFemales: mortProj.projectedFinalFemales,
+    initialFemales
+  };
+}
+function loadObservations() { try { return JSON.parse(localStorage.getItem('afr_observations') || '{}'); } catch { return {}; } }
+function saveObservations(o) { try { localStorage.setItem('afr_observations', JSON.stringify(o)); } catch {} }
+function obsKey(batName, key=targetKey) { return `${batName}|${key}`; }
+function getObsFor(batName, key=targetKey) { return loadObservations()[obsKey(batName,key)] || []; }
+function getObsSeries(batName) {
+  const all = loadObservations(), prefix = batName + '|';
+  return Object.keys(all).filter(k=>k.startsWith(prefix)).flatMap(k => all[k].map(o => ({...o, key:k.split('|')[1]}))).sort((a,b)=>a.key.localeCompare(b.key));
+}
+function esc(s) { return String(s ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
+function openObservation(batName, ev) {
+  if (ev) ev.stopPropagation();
+  const tags = ['traitement fait','changement aliment','problème chaîne','panne pipette','chaleur','vaccin','tri/manipulation'];
+  const existing = getObsFor(batName).map(o=>o.text).join('\n');
+  document.getElementById('obs-title').textContent = `📝 Observation — ${batName}`;
+  document.getElementById('obs-body').innerHTML = `
+    <div class="ctrl-label">Date : ${keyToFr(targetKey)}</div>
+    <div class="obs-tags">${tags.map(t=>`<span class="obs-chip" onclick="toggleObsTag(this)">${t}</span>`).join('')}</div>
+    <textarea class="obs-text" id="obs-text" placeholder="Ex : changement aliment, panne pipette parc 2, vaccin, chaleur...">${esc(existing)}</textarea>
+    <div class="set-actions"><button class="btn btn-primary" onclick="saveObservation('${batName}')">Enregistrer</button><button class="btn btn-ghost" onclick="deleteObservation('${batName}')">Supprimer</button></div>`;
+  document.getElementById('obs-overlay').classList.add('open');
+}
+function toggleObsTag(el) {
+  el.classList.toggle('active');
+  const ta = document.getElementById('obs-text');
+  if (!ta.value.includes(el.textContent)) ta.value = (ta.value ? ta.value + '\n' : '') + el.textContent;
+}
+function saveObservation(batName) {
+  const txt = document.getElementById('obs-text').value.trim();
+  const all = loadObservations();
+  if (txt) all[obsKey(batName)] = [{ text:txt, savedAt:new Date().toISOString() }]; else delete all[obsKey(batName)];
+  saveObservations(all); closeObservation(); renderAll();
+}
+function deleteObservation(batName) { const all=loadObservations(); delete all[obsKey(batName)]; saveObservations(all); closeObservation(); renderAll(); }
+function closeObservation() { document.getElementById('obs-overlay').classList.remove('open'); }
+document.getElementById('obs-overlay').addEventListener('click', e => { if (e.target.id==='obs-overlay') closeObservation(); });
+function healthScoreHtml(h) {
+  const fill = h.cls==='green'?'var(--green)':h.cls==='orange'?'var(--orange)':'var(--red)';
+  return `<div class="health-box"><div class="health-top"><div><div class="health-label">Score santé bande</div><div class="health-score score-${h.cls}">${h.score}<small>/100</small></div></div><div class="health-badges">${h.issues.map(i=>badge(h.cls, esc(i))).join('')}</div></div><div class="mini-bar"><div class="mini-fill" style="width:${h.score}%;background:${fill}"></div></div></div>`;
+}
+function updateAlertHistory(alerts) {
+  const key='afr_alert_history'; let hist=[]; try { hist=JSON.parse(localStorage.getItem(key)||'[]'); } catch {}
+  const activeIds = new Set(alerts.map(a => `${a.bat}|${a.type||a.icon}|${a.txt}`));
+  hist = hist.map(h => activeIds.has(h.id) ? {...h, active:true, lastSeen:targetKey} : {...h, active:false});
+  alerts.forEach(a => {
+    const id = `${a.bat}|${a.type||a.icon}|${a.txt}`;
+    if (!hist.some(h=>h.id===id)) hist.unshift({ id, date:a.dateKey||targetKey, bat:a.bat, type:a.type||a.icon, value:a.txt, active:true, lastSeen:targetKey });
+  });
+  hist = hist.slice(0,300);
+  try { localStorage.setItem(key, JSON.stringify(hist)); } catch {}
+}
+function getAlertHistory() { try { return JSON.parse(localStorage.getItem('afr_alert_history')||'[]'); } catch { return []; } }
+function toggleAlertHistory() {
+  const el = document.getElementById('alert-history');
+  if (el.style.display === 'none' || !el.style.display) { renderAlertHistory(); el.style.display='block'; el.scrollIntoView({behavior:'smooth', block:'nearest'}); }
+  else el.style.display='none';
+}
+function renderAlertHistory() {
+  const hist = getAlertHistory();
+  const rows = hist.map(h => `<tr><td>${keyToFr(h.date)}</td><td><span class="bench-bat" onclick="openDetail('${h.bat}')">${h.bat}</span></td><td>${esc(h.type)}</td><td>${esc(h.value)}</td><td class="${h.active?'history-active':'history-ok'}">${h.active?'active':'corrigée'}</td></tr>`).join('') || '<tr><td colspan="5">Aucune alerte enregistrée pour le moment.</td></tr>';
+  document.getElementById('alert-history').innerHTML = `<h3>🕘 Historique alertes</h3><table class="bench-table"><thead><tr><th>Date</th><th>Bâtiment</th><th>Type</th><th>Valeur</th><th>État</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+function detectAnomalies(bat) {
+  const s = selectedSeries(bat);
+  if (s.length < 4) return [];
+  const last = s[s.length - 1];
+  const win = s.slice(-8, -1);            // 7 jours précédents (hors jour courant)
+  const alerts = [];
+
+  // 1 ── EAU : baisse (signal sanitaire précoce) ou hausse
+  const avgEau = avgOf(win.filter(x => x.eauL > 0), x => x.eauL);
+  if (avgEau && last.eauL > 0) {
+    const dev = (last.eauL - avgEau) / avgEau * 100;
+    if (dev <= -TH.eauDropR)
+      alerts.push({ level:'red', icon:'💧', type:'Eau', txt:`Chute d'eau ${dev.toFixed(0)} % (${fmt(last.eauL)} L vs moy. 7j ${fmt(avgEau)} L)` });
+    else if (dev <= -TH.eauDropO)
+      alerts.push({ level:'orange', icon:'💧', type:'Eau', txt:`Baisse d'eau ${dev.toFixed(0)} % vs moyenne 7j` });
+    else if (dev >= TH.eauRise)
+      alerts.push({ level:'orange', icon:'💧', type:'Eau', txt:`Hausse d'eau +${dev.toFixed(0)} % vs moyenne 7j (chaleur ? fuite ?)` });
+  }
+
+  // 2 ── ALIMENT : variation de consommation (refus = signal appétit/santé)
+  const avgAlim = avgOf(win.filter(x => x.alimGrsF > 0), x => x.alimGrsF);
+  if (avgAlim && last.alimGrsF > 0) {
+    const dev = (last.alimGrsF - avgAlim) / avgAlim * 100;
+    if (Math.abs(dev) >= TH.alimVar)
+      alerts.push({ level:'orange', icon:'🌾', type:'Aliment',
+        txt:`${dev<0?'Baisse':'Hausse'} aliment ${dev>0?'+':''}${dev.toFixed(0)} % (${fmt(last.alimGrsF,1)} g/♀ vs moy. ${fmt(avgAlim,1)})` });
+  }
+
+  // 3 ── PONTE : décrochage du taux vs moyenne 7j (en points)
+  const avgTp = avgOf(win, x => x.tp);
+  if (avgTp != null && last.tp != null) {
+    const drop = avgTp - last.tp;
+    if (drop >= TH.ponteDropR)
+      alerts.push({ level:'red', icon:'🥚', type:'Ponte', txt:`Décrochage ponte −${drop.toFixed(1)} pts (${last.tp.toFixed(1)} % vs moy. 7j ${avgTp.toFixed(1)} %)` });
+    else if (drop >= TH.ponteDropO)
+      alerts.push({ level:'orange', icon:'🥚', type:'Ponte', txt:`Baisse de ponte −${drop.toFixed(1)} pts vs moyenne 7j` });
+  }
+
+  // 4 ── MORTALITÉ : pic du jour vs moyenne journalière 7j
+  const avgMort = avgOf(win, x => x.mort);
+  if (last.mort != null && last.mort > 0 && avgMort != null) {
+    if (last.mort >= TH.mortAbs || (last.mort >= TH.mortFloorR && last.mort >= avgMort * (TH.mortMult + 0.5)))
+      alerts.push({ level:'red', icon:'💀', type:'Mortalité', txt:`Pic de mortalité : ${last.mort} ♀ aujourd'hui (moy. 7j ${avgMort.toFixed(1)}/j)` });
+    else if (last.mort >= TH.mortFloorO && last.mort >= avgMort * TH.mortMult)
+      alerts.push({ level:'orange', icon:'💀', type:'Mortalité', txt:`Mortalité en hausse : ${last.mort} ♀ (moy. 7j ${avgMort.toFixed(1)}/j)` });
+  }
+
+  // 5 ── RATIO eau/aliment : rupture vs base 7j
+  const winR = win.filter(x => x.eauL > 0 && x.alimKG > 0);
+  if (winR.length >= 3 && last.eauL > 0 && last.alimKG > 0) {
+    const avgR = avgOf(winR, x => x.eauL / x.alimKG);
+    const r = last.eauL / last.alimKG;
+    const dev = (r - avgR) / avgR * 100;
+    if (Math.abs(dev) >= TH.ratioVar)
+      alerts.push({ level:'orange', icon:'⚖️', type:'Ratio eau/aliment',
+        txt:`Ratio eau/aliment ${r.toFixed(2).replace('.',',')} L/kg (${dev>0?'+':''}${dev.toFixed(0)} % vs base 7j)` });
+  }
+
+  return alerts.map(a => ({ ...a, bat: bat.batiment, dateKey: last.key }));
+}
+
+// ══════════════════════════════════════════════════════
+// BADGES & HELPERS
+// ══════════════════════════════════════════════════════
+const fmt = (n, d=0) => n == null ? '—' : n.toLocaleString('fr-FR', { maximumFractionDigits: d });
+const pct = (n, d=1) => n == null ? '—' : n.toFixed(d) + ' %';
+
+function badge(cls, text) {
+  return `<span class="badge b-${cls}">${text}</span>`;
+}
+
+function perteBadge(perte) {
+  // Perte cumulée réelle ; couleur selon l'écart au théorique (pts)
+  if (!perte || perte.lot == null) return badge('grey', '—');
+  const lotPct = perte.lot * 100;
+  let cls = 'green';
+  if (perte.ecart != null) {
+    const ec = perte.ecart * 100;
+    cls = ec <= 0.5 ? 'green' : ec <= 2 ? 'orange' : 'red';
+  }
+  return `<div class="ind-main">${badge(cls, `${lotPct.toFixed(2)} %`)}</div>`;
+}
+
+function perteSub(d) {
+  const parts = [];
+  if (d.mort_glob != null) parts.push(`${fmt(d.mort_glob)} ♀ ce jour`);
+  if (d.perte && d.perte.th != null) parts.push(`théo ${(d.perte.th*100).toFixed(1)} %`);
+  return parts.join(' · ') || 'perte cumulée';
+}
+
+function otvBadge(otv) {
+  // Production cumulée OAC/♀ ; couleur selon l'avance/retard sur l'objectif
+  if (!otv || otv.lot == null) return badge('grey', '—');
+  let cls = 'grey';
+  if (otv.ecart != null) cls = otv.ecart >= 0 ? 'green' : (otv.ecart >= -5 ? 'orange' : 'red');
+  return `<div class="ind-main">${badge(cls, `${otv.lot.toFixed(1)} œ/♀`)}</div>`;
+}
+
+function otvSub(otv) {
+  if (!otv) return 'cumul production';
+  const parts = [];
+  if (otv.th != null)    parts.push(`obj ${otv.th.toFixed(1)}`);
+  if (otv.ecart != null) parts.push(`${otv.ecart>=0?'+':''}${otv.ecart.toFixed(1)} œ/♀`);
+  return parts.join(' · ') || 'cumul production';
+}
+
+function ponteBadge(tp) {
+  if (tp == null) return badge('grey', '—');
+  const cls = tp > 80 ? 'green' : tp > 60 ? 'orange' : 'red';
+  return badge(cls, `${pct(tp, 1)} ponte`);
+}
+
+function nidsBadge(pn) {
+  if (pn == null) return badge('grey', '—');
+  const cls = pn > 80 ? 'green' : pn > 60 ? 'orange' : 'red';
+  return badge(cls, `${pct(pn, 1)} nids`);
+}
+
+function alimBadge(grsF) {
+  if (grsF == null) return badge('grey', '—');
+  const cls = grsF > 140 && grsF < 260 ? 'green' : 'orange';
+  return badge(cls, `${fmt(grsF, 1)} g/♀`);
+}
+
+function eauBadge(mLF) {
+  if (mLF == null) return badge('grey', '—');
+  const cls = mLF > 300 && mLF < 800 ? 'green' : 'orange';
+  return badge(cls, `${fmt(mLF, 0)} mL/♀`);
+}
+
+function progBar(pct, color) {
+  const w = Math.min(100, Math.max(0, pct || 0));
+  return `<div class="prog-bar"><div class="prog-fill" style="width:${w}%;background:${color}"></div></div>`;
+}
+
+// ══════════════════════════════════════════════════════
+// RENDU D'UNE CARTE
+// ══════════════════════════════════════════════════════
+function renderCard(bat) {
+  const d = extractDay(bat, targetKey);
+
+  const ageStr = d.age != null ? `${d.age}` : '—';
+  const dateStr = d.actualKey ? keyToFr(d.actualKey, false) : '—';
+
+  // Alert si données estimées (date non trouvée)
+  const estWarn = d.isEstimated
+    ? `<div class="card-warn">⚠️ Données du ${keyToFr(d.actualKey)} (date demandée non saisie)</div>`
+    : '';
+
+  const livStr = bat.cfg.releves.livraison != null && d.livraison != null && d.livraison > 0
+    ? ` · Livraison : <strong>${fmt(d.livraison)} kg</strong>` : '';
+
+  const eauSol  = d.eau_L_SOL  != null ? `SOL ${fmt(d.eau_L_SOL, 0)} L` : '';
+  const eauNids = d.eau_L_NIDS != null ? ` · NIDS ${fmt(d.eau_L_NIDS, 0)} L` : '';
+
+  const declStr = d.decl_total != null
+    ? `${fmt(d.decl_total)} déclassés (${pct(d.decl_pct, 1)})` : '—';
+
+  // ─ Pesées : poids en grammes → kg ; CV en %
+  const pesLine = (pes, parc) => {
+    if (!pes) return `<span class="pes-empty">P${parc} —</span>`;
+    const kg = (pes.poids / 1000).toFixed(3).replace('.', ',');
+    const cv = pes.cv != null ? ` · CV ${fmt(pes.cv, 1)}%` : '';
+    return `<span class="pes-val"><b>P${parc}</b> ${kg} kg${cv}</span>`;
+  };
+  const pesP1 = pesLine(d.pes_p1, '1');
+  const pesP2 = pesLine(d.pes_p2, '2');
+  // Date de la dernière pesée (la plus récente des deux parcs)
+  let pesDateKey = null;
+  if (d.pes_p1 && d.pes_p2) pesDateKey = d.pes_p1.dateKey > d.pes_p2.dateKey ? d.pes_p1.dateKey : d.pes_p2.dateKey;
+  else pesDateKey = (d.pes_p1 || d.pes_p2)?.dateKey || null;
+  const pesDateStr = pesDateKey ? keyToFr(pesDateKey) : '—';
+  const health = getHealthScore(bat);
+  const proj = projectionFinLot(bat);
+  const obsToday = getObsFor(bat.batiment);
+  const obsHtml = obsToday.length ? `<div class="obs-list">${obsToday.map(o=>`<div class="obs-item"><span class="obs-date">${keyToFr(targetKey,false)}</span>${esc(o.text).replace(/\n/g,'<br>')}</div>`).join('')}</div>` : '';
+  const projHtml = proj ? `<div class="ind-row"><div class="ind-left"><span class="ind-icon">🔮</span><span class="ind-name">Prévision fin lot</span></div><div class="ind-right"><div class="ind-main">${fmt(proj.projectedOtv,1)} OAC/♀ à ${fmt(proj.endAge,0)} sem</div><div class="ind-sub">${proj.retard!=null ? (proj.retard>=0?'avance ':'retard ') + (proj.retard>=0?'+':'') + proj.retard.toFixed(1) + ' OAC/♀' : ''}${proj.missingEggs!=null && proj.missingEggs<0 ? ' · ' + fmt(Math.abs(proj.missingEggs)) + ' œufs manquants' : ''} · courbe théorique ×${fmt(proj.perfFactor,2)} · effet mortalité ×${fmt(proj.mortFactor,2)}${proj.mortImpactOtv!=null ? ' (' + (proj.mortImpactOtv>=0?'+':'') + fmt(proj.mortImpactOtv,1) + ' OAC/♀)' : ''} · réforme 70 sem · mortalité finale ${fmt(proj.mortFinal)}${proj.mortFinalPct!=null ? ' (' + fmt(proj.mortFinalPct,1) + ' %)' : ''}${proj.mortFutureDeaths!=null ? ' · morts prévus restants ' + fmt(proj.mortFutureDeaths) : ''}${proj.mortAgeAccel!=null ? ' · hausse âge ×' + fmt(proj.mortAgeAccel,2) : ''}</div></div></div>` : '';
+
+  return `
+  <div class="bat-card" onclick="openDetail('${bat.batiment}')">
+    <div class="card-head">
+      <div>
+        <div class="card-bat-name">${bat.batiment}</div>
+        <div class="card-bat-lot">${bat.lot || '—'} · Orvia ${bat.lotOrvia || '—'}</div>
+        <div class="card-bat-souche">Souche ${bat.souche || '—'} · ${bat.inuav || '—'}</div>
+      </div>
+      <div class="card-right">
+        <div class="card-age">${ageStr} <span class="card-age-unit">sem</span></div>
+        <div class="card-date-str">${dateStr}</div>
+      </div>
+    </div>
+    <div class="card-body">
+      ${estWarn}
+      ${healthScoreHtml(health)}
+      ${projHtml}
+
+      <div class="ind-divider">Effectifs</div>
+
+      <div class="ind-row">
+        <div class="ind-left">
+          <span class="ind-icon">👩</span>
+          <span class="ind-name">Effectif global</span>
+        </div>
+        <div class="ind-right">
+          <div class="ind-main">${fmt(d.fin_glob)}</div>
+          <div class="ind-sub">♀ en place · P1:${fmt(d.fin_p1)} P2:${fmt(d.fin_p2)}</div>
+        </div>
+      </div>
+
+      <div class="ind-row">
+        <div class="ind-left">
+          <span class="ind-icon">💀</span>
+          <span class="ind-name">Mortalité</span>
+        </div>
+        <div class="ind-right">
+          ${perteBadge(d.perte)}
+          <div class="ind-sub">${perteSub(d)}</div>
+        </div>
+      </div>
+
+      <div class="ind-divider">Ponte</div>
+
+      <div class="ind-row">
+        <div class="ind-left">
+          <span class="ind-icon">🥚</span>
+          <span class="ind-name">Oeufs totaux</span>
+        </div>
+        <div class="ind-right">
+          <div class="ind-main">${fmt(d.ponte_total)}</div>
+          <div class="ind-sub">${ponteBadge(d.taux_ponte)}</div>
+        </div>
+      </div>
+
+      <div class="ind-row">
+        <div class="ind-left">
+          <span class="ind-icon">🪺</span>
+          <span class="ind-name">Sol / Nids</span>
+        </div>
+        <div class="ind-right">
+          <div class="ind-main">${fmt(d.ponte_sol)} / ${fmt(d.ponte_nids)}</div>
+          <div class="ind-sub">${nidsBadge(d.pct_nids)}</div>
+        </div>
+      </div>
+
+      <div class="ind-row">
+        <div class="ind-left">
+          <span class="ind-icon">✅</span>
+          <span class="ind-name">OAC</span>
+        </div>
+        <div class="ind-right">
+          <div class="ind-main">${fmt(d.oac)}</div>
+          <div class="ind-sub">${declStr}</div>
+        </div>
+      </div>
+
+      <div class="ind-row">
+        <div class="ind-left">
+          <span class="ind-icon">📈</span>
+          <span class="ind-name">Cumul OAC/♀</span>
+        </div>
+        <div class="ind-right">
+          ${otvBadge(d.otv)}
+          <div class="ind-sub">${otvSub(d.otv)}</div>
+        </div>
+      </div>
+
+      <div class="ind-divider">Alimentation</div>
+
+      <div class="ind-row">
+        <div class="ind-left">
+          <span class="ind-icon">🌾</span>
+          <span class="ind-name">Consommation</span>
+        </div>
+        <div class="ind-right">
+          <div class="ind-main">${alimBadge(d.alim_grsF)}</div>
+          <div class="ind-sub">${fmt(d.alim_KG, 0)} kg/jour${livStr}</div>
+        </div>
+      </div>
+
+      <div class="ind-divider">Eau</div>
+
+      <div class="ind-row">
+        <div class="ind-left">
+          <span class="ind-icon">💧</span>
+          <span class="ind-name">Consommation</span>
+        </div>
+        <div class="ind-right">
+          <div class="ind-main">${fmt(d.eau_L_tot, 0)} L</div>
+          <div class="ind-sub">${eauBadge(d.eau_mLF)} · ${eauSol}${eauNids}</div>
+        </div>
+      </div>
+
+      <div class="ind-divider">Dernière pesée ♀ · ${pesDateStr}</div>
+
+      <div class="ind-row ind-pes">
+        <div class="ind-left">
+          <span class="ind-icon">⚖️</span>
+          <span class="ind-name">Poids moyen</span>
+        </div>
+        <div class="ind-right pes-right">
+          ${pesP1}<br>${pesP2}
+        </div>
+      </div>
+      ${obsHtml}
+
+    </div>
+    <div class="card-actions"><button class="btn btn-ghost btn-small" onclick="openObservation('${bat.batiment}', event)">📝 Observation</button></div>
+    <div class="card-hint">📈 Cliquer pour les courbes & l'historique</div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════════════
+// RENDU DASHBOARD COMPLET
+// ══════════════════════════════════════════════════════
+function renderAll() {
+  const bats = Object.keys(store).sort();
+  const dashboard = document.getElementById('dashboard');
+
+  if (!bats.length) {
+    dashboard.innerHTML = `<div class="no-data">
+      <div class="no-data-icon">📊</div>
+      <div class="no-data-title">Aucun fichier chargé</div>
+      <div class="no-data-sub">Déposez les fichiers Excel de chaque bâtiment ci-dessus</div>
+    </div>`;
+    document.getElementById('summary-strip').style.display = 'none';
+    return;
+  }
+
+  // Totaux pour le strip
+  let totF=0, totM=0, totP=0, totO=0, totE=0;
+  globalRanges = null;   // recalcul des échelles communes
+
+  const cards = bats.map(bn => {
+    const bat = store[bn];
+    const d = extractDay(bat, targetKey);
+    totF += d.fin_glob  || 0;
+    totM += d.mort_glob || 0;
+    totP += d.ponte_total || 0;
+    totO += d.oac || 0;
+    totE += d.eau_L_tot || 0;
+    return renderCard(bat);
+  });
+
+  dashboard.innerHTML = cards.join('');
+
+  // Summary
+  const totTP = totF > 0 ? (totP / totF * 100) : null;
+  const totMP = totF > 0 ? (totM / totF * 100) : null;
+  document.getElementById('s-eff').textContent   = totF.toLocaleString('fr-FR');
+  document.getElementById('s-mort').textContent  = totM;
+  // sous-titre morts : perte cumulée max parmi les bâtiments (réelle)
+  let maxPerte = null;
+  bats.forEach(bn => {
+    const d = extractDay(store[bn], targetKey);
+    if (d.perte && d.perte.lot != null) maxPerte = Math.max(maxPerte ?? 0, d.perte.lot * 100);
+  });
+  document.getElementById('s-mort-pct').textContent = maxPerte != null ? `perte max ${maxPerte.toFixed(1)} %` : '';
+  document.getElementById('s-ponte').textContent = totP.toLocaleString('fr-FR');
+  document.getElementById('s-tp').textContent    = totTP != null ? pct(totTP, 1) + ' ponte' : '';
+  document.getElementById('s-oac').textContent   = totO.toLocaleString('fr-FR');
+  document.getElementById('s-eau').textContent   = Math.round(totE).toLocaleString('fr-FR');
+  document.getElementById('summary-strip').style.display = 'grid';
+
+  // Save note
+  document.getElementById('save-note').textContent =
+    `${bats.length} bâtiment${bats.length > 1 ? 's' : ''} chargé${bats.length > 1 ? 's' : ''}`;
+
+  // Bandeau alertes
+  renderAlerts(bats);
+
+  // Rafraîchir le comparatif et l'historique s'ils sont ouverts
+  const bench = document.getElementById('benchmark');
+  if (bench && bench.style.display === 'block') renderBenchmark();
+  const hist = document.getElementById('alert-history');
+  if (hist && hist.style.display === 'block') renderAlertHistory();
+}
+
+// ══════════════════════════════════════════════════════
+// BANDEAU ALERTES
+// ══════════════════════════════════════════════════════
+function renderAlerts(bats) {
+  const panel = document.getElementById('alert-panel');
+  let all = [];
+  bats.forEach(bn => {
+    const bat = store[bn];
+    all = all.concat(detectInputErrors(bat), detectAnomalies(bat), detectTrendAlerts(bat));
+  });
+  updateAlertHistory(all);
+
+  // tri : rouge avant orange
+  all.sort((a, b) => (a.level === b.level) ? 0 : (a.level === 'red' ? -1 : 1));
+
+  const nRed = all.filter(a => a.level === 'red').length;
+
+  if (!all.length) {
+    panel.innerHTML = `<div class="alert-ok">✅ Aucune anomalie détectée sur les bâtiments chargés (saisie, tendances, eau, aliment, ponte, mortalité, ratio).</div>`;
+    panel.style.display = 'flex';
+    return;
+  }
+
+  const head = `<div class="alert-head">⚠️ Alertes du jour <span class="alert-count">${all.length}</span></div>`;
+  const rows = all.map(a => `
+    <div class="alert-row ${a.level}" onclick="openDetail('${a.bat}')">
+      <span class="alert-ico">${a.icon}</span>
+      <span class="alert-bat">${a.bat}</span>
+      <span class="alert-txt">${a.txt}</span>
+    </div>`).join('');
+
+  panel.innerHTML = head + rows;
+  panel.style.display = 'flex';
+}
+
+// ══════════════════════════════════════════════════════
+// MODALE DÉTAIL + COURBES
+// ══════════════════════════════════════════════════════
+let detailCharts = [];
+let globalRanges = null;
+
+// Plages communes à tous les bâtiments → échelles identiques pour comparer
+function computeGlobalRanges() {
+  const bats = Object.keys(store);
+  let mortMax=0, cumMax=0, eauMax=0, alimMax=0, poidsMin=Infinity, poidsMax=0;
+  bats.forEach(bn => {
+    const bat = store[bn];
+    const s = extractSeries(bat);
+    let cum = 0;
+    s.forEach(x => {
+      if (x.mort != null) mortMax = Math.max(mortMax, x.mort);
+      cum += (x.mort || 0);
+      if (x.eauMlF != null) eauMax = Math.max(eauMax, x.eauMlF);
+      if (x.alimGrsF != null) alimMax = Math.max(alimMax, x.alimGrsF);
+    });
+    cumMax = Math.max(cumMax, cum);
+    const c = bat.cfg, rel = bat.relevesRows;
+    for (let i = DATA_START; i < rel.length; i++) {
+      [c.releves.poids_p1, c.releves.poids_p2].forEach(col => {
+        const w = rel[i]?.[col];
+        if (typeof w === 'number' && w > 100) {
+          poidsMin = Math.min(poidsMin, w/1000);
+          poidsMax = Math.max(poidsMax, w/1000);
+        }
+      });
+    }
+  });
+  const pad = (v, p=0.05) => v * (1+p);
+  globalRanges = {
+    ponte: { min:0, max:100 },
+    mortMax: pad(mortMax) || 10,
+    cumMax:  pad(cumMax)  || 10,
+    eauMax:  pad(eauMax)  || 100,
+    alimMax: pad(alimMax) || 100,
+    poidsMin: isFinite(poidsMin) ? Math.floor((poidsMin-0.2)*10)/10 : 0,
+    poidsMax: poidsMax ? Math.ceil((poidsMax+0.2)*10)/10 : 4
+  };
+}
+
+function closeDetail() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  detailCharts.forEach(c => c.destroy());
+  detailCharts = [];
+}
+
+function renderObservationTimeline(batName) {
+  const obs = getObsSeries(batName);
+  if (!obs.length) return '<div class="ind-sub">Aucune observation enregistrée.</div>';
+  return `<div class="obs-list">${obs.map(o => `<div class="obs-item"><span class="obs-date">${keyToFr(o.key)}</span>${esc(o.text).replace(/\n/g,'<br>')}</div>`).join('')}</div>`;
+}
+
+function openDetail(batName) {
+  const bat = store[batName];
+  if (!bat) return;
+  const s = extractSeries(bat);
+  if (!s.length) return;
+
+  const last = s[s.length - 1];
+  document.getElementById('modal-title').textContent = batName;
+  document.getElementById('modal-sub').textContent =
+    `${bat.lot || ''} · Souche ${bat.souche || '—'} · ${s.length} jours de données · ${keyToFr(last.key)}`;
+
+  document.getElementById('modal-body').innerHTML = `
+    <div class="chart-block">
+      <div class="chart-title">📝 Observations enregistrées</div>
+      ${renderObservationTimeline(batName)}
+    </div>
+    <div class="chart-block">
+      <div class="chart-title">🥚 Taux de ponte — réel vs objectif souche</div>
+      <div class="chart-canvas-wrap"><canvas id="ch-ponte"></canvas></div>
+    </div>
+    <div class="chart-block">
+      <div class="chart-title">📈 Production cumulée OAC /♀ — réel vs objectif ORVIA</div>
+      <div class="chart-canvas-wrap"><canvas id="ch-otv"></canvas></div>
+    </div>
+    <div class="chart-block">
+      <div class="chart-title">💀 Mortalité — journalière & cumulée</div>
+      <div class="chart-canvas-wrap"><canvas id="ch-mort"></canvas></div>
+    </div>
+    <div class="chart-block">
+      <div class="chart-title">💧🌾 Consommation eau (mL/♀) & aliment (g/♀)</div>
+      <div class="chart-canvas-wrap"><canvas id="ch-conso"></canvas></div>
+    </div>
+    <div class="chart-block">
+      <div class="chart-title">⚖️ Pesées ♀ — poids moyen par parc (kg)</div>
+      <div class="chart-canvas-wrap"><canvas id="ch-poids"></canvas></div>
+    </div>`;
+
+  document.getElementById('modal-overlay').classList.add('open');
+
+  const obsDays = new Set(getObsSeries(batName).map(o => o.key));
+  const labels = s.map(x => obsDays.has(x.key) ? keyToFr(x.key, false) + ' 📝' : keyToFr(x.key, false));
+  const ages   = s.map(x => x.age);
+  const COL = { teal:'#0E6B8A', navy:'#1B3A6B', red:'#B71C1C', orange:'#C84B00', green:'#1E7E34', grey:'#90A4AE' };
+  const baseOpts = (yTitle) => ({
+    responsive:true, maintainAspectRatio:false,
+    interaction:{ mode:'index', intersect:false },
+    plugins:{ legend:{ labels:{ font:{ size:11 }, boxWidth:14 } } },
+    scales:{
+      x:{ ticks:{ maxTicksLimit:10, font:{ size:9 } }, grid:{ display:false } },
+      y:{ title:{ display:!!yTitle, text:yTitle, font:{ size:10 } }, ticks:{ font:{ size:10 } } }
+    },
+    elements:{ point:{ radius:0, hitRadius:8 }, line:{ borderWidth:2, tension:0.25 } }
+  });
+
+  if (!globalRanges) computeGlobalRanges();
+  const R = globalRanges;
+
+  // 1 ── Ponte réel vs objectif ORVIA
+  const ponteReal = s.map(x => x.tp);
+  const ponteObj  = s.map(x => { const t = bat.theory[Math.round(x.age)]; return t && t.ponteOrvia ? t.ponteOrvia*100 : null; });
+  detailCharts.push(new Chart(document.getElementById('ch-ponte'), {
+    type:'line',
+    data:{ labels, datasets:[
+      { label:'Ponte réelle %', data:ponteReal, borderColor:COL.teal, backgroundColor:'rgba(14,107,138,0.08)', fill:true, spanGaps:true },
+      { label:'Objectif ORVIA %', data:ponteObj, borderColor:COL.orange, borderDash:[6,4], spanGaps:true }
+    ]},
+    options:{ ...baseOpts('%'), scales:{ ...baseOpts().scales, y:{ ...baseOpts().scales.y, min:0, max:100 } } }
+  }));
+
+  // 1b ── Production cumulée OAC /♀ réel vs objectif ORVIA (par semaine)
+  // LOT réel depuis Report (NB) ; objectif ORVIA depuis THÉORIES (indép. du sélecteur)
+  const rep = bat.reportNBRows || [];
+  const otvLbl = [], otvReal = [], otvObj = [];
+  for (let i = 7; i < rep.length; i++) {
+    const a = rep[i]?.[2];
+    if (typeof a !== 'number') continue;
+    const lot = rep[i]?.[18], ec = rep[i]?.[20];
+    if (a > last.age + 0.5) break;
+    otvLbl.push('S' + a);
+    otvReal.push((typeof lot === 'number' && typeof ec === 'number' && lot > 0) ? lot : null);
+    const th = bat.theory[Math.round(a)];
+    otvObj.push(th && typeof th.otvOrvia === 'number' ? th.otvOrvia : null);
+  }
+  detailCharts.push(new Chart(document.getElementById('ch-otv'), {
+    type:'line',
+    data:{ labels:otvLbl, datasets:[
+      { label:'Réel œ/♀', data:otvReal, borderColor:COL.green, backgroundColor:'rgba(30,126,52,0.08)', fill:true, spanGaps:true },
+      { label:'Objectif ORVIA œ/♀', data:otvObj, borderColor:COL.orange, borderDash:[6,4], spanGaps:true }
+    ]},
+    options:{ ...baseOpts('œufs/♀') }
+  }));
+
+  // 2 ── Mortalité journalière + cumulée (échelles globales)
+  let cum = 0;
+  const mortDay = s.map(x => x.mort != null ? x.mort : null);
+  const mortCum = s.map(x => { cum += (x.mort || 0); return cum; });
+  detailCharts.push(new Chart(document.getElementById('ch-mort'), {
+    type:'bar',
+    data:{ labels, datasets:[
+      { type:'bar', label:'Morts / jour', data:mortDay, backgroundColor:'rgba(183,28,28,0.55)', yAxisID:'y' },
+      { type:'line', label:'Cumul morts', data:mortCum, borderColor:COL.navy, yAxisID:'y1', spanGaps:true }
+    ]},
+    options:{ ...baseOpts(),
+      scales:{
+        x:{ ticks:{ maxTicksLimit:10, font:{ size:9 } }, grid:{ display:false } },
+        y:{ position:'left', min:0, max:R.mortMax, title:{ display:true, text:'jour', font:{ size:10 } }, ticks:{ font:{ size:10 } } },
+        y1:{ position:'right', min:0, max:R.cumMax, title:{ display:true, text:'cumul', font:{ size:10 } }, grid:{ display:false }, ticks:{ font:{ size:10 } } }
+      }
+    }
+  }));
+
+  // 3 ── Conso eau (mL/♀) & aliment (g/♀) — échelles globales
+  detailCharts.push(new Chart(document.getElementById('ch-conso'), {
+    type:'line',
+    data:{ labels, datasets:[
+      { label:'Eau mL/♀', data:s.map(x=>x.eauMlF), borderColor:COL.teal, yAxisID:'y', spanGaps:true },
+      { label:'Aliment g/♀', data:s.map(x=>x.alimGrsF), borderColor:COL.green, yAxisID:'y1', spanGaps:true }
+    ]},
+    options:{ ...baseOpts(),
+      scales:{
+        x:{ ticks:{ maxTicksLimit:10, font:{ size:9 } }, grid:{ display:false } },
+        y:{ position:'left', min:0, max:R.eauMax, title:{ display:true, text:'mL/♀', font:{ size:10 } }, ticks:{ font:{ size:10 } } },
+        y1:{ position:'right', min:0, max:R.alimMax, title:{ display:true, text:'g/♀', font:{ size:10 } }, grid:{ display:false }, ticks:{ font:{ size:10 } } }
+      }
+    }
+  }));
+
+  // 4 ── Pesées par parc (échelle poids globale)
+  const c = bat.cfg, rel = bat.relevesRows;
+  const pes1 = [], pes2 = [], pesLbl = [];
+  for (let i = DATA_START; i < rel.length; i++) {
+    const k = cellKey(rel[i]?.[c.releves.date]);
+    if (!k || k > todayKey()) continue;
+    const w1 = rel[i]?.[c.releves.poids_p1], w2 = rel[i]?.[c.releves.poids_p2];
+    const has1 = typeof w1==='number' && w1>100, has2 = typeof w2==='number' && w2>100;
+    if (has1 || has2) { pesLbl.push(keyToFr(k,false)); pes1.push(has1?w1/1000:null); pes2.push(has2?w2/1000:null); }
+  }
+  detailCharts.push(new Chart(document.getElementById('ch-poids'), {
+    type:'line',
+    data:{ labels:pesLbl, datasets:[
+      { label:'Parc 1 (kg)', data:pes1, borderColor:COL.navy, spanGaps:true, elements:{point:{radius:3}} },
+      { label:'Parc 2 (kg)', data:pes2, borderColor:COL.teal, spanGaps:true, elements:{point:{radius:3}} }
+    ]},
+    options:{ ...baseOpts('kg'), scales:{ ...baseOpts().scales, y:{ ...baseOpts().scales.y, min:R.poidsMin, max:R.poidsMax } } }
+  }));
+}
+
+// Fermer la modale au clic sur le fond / touche Échap
+document.getElementById('modal-overlay').addEventListener('click', e => {
+  if (e.target.id === 'modal-overlay') closeDetail();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDetail(); });
+
+// ══════════════════════════════════════════════════════
+// COMPARATIF INTER-BÂTIMENTS
+// ══════════════════════════════════════════════════════
+let benchSort = { col:'bat', dir:1 };
+
+function toggleBenchmark() {
+  const el = document.getElementById('benchmark');
+  if (el.style.display === 'none' || !el.style.display) { renderBenchmark(); el.style.display = 'block'; el.scrollIntoView({behavior:'smooth', block:'nearest'}); }
+  else el.style.display = 'none';
+}
+
+function benchData() {
+  return Object.keys(store).map(bn => {
+    const d = extractDay(store[bn], targetKey);
+    return {
+      bat: bn,
+      age: d.age,
+      eff: d.fin_glob,
+      tp: d.taux_ponte,
+      perte: d.perte ? d.perte.lot*100 : null,
+      perteEc: d.perte && d.perte.ecart!=null ? d.perte.ecart*100 : null,
+      otv: d.otv ? d.otv.lot : null,
+      otvEc: d.otv ? d.otv.ecart : null,
+      grsF: d.alim_grsF,
+      eau: d.eau_mLF,
+      score: getHealthScore(store[bn]).score,
+      proj: projectionFinLot(store[bn])?.projectedOtv || null
+    };
+  });
+}
+
+function renderBenchmark() {
+  const rows = benchData();
+  const dir = benchSort.dir, col = benchSort.col;
+  rows.sort((a,b) => {
+    const x=a[col], y=b[col];
+    if (x==null) return 1; if (y==null) return -1;
+    return (typeof x === 'string') ? x.localeCompare(y)*dir : (x-y)*dir;
+  });
+  const cols = [
+    ['bat','Bâtiment'],['age','Âge'],['eff','Effectif'],['tp','Ponte %'],
+    ['perte','Perte %'],['perteEc','Écart perte'],['otv','Cumul œ/♀'],['otvEc','Écart obj'],
+    ['grsF','g/♀'],['eau','mL/♀'],['score','Score'],['proj','Proj. fin lot']
+  ];
+  const th = cols.map(([k,l]) => `<th onclick="sortBench('${k}')">${l}${benchSort.col===k?(dir>0?' ▲':' ▼'):''}</th>`).join('');
+  const fmtCell = (k,v) => {
+    if (v==null) return '—';
+    if (k==='bat') return `<span class="bench-bat" onclick="openDetail('${v}')">${v}</span>`;
+    if (k==='age') return v+' sem';
+    if (k==='eff') return fmt(v);
+    if (k==='tp')  return v.toFixed(1)+' %';
+    if (k==='perte') return v.toFixed(2)+' %';
+    if (k==='perteEc') return `<span class="${v<=0?'cell-pos':'cell-neg'}">${v>0?'+':''}${v.toFixed(1)} pts</span>`;
+    if (k==='otv') return v.toFixed(1);
+    if (k==='otvEc') return `<span class="${v>=0?'cell-pos':'cell-neg'}">${v>=0?'+':''}${v.toFixed(1)}</span>`;
+    if (k==='grsF') return fmt(v,1);
+    if (k==='eau') return fmt(v,0);
+    if (k==='score') return v + '/100';
+    if (k==='proj') return fmt(v,1);
+    return v;
+  };
+  const trs = rows.map(r => `<tr>${cols.map(([k]) => `<td>${fmtCell(k, r[k])}</td>`).join('')}</tr>`).join('');
+  document.getElementById('benchmark').innerHTML =
+    `<h3>📊 Comparatif inter-bâtiments — ${keyToFr(targetKey)}</h3>
+     <table class="bench-table"><thead><tr>${th}</tr></thead><tbody>${trs}</tbody></table>`;
+}
+
+function sortBench(col) {
+  if (benchSort.col === col) benchSort.dir *= -1;
+  else { benchSort.col = col; benchSort.dir = (col === 'bat') ? 1 : -1; }
+  renderBenchmark();
+}
+
+// ══════════════════════════════════════════════════════
+// EXPORT EXCEL CONSOLIDÉ
+// ══════════════════════════════════════════════════════
+function exportExcel() {
+  const rows = benchData();
+  if (!rows.length) { alert('Aucun bâtiment chargé.'); return; }
+  const header = ['Bâtiment','Âge (sem)','Effectif','Ponte %','Perte cumulée %','Écart perte (pts)','Cumul OAC/♀','Écart obj (œ/♀)','Aliment g/♀','Eau mL/♀','Score santé','Projection OAC/♀ fin lot'];
+  const aoa = [header];
+  rows.forEach(r => aoa.push([
+    r.bat, r.age, r.eff,
+    r.tp!=null?+r.tp.toFixed(1):'', r.perte!=null?+r.perte.toFixed(2):'',
+    r.perteEc!=null?+r.perteEc.toFixed(1):'', r.otv!=null?+r.otv.toFixed(1):'',
+    r.otvEc!=null?+r.otvEc.toFixed(1):'', r.grsF!=null?+r.grsF.toFixed(1):'', r.eau!=null?Math.round(r.eau):'', r.score ?? '', r.proj!=null?+r.proj.toFixed(1):''
+  ]));
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = header.map(() => ({ wch:14 }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Synthèse');
+  XLSX.writeFile(wb, `AFR_Synthese_${targetKey}.xlsx`);
+}
+
+
+// ══════════════════════════════════════════════════════
+// RÉUNION DU MATIN / RAPPORT PDF / FIREBASE
+// ══════════════════════════════════════════════════════
+function meetingData() {
+  const bats = Object.keys(store).sort();
+  const rows = bats.map(bn => {
+    const bat = store[bn], d = extractDay(bat, targetKey), h = getHealthScore(bat);
+    const alerts = [...detectInputErrors(bat), ...detectAnomalies(bat), ...detectTrendAlerts(bat)];
+    return { bat:bn, d, h, alerts, proj:projectionFinLot(bat) };
+  }).sort((a,b)=>a.h.score-b.h.score);
+  return rows;
+}
+function openMorningMeeting() {
+  const rows = meetingData();
+  if (!rows.length) { alert('Aucun bâtiment chargé.'); return; }
+  const bestOtv = rows.filter(r=>r.d.otv && r.d.otv.ecart != null).sort((a,b)=>b.d.otv.ecart-a.d.otv.ecart)[0];
+  const items = [];
+  rows.slice(0,5).forEach(r => {
+    const main = r.alerts[0]?.txt || (r.h.issues.join(' · ') || 'RAS');
+    items.push(`<div class="meeting-item"><strong>${r.bat}</strong> — score ${r.h.score}/100 · ${esc(main)}</div>`);
+  });
+  if (bestOtv) items.push(`<div class="meeting-item"><strong>${bestOtv.bat}</strong> — meilleur écart OAC/♀ : ${bestOtv.d.otv.ecart>=0?'+':''}${bestOtv.d.otv.ecart.toFixed(1)} vs objectif (${bestOtv.d.otv.lot.toFixed(1)} OAC/♀ cumulés)</div>`);
+  document.getElementById('meeting-sub').textContent = `Points à surveiller — ${keyToFr(targetKey)}`;
+  document.getElementById('meeting-body').innerHTML = `<div class="meeting-list">${items.join('')}</div>`;
+  document.getElementById('meeting-overlay').classList.add('open');
+}
+function closeMorningMeeting() { document.getElementById('meeting-overlay').classList.remove('open'); }
+document.getElementById('meeting-overlay').addEventListener('click', e => { if (e.target.id==='meeting-overlay') closeMorningMeeting(); });
+function buildReportHtml() {
+  const rows = meetingData();
+  const alerts = rows.flatMap(r=>r.alerts);
+  const cards = rows.map(r => `<div class="report-card"><h3>${r.bat} — score ${r.h.score}/100</h3><p>Âge ${r.d.age ?? '—'} sem · Effectif ${fmt(r.d.fin_glob)} · Ponte ${pct(r.d.taux_ponte,1)} · OAC ${fmt(r.d.oac)} · Eau ${fmt(r.d.eau_L_tot)} L · Aliment ${fmt(r.d.alim_grsF,1)} g/♀</p><p>Projection : ${r.proj ? fmt(r.proj.projectedOtv,1)+' OAC/♀ · '+(r.proj.retard>=0?'+':'')+r.proj.retard.toFixed(1)+' vs obj · effet mortalité ×'+fmt(r.proj.mortFactor,2)+' · mortalité finale '+fmt(r.proj.mortFinal) : '—'}</p></div>`).join('');
+  const alertRows = alerts.map(a=>`<tr><td>${a.bat}</td><td>${esc(a.type||a.icon)}</td><td>${esc(a.txt)}</td></tr>`).join('') || '<tr><td colspan="3">Aucune alerte</td></tr>';
+  const obs = Object.keys(store).flatMap(bn=>getObsSeries(bn).map(o=>({bat:bn,...o})));
+  const obsRows = obs.map(o=>`<tr><td>${keyToFr(o.key)}</td><td>${o.bat}</td><td>${esc(o.text).replace(/\n/g,'<br>')}</td></tr>`).join('') || '<tr><td colspan="3">Aucun commentaire</td></tr>';
+  return `<!doctype html><html><head><meta charset="utf-8"><title>Rapport bande AFR</title><style>${document.querySelector('style').innerHTML}</style></head><body><div class="report-page"><div class="report-title">AFR — Rapport bande du ${keyToFr(targetKey)}</div><p>Généré depuis Suivi Bandes. Données issues des fichiers Excel chargés dans le navigateur.</p><div class="report-section"><h2>Résumé global</h2><p>${rows.length} bâtiments · score moyen ${fmt(avgOf(rows,x=>x.h.score),0)}/100 · ${alerts.length} alerte(s)</p></div><div class="report-section"><h2>Cartes bâtiments</h2><div class="report-grid">${cards}</div></div><div class="report-section"><h2>Alertes</h2><table class="bench-table"><thead><tr><th>Bâtiment</th><th>Type</th><th>Détail</th></tr></thead><tbody>${alertRows}</tbody></table></div><div class="report-section"><h2>Tableau comparatif</h2>${document.getElementById('benchmark').innerHTML || ''}</div><div class="report-section"><h2>Commentaires</h2><table class="bench-table"><thead><tr><th>Date</th><th>Bâtiment</th><th>Observation</th></tr></thead><tbody>${obsRows}</tbody></table></div></div></body></html>`;
+}
+function exportBandReportPDF() {
+  if (!Object.keys(store).length) { alert('Aucun bâtiment chargé.'); return; }
+  const wasHidden = document.getElementById('benchmark').style.display !== 'block';
+  renderBenchmark();
+  const w = window.open('', '_blank');
+  w.document.write(buildReportHtml());
+  w.document.close();
+  setTimeout(()=>{ w.focus(); w.print(); }, 400);
+  if (wasHidden) document.getElementById('benchmark').style.display = 'none';
+}
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCSw10bFLStcem4A_CO4IXmKeQbLH9NXsM",
+  authDomain: "afr-nt2.firebaseapp.com",
+  databaseURL: "https://afr-nt2-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "afr-nt2",
+  storageBucket: "afr-nt2.firebasestorage.app",
+  messagingSenderId: "169851474976",
+  appId: "1:169851474976:web:be14c24366b0af024f9845",
+  measurementId: "G-HYBY42TVJZ"
+};
+let afrFirebaseApp = null;
+let afrFirebaseDb = null;
+function initFirebaseAFR() {
+  if (!window.firebase) {
+    throw new Error('SDK Firebase non chargé. Vérifie la connexion internet et les balises script Firebase.');
+  }
+  if (!afrFirebaseApp) {
+    afrFirebaseApp = firebase.apps && firebase.apps.length ? firebase.app() : firebase.initializeApp(FIREBASE_CONFIG);
+    afrFirebaseDb = firebase.database();
+    try {
+      if (firebase.analytics && FIREBASE_CONFIG.measurementId) firebase.analytics();
+    } catch (e) {
+      console.warn('Analytics Firebase non initialisé :', e);
+    }
+  }
+  return afrFirebaseDb;
+}
+function firebaseSafeKey(key) {
+  return String(key || '').replace(/[.#$\[\]/]/g, '_');
+}
+
+// Nettoyage avant envoi Firebase : Firebase refuse undefined, NaN et Infinity.
+// Cette fonction transforme toutes les valeurs non acceptées en null.
+function cleanForFirebase(value) {
+  if (value === undefined) return null;
+  if (value === null) return null;
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+  if (typeof value === 'string' || typeof value === 'boolean') return value;
+  if (value instanceof Date) return value.toISOString();
+  if (Array.isArray(value)) return value.map(cleanForFirebase);
+  if (typeof value === 'object') {
+    const out = {};
+    for (const [k, v] of Object.entries(value)) {
+      const safeKey = firebaseSafeKey(k);
+      out[safeKey] = cleanForFirebase(v);
+    }
+    return out;
+  }
+  return null;
+}
+
+async function syncFirebase() {
+  try {
+    if (!Object.keys(store).length) { alert('Aucun bâtiment chargé.'); return; }
+    const db = initFirebaseAFR();
+    const rows = meetingData().map(r => ({
+      batiment: r.bat,
+      date: targetKey,
+      score: r.h.score,
+      scoreDetail: r.h.detail,
+      alertes: r.alerts.map(a => ({
+        type: a.type || a.icon || null,
+        texte: a.txt || null,
+        niveau: a.level || null,
+        dateKey: a.dateKey || targetKey
+      })),
+      projection: r.proj,
+      donnees: {
+        age: r.d.age,
+        effectif: r.d.fin_glob,
+        morts: r.d.mort_glob,
+        mortalitePct: r.d.mort_pct,
+        pontePct: r.d.taux_ponte,
+        ponteTotal: r.d.ponte_total,
+        oac: r.d.oac,
+        eauL: r.d.eau_L_tot,
+        eauMlF: r.d.eau_mLF,
+        alimentKg: r.d.alim_KG,
+        alimentGrsF: r.d.alim_grsF,
+        poidsP1: r.d.pes_p1 ? r.d.pes_p1.poids : null,
+        cvP1: r.d.pes_p1 ? r.d.pes_p1.cv : null,
+        poidsP2: r.d.pes_p2 ? r.d.pes_p2.poids : null,
+        cvP2: r.d.pes_p2 ? r.d.pes_p2.cv : null
+      },
+      observations: getObsSeries(r.bat)
+    }));
+    const rawPayload = {
+      date: targetKey,
+      generatedAt: new Date().toISOString(),
+      batiments: rows.reduce((acc, r) => { acc[firebaseSafeKey(r.batiment)] = r; return acc; }, {})
+    };
+    const payload = cleanForFirebase(rawPayload);
+    window.afrFirebasePayload = payload;
+    await db.ref('suiviBandes/' + firebaseSafeKey(targetKey)).set(payload);
+    await db.ref('suiviBandesDernier').set(payload);
+    document.getElementById('save-note').textContent = 'Firebase synchronisé · ' + new Date().toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+    alert('Données envoyées sur Firebase pour le ' + keyToFr(targetKey) + '.');
+  } catch (err) {
+    console.error(err);
+    alert('Erreur Firebase : ' + err.message);
+  }
+}
+// ══════════════════════════════════════════════════════
+// RÉGLAGES SEUILS
+// ══════════════════════════════════════════════════════
+function openSettings() {
+  const groups = [
+    ['💧 Eau (vs moyenne 7 j)', [
+      ['eauDropO','Baisse — orange (%)'],['eauDropR','Baisse — rouge (%)'],['eauRise','Hausse — orange (%)']
+    ]],
+    ['🌾 Aliment', [['alimVar','Variation — orange (%)']]],
+    ['🥚 Ponte (points vs moyenne 7 j)', [['ponteDropO','Baisse — orange (pts)'],['ponteDropR','Baisse — rouge (pts)']]],
+    ['💀 Mortalité (pic vs moyenne 7 j)', [
+      ['mortMult','Multiplicateur (×)'],['mortFloorO','Plancher orange (♀)'],['mortFloorR','Plancher rouge (♀)'],['mortAbs','Seuil absolu rouge (♀)']
+    ]],
+    ['⚖️ Ratio eau/aliment', [['ratioVar','Variation — orange (%)']]]
+  ];
+  const body = groups.map(([title, items]) =>
+    `<div class="set-grp"><div class="set-grp-title">${title}</div>${
+      items.map(([k,l]) => `<div class="set-row"><label>${l}</label><input type="number" step="0.5" id="set-${k}" value="${TH[k]}"></div>`).join('')
+    }</div>`).join('') +
+    `<div class="set-actions"><button class="btn btn-primary" onclick="applySettings()">Enregistrer</button>
+     <button class="btn btn-ghost" onclick="resetSettings()">Réinitialiser</button></div>`;
+  document.getElementById('settings-body').innerHTML = body;
+  document.getElementById('settings-overlay').classList.add('open');
+}
+function closeSettings() { document.getElementById('settings-overlay').classList.remove('open'); }
+function applySettings() {
+  Object.keys(DEFAULT_THRESHOLDS).forEach(k => {
+    const el = document.getElementById('set-'+k);
+    if (el && el.value !== '') TH[k] = parseFloat(el.value);
+  });
+  saveThresholds(); closeSettings(); renderAll();
+}
+function resetSettings() { TH = {...DEFAULT_THRESHOLDS}; saveThresholds(); openSettings(); renderAll(); }
+document.getElementById('settings-overlay').addEventListener('click', e => { if (e.target.id==='settings-overlay') closeSettings(); });
+
+// ══════════════════════════════════════════════════════
+// CONTRÔLES DATE
+// ══════════════════════════════════════════════════════
+function applyDate() {
+  const picker = document.getElementById('date-picker');
+  if (!picker.value) return;
+  targetKey = picker.value;   // déjà au format "AAAA-MM-JJ"
+  renderAll();
+}
+
+function goToday() {
+  targetKey = todayKey();
+  document.getElementById('date-picker').value = targetKey;
+  renderAll();
+}
+
+// ══════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════
+(function init() {
+  targetKey = todayKey();
+  document.getElementById('date-picker').value = targetKey;
+
+  document.getElementById('hdr-date').textContent =
+    new Date().toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+})();
+</script>
+</body>
+</html>
