@@ -1199,8 +1199,8 @@ return [...base,
     const idxAlim = base.findIndex(c => c.name === "Compteur aliment");
     if (idxAlim !== -1) {
       const alimBase = { ...base[idxAlim] };
-      base[idxAlim] = { ...alimBase, name: "Compteur aliment P51" };
-      base.splice(idxAlim + 1, 0, { ...alimBase, name: "Compteur aliment P50" });
+      base[idxAlim] = { ...alimBase, name: "Compteur aliment P50" };
+      base.splice(idxAlim + 1, 0, { ...alimBase, name: "Compteur aliment P51" });
     }
 
     return [...base,
