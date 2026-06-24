@@ -1,8 +1,8 @@
 {
   "name": "Alertes Élevage AFR",
   "short_name": "Alertes AFR",
-  "start_url": "/AFR/surveillance/",
-  "scope": "/AFR/surveillance/",
+  "start_url": "/surveillance/",
+  "scope": "/surveillance/",
   "display": "standalone",
   "background_color": "#0f1117",
   "theme_color": "#0f1117"
