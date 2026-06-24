@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Alertes AFR">
+<meta name="theme-color" content="#0f1117">
+<link rel="manifest" href="manifest.json">
+<title>Alertes Élevage AFR</title>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js"></script>
+<style>
+  :root{ --bg:#0f1117; --card:#171a22; --line:#252a35; --txt:#e7eaf0; --mut:#9aa3b2; --acc:#3b82f6; --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444; }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body{ margin:0; background:var(--bg); color:var(--txt);
+        font-family:'DM Sans',system-ui,-apple-system,sans-serif;
+        padding:max(20px,env(safe-area-inset-top)) 18px 28px; }
+  .wrap{ max-width:520px; margin:0 auto; }
+  h1{ font-size:22px; font-weight:700; letter-spacing:-.2px; margin:6px 0 2px; }
+  .sub{ color:var(--mut); font-size:13px; margin-bottom:22px; }
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:16px; padding:18px; margin-bottom:14px; }
+  .row{ display:flex; align-items:center; gap:12px; }
+  .dot{ width:10px; height:10px; border-radius:50%; background:var(--mut); flex:0 0 auto; }
+  .dot.ok{ background:var(--ok); } .dot.bad{ background:var(--bad); } .dot.warn{ background:var(--warn); }
+  .stat{ font-size:14px; }
+  .stat b{ display:block; font-size:15px; }
+  .stat span{ color:var(--mut); font-size:12.5px; }
+  button{ width:100%; border:0; border-radius:13px; padding:15px 16px; font-size:15px; font-weight:600;
+          font-family:inherit; cursor:pointer; margin-top:10px; }
+  .primary{ background:var(--acc); color:#fff; }
+  .ghost{ background:transparent; color:var(--txt); border:1px solid var(--line); }
+  .primary:active,.ghost:active{ transform:scale(.99); }
+  .ok-btn{ background:rgba(34,197,94,.18); color:var(--ok); border:1px solid rgba(34,197,94,.4); }
+  .log{ font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; color:var(--mut);
+        white-space:pre-wrap; word-break:break-word; margin-top:12px; line-height:1.5; }
+  .hint{ color:var(--mut); font-size:12.5px; line-height:1.55; margin-top:10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🔔 Alertes Élevage AFR</h1>
+  <div class="sub">Coupures de courant & alertes comportementales des caméras.</div>
+
+  <div class="card">
+    <div class="row"><span id="dot" class="dot"></span><div class="stat">
+      <b id="state">Notifications non activées</b>
+      <span id="state2">Appuie sur « Activer » pour recevoir les alertes sur ce téléphone.</span>
+    </div></div>
+    <button id="bell" class="primary">Activer les notifications</button>
+    <button id="test" class="ghost">Tester l'affichage (local)</button>
+  </div>
+
+  <div class="card">
+    <div class="hint">
+      Pour recevoir les alertes <b>appli fermée</b> sur iPhone, cette page doit être
+      <b>ajoutée à l'écran d'accueil</b> (Partager → « Sur l'écran d'accueil »), puis ouverte
+      depuis cette icône avant d'appuyer sur « Activer ».
+    </div>
+    <div id="log" class="log"></div>
+  </div>
+</div>
+
+<script>
+  const VAPID = 'BDKvTp5wRGASkvxuvgiOkdlhCDCBf-usWfaHqqsQ28MBx-BsOXC_rm0epVWr9IcgDXnSsZSnoEeKgw8qbYPGQmo';
+  const firebaseConfig = {
+    apiKey: "AIzaSyCSw10bFLStcem4A_CO4IXmKeQbLH9NXsM",
+    authDomain: "afr-nt2.firebaseapp.com",
+    databaseURL: "https://afr-nt2-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "afr-nt2",
+    storageBucket: "afr-nt2.firebasestorage.app",
+    messagingSenderId: "169851474976",
+    appId: "1:169851474976:web:be14c24366b0af024f9845"
+  };
+  if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+
+  const $ = id => document.getElementById(id);
+  const log = m => { $('log').textContent += (new Date().toLocaleTimeString()+'  '+m+'\n'); };
+  function setState(cls, t1, t2){ $('dot').className='dot '+(cls||''); $('state').textContent=t1; if(t2)$('state2').textContent=t2; }
+
+  function deviceId(){
+    let id = localStorage.getItem('surv_device_id');
+    if(!id){ id = 'dev_'+Date.now()+'_'+Math.random().toString(36).slice(2,8); localStorage.setItem('surv_device_id', id); }
+    return id;
+  }
+
+  async function registerSw(){
+    if(!('serviceWorker' in navigator)) throw new Error('Service Worker non supporté par ce navigateur');
+    let reg = await navigator.serviceWorker.getRegistration('/AFR/surveillance/');
+    if(!reg) reg = await navigator.serviceWorker.register('sw.js', { scope: '/AFR/surveillance/' });
+    await navigator.serviceWorker.ready;
+    return reg;
+  }
+
+  async function enable(){
+    try{
+      setState('warn','Activation…','Autorise les notifications dans la fenêtre qui s\'ouvre.');
+      const perm = await Notification.requestPermission();
+      if(perm !== 'granted'){ setState('bad','Notifications refusées','Va dans Réglages → cette appli → Notifications pour les réautoriser.'); return; }
+
+      const reg = await registerSw();
+      const messaging = firebase.messaging();
+      messaging.useServiceWorker(reg);
+      const token = await messaging.getToken({ vapidKey: VAPID, serviceWorkerRegistration: reg });
+      if(!token) throw new Error('Token vide (réessaie après avoir ajouté la page à l\'écran d\'accueil)');
+
+      await firebase.database().ref('surveillance/alertTokens/'+deviceId())
+            .set({ token: token, ts: Date.now(), ua: navigator.userAgent.slice(0,120) });
+
+      log('Token enregistré ✓ (…'+token.slice(-12)+')');
+      setState('ok','Notifications activées','Tu recevras les coupures et alertes comportementales ici.');
+      $('bell').className='ok-btn'; $('bell').textContent='✅ Notifications activées';
+    }catch(e){
+      console.error(e); log('Erreur : '+(e.message||e));
+      setState('bad','Échec de l\'activation', e.message||String(e));
+    }
+  }
+
+  async function testLocal(){
+    try{
+      if(Notification.permission !== 'granted'){ log('Active d\'abord les notifications.'); return; }
+      const reg = await registerSw();
+      await reg.showNotification('✅ Test AFR', {
+        body:'Si tu vois ça, les alertes coupure s\'afficheront ici.',
+        requireInteraction:true, tag:'afr_test', data:{kind:'test'}
+      });
+      log('Notif de test affichée localement ✓');
+    }catch(e){ log('Test KO : '+(e.message||e)); }
+  }
+
+  $('bell').addEventListener('click', enable);
+  $('test').addEventListener('click', testLocal);
+
+  // état initial
+  (async()=>{
+    if(!('Notification' in window)){ setState('bad','Non supporté','Ce navigateur ne gère pas les notifications.'); return; }
+    if(Notification.permission === 'granted'){
+      setState('ok','Notifications déjà autorisées','Réappuie sur « Activer » pour réenregistrer ce téléphone si besoin.');
+    }
+    log('Prêt. Appareil : '+deviceId());
+  })();
+</script>
+</body>
+</html>
