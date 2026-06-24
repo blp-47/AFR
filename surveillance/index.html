@@ -88,8 +88,8 @@
 
   async function registerSw(){
     if(!('serviceWorker' in navigator)) throw new Error('Service Worker non supporté par ce navigateur');
-    let reg = await navigator.serviceWorker.getRegistration('/AFR/surveillance/');
-    if(!reg) reg = await navigator.serviceWorker.register('sw.js', { scope: '/AFR/surveillance/' });
+    let reg = await navigator.serviceWorker.getRegistration('/surveillance/');
+    if(!reg) reg = await navigator.serviceWorker.register('sw.js', { scope: '/surveillance/' });
     await navigator.serviceWorker.ready;
     return reg;
   }
