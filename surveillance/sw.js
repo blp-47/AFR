@@ -1,5 +1,5 @@
 /* Service Worker dédié — Alertes Élevage AFR
- * Sert UNIQUEMENT à la page /AFR/surveillance/ (scope isolé).
+ * Sert UNIQUEMENT à la page /surveillance/ (scope isolé).
  * N'interfère pas avec /AFR/firebase-messaging-sw.js du portail.
  * Reçoit des messages DATA-ONLY et affiche la notif lui-même
  * (obligatoire pour que le push web s'affiche sur iOS).
@@ -36,8 +36,8 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
-      for (const c of list) { if (c.url.includes('/AFR/surveillance/') && 'focus' in c) return c.focus(); }
-      if (clients.openWindow) return clients.openWindow('/AFR/surveillance/');
+      for (const c of list) { if (c.url.includes('/surveillance/') && 'focus' in c) return c.focus(); }
+      if (clients.openWindow) return clients.openWindow('/surveillance/');
     })
   );
 });
