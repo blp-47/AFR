@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Chlore / pH – Bacs d'eau AFR</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0f1117; --card:#171a22; --card2:#1c2029; --line:#262a36;
+  --txt:#e5e7eb; --mut:#9ca3af; --accent:#3b82f6; --accent2:#2563eb;
+  --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--txt);font-family:'DM Sans',system-ui,sans-serif}
+body{padding:0 0 90px}
+h1,h2,h3{font-family:'Syne',sans-serif;margin:0}
+header{
+  position:sticky;top:0;z-index:20;background:rgba(15,17,23,.92);
+  backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:14px 16px 12px
+}
+.htop{display:flex;align-items:center;gap:10px}
+.htop h1{font-size:18px;font-weight:800;letter-spacing:-.3px}
+.htop h1 span{color:var(--accent)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--bad);flex:none;box-shadow:0 0 8px currentColor}
+.dot.on{background:var(--ok)}
+.tabs{display:flex;gap:6px;margin-top:12px}
+.tab{flex:1;text-align:center;padding:9px;border:1px solid var(--line);background:var(--card);
+  border-radius:10px;font-weight:600;font-size:14px;color:var(--mut);cursor:pointer}
+.tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+main{padding:16px}
+.datebar{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.datebar label{font-size:13px;color:var(--mut);font-weight:600}
+input[type=date]{flex:1;background:var(--card);border:1px solid var(--line);color:var(--txt);
+  border-radius:10px;padding:11px 12px;font-family:inherit;font-size:15px;font-weight:600}
+input[type=date]::-webkit-calendar-picker-indicator{filter:invert(.7)}
+.site{margin-bottom:14px}
+.site-h{font-family:'Syne';font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+  color:var(--accent);margin:0 4px 8px;display:flex;align-items:center;gap:8px}
+.site-h::after{content:"";flex:1;height:1px;background:var(--line)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.bac-block{border-bottom:1px solid var(--line)}
+.bac-block:last-child{border-bottom:none}
+.row{display:grid;grid-template-columns:70px 1fr 1fr;align-items:center;gap:8px;padding:10px 12px}
+.bnote{display:block;width:auto;margin:0 12px 11px;background:var(--card2);border:1px solid var(--line);
+  color:var(--txt);border-radius:9px;padding:9px 11px;font-family:inherit;font-size:14px}
+.bnote::placeholder{color:#5b6270}
+.bnote:focus{outline:none;border-color:var(--accent);background:#1f2430}
+.bnote.filled{border-left:3px solid var(--accent);background:#1f2430}
+.bac{font-weight:700;font-size:15px}
+.field{position:relative}
+.field input{width:100%;background:var(--card2);border:1px solid var(--line);color:var(--txt);
+  border-radius:9px;padding:11px 40px 11px 12px;font-family:inherit;font-size:16px;font-weight:600;text-align:left}
+.field input:focus{outline:none;border-color:var(--accent);background:#1f2430}
+.field .u{position:absolute;right:11px;top:50%;transform:translateY(-50%);
+  font-size:11px;color:var(--mut);font-weight:600;pointer-events:none}
+.field input.warn{border-color:var(--warn);background:rgba(245,158,11,.08)}
+.field input.bad{border-color:var(--bad);background:rgba(239,68,68,.08)}
+.head-lbl{display:grid;grid-template-columns:70px 1fr 1fr;gap:8px;padding:0 12px 6px;
+  font-size:11px;color:var(--mut);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.savebar{position:fixed;left:0;right:0;bottom:0;padding:12px 16px;
+  background:linear-gradient(to top,var(--bg) 60%,transparent);z-index:15}
+.btn{width:100%;border:none;border-radius:12px;padding:15px;font-family:'Syne';font-weight:700;
+  font-size:16px;cursor:pointer;color:#fff;background:var(--accent);transition:.15s}
+.btn:active{transform:scale(.98)}
+.btn.saved{background:var(--ok)}
+.btn:disabled{opacity:.5}
+.btn.sec{background:var(--card);border:1px solid var(--line);color:var(--txt);padding:12px;font-size:14px}
+/* Historique */
+.hint{font-size:12px;color:var(--mut);margin:0 0 12px;line-height:1.5}
+.hist-item{background:var(--card);border:1px solid var(--line);border-radius:12px;
+  margin-bottom:10px;overflow:hidden}
+.hist-h{display:flex;justify-content:space-between;align-items:center;padding:13px 14px;cursor:pointer}
+.hist-date{font-family:'Syne';font-weight:700;font-size:15px}
+.hist-meta{font-size:11px;color:var(--mut)}
+.hist-body{display:none;padding:0 14px 12px;border-top:1px solid var(--line)}
+.hist-item.open .hist-body{display:block}
+.chev{color:var(--mut);transition:.2s;font-size:13px}
+.hist-item.open .chev{transform:rotate(90deg)}
+.htable{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px}
+.htable th{text-align:left;color:var(--mut);font-weight:600;padding:6px 4px;font-size:11px;
+  text-transform:uppercase;border-bottom:1px solid var(--line)}
+.htable td{padding:7px 4px;border-bottom:1px solid var(--line)}
+.htable td:first-child{font-weight:700}
+.pill{display:inline-block;padding:2px 7px;border-radius:6px;font-weight:600;font-size:12px}
+.pill.ok{background:rgba(34,197,94,.12);color:var(--ok)}
+.pill.warn{background:rgba(245,158,11,.14);color:var(--warn)}
+.pill.bad{background:rgba(239,68,68,.14);color:var(--bad)}
+.pill.na{color:var(--mut)}
+.empty{text-align:center;color:var(--mut);padding:40px 20px;font-size:14px}
+.note{width:100%;min-height:82px;background:var(--card);border:1px solid var(--line);color:var(--txt);
+  border-radius:12px;padding:12px;font-family:inherit;font-size:15px;line-height:1.5;resize:vertical}
+.note:focus{outline:none;border-color:var(--accent);background:#1f2430}
+.hnote{margin-top:6px;background:var(--card2);border:1px solid var(--line);border-left:3px solid var(--accent);
+  border-radius:8px;padding:8px 11px;font-size:13px;line-height:1.45;color:var(--txt);white-space:pre-wrap}
+.noterow td{padding-top:0;padding-bottom:9px;border-bottom:1px solid var(--line)}
+.toast{position:fixed;bottom:92px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--card2);border:1px solid var(--line);padding:11px 18px;border-radius:10px;
+  font-size:14px;font-weight:600;opacity:0;transition:.25s;pointer-events:none;z-index:30}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.hidden{display:none}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="htop">
+    <span class="dot" id="dot"></span>
+    <h1>Chlore <span>/</span> pH — Bacs d'eau</h1>
+  </div>
+  <div class="tabs">
+    <div class="tab active" data-tab="saisie">Saisie</div>
+    <div class="tab" data-tab="hist">Historique</div>
+  </div>
+</header>
+
+<main>
+  <!-- SAISIE -->
+  <section id="view-saisie">
+    <div class="datebar">
+      <label for="d">Date</label>
+      <input type="date" id="d">
+    </div>
+    <div class="head-lbl"><div></div><div>Chlore</div><div>pH</div></div>
+    <div id="form"></div>
+  </section>
+
+  <!-- HISTORIQUE -->
+  <section id="view-hist" class="hidden">
+    <p class="hint">Toutes les relevés enregistrés, du plus récent au plus ancien. Touchez une date pour la détailler ou l'ouvrir en saisie.</p>
+    <button class="btn sec" id="csvBtn" style="margin-bottom:14px">⬇️ Exporter en CSV</button>
+    <div id="histList"></div>
+  </section>
+</main>
+
+<div class="savebar" id="savebar">
+  <button class="btn" id="saveBtn">Enregistrer</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+const FB = {
+  apiKey:            "AIzaSyCSw10bFLStcem4A_CO4IXmKeQbLH9NXsM",
+  authDomain:        "afr-nt2.firebaseapp.com",
+  databaseURL:       "https://afr-nt2-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:         "afr-nt2",
+  storageBucket:     "afr-nt2.firebasestorage.app",
+  messagingSenderId: "169851474976",
+  appId:             "1:169851474976:web:be14c24366b0af024f9845",
+  measurementId:     "G-HYBY42TVJZ"
+};
+firebase.initializeApp(FB);
+const db = firebase.database();
+const ROOT = "chlore_ph";
+
+// ── Configuration des bacs par site ──────────────────────────────
+const SITES = {
+  "SG": ["SG1","SG2","SG3"],
+  "NT": ["NT1","NT2"],
+  "NV": ["NV1","NV2"],
+  "ST": ["ST1","ST2","ST3"],
+  "VS": ["VS"]
+};
+const BACS = Object.values(SITES).flat();
+
+// Seuils indicatifs (aide visuelle uniquement)
+const CL_MIN=0.2, CL_MAX=2.0;      // chlore libre ppm
+const PH_MIN=6.0, PH_MAX=8.0;      // pH
+
+// ── State ─────────────────────────────────────────────────────────
+let allData = {};   // { date: { BAC:{cl,ph}, meta:{ts} } }
+let ready = false;
+
+const $ = s => document.querySelector(s);
+const dot = $("#dot");
+
+// ── Auth anonyme ──────────────────────────────────────────────────
+firebase.auth().signInAnonymously().catch(e=>console.error(e));
+firebase.auth().onAuthStateChanged(u=>{
+  if(!u) return;
+  dot.classList.add("on");
+  db.ref(ROOT).on("value", snap=>{
+    allData = snap.val() || {};
+    ready = true;
+    loadDate();     // rafraîchit la saisie si la date affichée a changé côté serveur
+    renderHist();
+  });
+});
+
+// ── Date ──────────────────────────────────────────────────────────
+function todayStr(){
+  const t=new Date(); t.setMinutes(t.getMinutes()-t.getTimezoneOffset());
+  return t.toISOString().slice(0,10);
+}
+const dInput = $("#d");
+dInput.value = todayStr();
+dInput.addEventListener("change", loadDate);
+
+// ── Rendu formulaire de saisie ────────────────────────────────────
+function buildForm(){
+  const f = $("#form"); f.innerHTML="";
+  for(const [site,bacs] of Object.entries(SITES)){
+    const wrap=document.createElement("div"); wrap.className="site";
+    wrap.innerHTML=`<div class="site-h">Site ${site}</div>`;
+    const card=document.createElement("div"); card.className="card";
+    bacs.forEach(b=>{
+      const block=document.createElement("div"); block.className="bac-block";
+      block.innerHTML=`
+        <div class="row">
+          <div class="bac">${b}</div>
+          <div class="field">
+            <input id="cl-${b}" type="number" inputmode="decimal" step="0.1" placeholder="—" min="0">
+            <span class="u">ppm</span>
+          </div>
+          <div class="field">
+            <input id="ph-${b}" type="number" inputmode="decimal" step="0.1" placeholder="—" min="0" max="14">
+            <span class="u">pH</span>
+          </div>
+        </div>
+        <input id="nt-${b}" class="bnote" type="text" placeholder="Commentaire ${b}… (ex : solution mère vide)">`;
+      card.appendChild(block);
+    });
+    wrap.appendChild(card); f.appendChild(wrap);
+  }
+  // coloration temps réel
+  BACS.forEach(b=>{
+    $("#cl-"+b).addEventListener("input",()=>colorCl(b));
+    $("#ph-"+b).addEventListener("input",()=>colorPh(b));
+    const nt=$("#nt-"+b);
+    nt.addEventListener("input",()=>nt.classList.toggle("filled",nt.value.trim()!==""));
+  });
+}
+function colorCl(b){
+  const el=$("#cl-"+b), v=parseFloat(el.value); el.classList.remove("warn","bad");
+  if(el.value==="") return;
+  if(isNaN(v)||v<0.05) el.classList.add("bad");
+  else if(v<CL_MIN||v>CL_MAX) el.classList.add("warn");
+}
+function colorPh(b){
+  const el=$("#ph-"+b), v=parseFloat(el.value); el.classList.remove("warn","bad");
+  if(el.value==="") return;
+  if(isNaN(v)||v<PH_MIN-1||v>PH_MAX+1) el.classList.add("bad");
+  else if(v<PH_MIN||v>PH_MAX) el.classList.add("warn");
+}
+
+function loadDate(){
+  const date=dInput.value; if(!date) return;
+  const rec=(allData[date])||{};
+  BACS.forEach(b=>{
+    const clEl=$("#cl-"+b), phEl=$("#ph-"+b);
+    if(!clEl) return;
+    // ne pas écraser une saisie en cours si l'utilisateur a le focus dessus
+    if(document.activeElement!==clEl) clEl.value=(rec[b]&&rec[b].cl!=null)?rec[b].cl:"";
+    if(document.activeElement!==phEl) phEl.value=(rec[b]&&rec[b].ph!=null)?rec[b].ph:"";
+    const ntEl=$("#nt-"+b);
+    if(ntEl && document.activeElement!==ntEl){
+      ntEl.value=(rec[b]&&rec[b].note)?rec[b].note:"";
+      ntEl.classList.toggle("filled",ntEl.value.trim()!=="");
+    }
+    colorCl(b); colorPh(b);
+  });
+}
+
+// ── Enregistrement ────────────────────────────────────────────────
+$("#saveBtn").addEventListener("click", ()=>{
+  const date=dInput.value; if(!date){toast("Choisis une date");return;}
+  const payload={};
+  let count=0;
+  BACS.forEach(b=>{
+    const cl=$("#cl-"+b).value, ph=$("#ph-"+b).value, nt=$("#nt-"+b).value.trim();
+    const o={};
+    if(cl!=="") { o.cl=parseFloat(cl); count++; }
+    if(ph!=="") { o.ph=parseFloat(ph); count++; }
+    if(nt!=="") { o.note=nt; count++; }
+    payload[b]= (Object.keys(o).length)? o : null;
+  });
+  payload.meta={ ts: Date.now(), by: firebase.auth().currentUser?.uid||"?" };
+  db.ref(`${ROOT}/${date}`).set(payload).then(()=>{
+    const btn=$("#saveBtn"); btn.classList.add("saved"); btn.textContent="✓ Enregistré";
+    toast(count+" valeur(s) sauvegardée(s)");
+    setTimeout(()=>{btn.classList.remove("saved");btn.textContent="Enregistrer";},1600);
+  }).catch(e=>toast("Erreur : "+e.message));
+});
+
+// ── Historique ────────────────────────────────────────────────────
+function badge(type,v,min,max,hardLow){
+  if(v==null||v==="") return `<span class="pill na">—</span>`;
+  const n=parseFloat(v); let cls="ok";
+  if(type==="cl"){ if(n<0.05) cls="bad"; else if(n<min||n>max) cls="warn"; }
+  else { if(n<min-1||n>max+1) cls="bad"; else if(n<min||n>max) cls="warn"; }
+  return `<span class="pill ${cls}">${n}</span>`;
+}
+function renderHist(){
+  const list=$("#histList");
+  const dates=Object.keys(allData).filter(d=>/^\d{4}-\d{2}-\d{2}$/.test(d)).sort().reverse();
+  if(!dates.length){ list.innerHTML=`<div class="empty">Aucun relevé enregistré.</div>`; return; }
+  list.innerHTML="";
+  dates.forEach(date=>{
+    const rec=allData[date]||{};
+    const filled=BACS.filter(b=>rec[b]&&(rec[b].cl!=null||rec[b].ph!=null)).length;
+    const meta=rec.meta?new Date(rec.meta.ts).toLocaleString("fr-FR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"";
+    const item=document.createElement("div"); item.className="hist-item";
+    let rows="";
+    BACS.forEach(b=>{
+      const r=rec[b]||{};
+      rows+=`<tr><td>${b}</td>
+        <td>${badge("cl",r.cl,CL_MIN,CL_MAX)}</td>
+        <td>${badge("ph",r.ph,PH_MIN,PH_MAX)}</td></tr>`;
+      if(r.note) rows+=`<tr class="noterow"><td colspan="3"><div class="hnote">💬 ${escapeHtml(r.note)}</div></td></tr>`;
+    });
+    item.innerHTML=`
+      <div class="hist-h">
+        <div>
+          <div class="hist-date">${fmtDate(date)}</div>
+          <div class="hist-meta">${filled}/${BACS.length} bacs · maj ${meta}</div>
+        </div>
+        <span class="chev">▶</span>
+      </div>
+      <div class="hist-body">
+        <table class="htable">
+          <thead><tr><th>Bac</th><th>Chlore (ppm)</th><th>pH</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <button class="btn sec" style="margin-top:10px" data-edit="${date}">✏️ Ouvrir en saisie</button>
+      </div>`;
+    item.querySelector(".hist-h").addEventListener("click",()=>item.classList.toggle("open"));
+    item.querySelector("[data-edit]").addEventListener("click",e=>{
+      e.stopPropagation();
+      dInput.value=date; loadDate(); switchTab("saisie");
+      window.scrollTo({top:0,behavior:"smooth"});
+    });
+    list.appendChild(item);
+  });
+}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function fmtDate(d){
+  const [y,m,day]=d.split("-");
+  return new Date(y,m-1,day).toLocaleDateString("fr-FR",{weekday:"short",day:"2-digit",month:"long",year:"numeric"});
+}
+
+// ── Export CSV ────────────────────────────────────────────────────
+$("#csvBtn").addEventListener("click",()=>{
+  const dates=Object.keys(allData).filter(d=>/^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
+  if(!dates.length){toast("Rien à exporter");return;}
+  const q=v=>`"${String(v).replace(/"/g,'""')}"`;
+  let csv="Date;Bac;Chlore_ppm;pH;Commentaire\n";
+  dates.forEach(date=>{
+    const rec=allData[date]||{};
+    BACS.forEach(b=>{
+      const r=rec[b]||{};
+      csv+=`${date};${b};${r.cl!=null?r.cl:""};${r.ph!=null?r.ph:""};${q(r.note||"")}\n`;
+    });
+  });
+  const blob=new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download=`Chlore_pH_bacs_${todayStr()}.csv`;
+  a.click();
+  toast("CSV généré");
+});
+
+// ── Onglets ───────────────────────────────────────────────────────
+function switchTab(t){
+  document.querySelectorAll(".tab").forEach(el=>el.classList.toggle("active",el.dataset.tab===t));
+  $("#view-saisie").classList.toggle("hidden",t!=="saisie");
+  $("#view-hist").classList.toggle("hidden",t==="saisie");
+  $("#savebar").classList.toggle("hidden",t!=="saisie");
+}
+document.querySelectorAll(".tab").forEach(el=>el.addEventListener("click",()=>switchTab(el.dataset.tab)));
+
+// ── Toast ─────────────────────────────────────────────────────────
+let toastT;
+function toast(msg){
+  const t=$("#toast"); t.textContent=msg; t.classList.add("show");
+  clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),2200);
+}
+
+// init
+buildForm();
+loadDate();
+</script>
+</body>
+</html>
