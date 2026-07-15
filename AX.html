@@ -1,0 +1,664 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#111827" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Pesées AFR" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <title>Pesées parcs 10 à 13</title>
+  <style>
+    :root {
+      --bg: #f3f4f6;
+      --card: #ffffff;
+      --text: #111827;
+      --muted: #6b7280;
+      --line: #d1d5db;
+      --primary: #111827;
+      --success: #15803d;
+      --danger: #b91c1c;
+      --warning: #a16207;
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      padding: env(safe-area-inset-top) 12px env(safe-area-inset-bottom);
+    }
+
+    button, input, select { font: inherit; }
+    button { -webkit-tap-highlight-color: transparent; }
+
+    .app {
+      width: min(100%, 620px);
+      margin: 0 auto;
+      padding: 10px 0 28px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin: 6px 4px 14px;
+    }
+
+    h1 { margin: 0; font-size: 25px; line-height: 1.15; }
+    .subtitle { margin-top: 5px; color: var(--muted); font-size: 14px; }
+
+    .icon-btn {
+      border: 0;
+      background: var(--card);
+      border-radius: 13px;
+      padding: 11px 13px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+      font-weight: 700;
+    }
+
+    .park-tabs {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 7px;
+      margin-bottom: 12px;
+    }
+
+    .park-tab {
+      border: 1px solid var(--line);
+      background: var(--card);
+      border-radius: 14px;
+      padding: 11px 4px 9px;
+      font-weight: 800;
+      color: var(--text);
+      position: relative;
+    }
+
+    .park-tab.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    .park-tab.done::after {
+      content: "✓";
+      position: absolute;
+      top: 3px;
+      right: 7px;
+      font-size: 12px;
+      color: var(--success);
+    }
+
+    .park-tab.active.done::after { color: #86efac; }
+
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: 0 2px 10px rgba(0,0,0,.07);
+      margin-bottom: 12px;
+    }
+
+    .progress-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .counter { font-size: 31px; font-weight: 900; letter-spacing: -.5px; }
+    .counter small { font-size: 16px; color: var(--muted); font-weight: 700; }
+    .park-title { color: var(--muted); font-weight: 700; text-align: right; }
+
+    .progress {
+      height: 13px;
+      border-radius: 999px;
+      background: #e5e7eb;
+      overflow: hidden;
+    }
+
+    .progress > div {
+      height: 100%;
+      width: 0;
+      background: var(--success);
+      transition: width .18s ease;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .stat {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 13px;
+      padding: 10px 7px;
+      text-align: center;
+    }
+
+    .stat strong { display: block; font-size: 19px; }
+    .stat span { font-size: 12px; color: var(--muted); }
+
+    label { display: block; font-weight: 800; margin-bottom: 9px; }
+
+    .entry-row {
+      display: grid;
+      grid-template-columns: 1fr 84px;
+      gap: 8px;
+      align-items: stretch;
+    }
+
+    #weightInput {
+      width: 100%;
+      border: 2px solid var(--line);
+      border-radius: 16px;
+      padding: 17px 14px;
+      font-size: 29px;
+      font-weight: 900;
+      outline: none;
+      background: #fff;
+      min-width: 0;
+    }
+
+    #weightInput:focus { border-color: var(--primary); }
+
+    #unitSelect {
+      border: 2px solid var(--line);
+      border-radius: 16px;
+      background: #fff;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .primary-btn {
+      width: 100%;
+      margin-top: 10px;
+      border: 0;
+      border-radius: 16px;
+      background: var(--primary);
+      color: #fff;
+      padding: 17px 14px;
+      font-weight: 900;
+      font-size: 18px;
+    }
+
+    .primary-btn:disabled { opacity: .45; }
+
+    .helper {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 8px;
+      text-align: center;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .secondary-btn, .danger-btn {
+      border-radius: 14px;
+      padding: 13px 10px;
+      font-weight: 800;
+      background: var(--card);
+      border: 1px solid var(--line);
+    }
+
+    .danger-btn { color: var(--danger); }
+
+    .list-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .list-header h2 { margin: 0; font-size: 18px; }
+
+    .weights-list {
+      max-height: 250px;
+      overflow: auto;
+      border: 1px solid #e5e7eb;
+      border-radius: 13px;
+    }
+
+    .weight-item {
+      display: grid;
+      grid-template-columns: 52px 1fr 66px;
+      gap: 8px;
+      align-items: center;
+      padding: 10px 11px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .weight-item:last-child { border-bottom: 0; }
+    .weight-num { color: var(--muted); font-weight: 700; }
+    .weight-value { font-weight: 900; font-size: 18px; }
+    .delete-one {
+      border: 0;
+      background: #fee2e2;
+      color: var(--danger);
+      border-radius: 10px;
+      padding: 7px;
+      font-weight: 800;
+    }
+
+    .empty { color: var(--muted); text-align: center; padding: 22px 10px; }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: calc(18px + env(safe-area-inset-bottom));
+      transform: translate(-50%, 25px);
+      opacity: 0;
+      pointer-events: none;
+      background: #111827;
+      color: #fff;
+      padding: 11px 15px;
+      border-radius: 999px;
+      font-weight: 750;
+      z-index: 20;
+      transition: .2s ease;
+      white-space: nowrap;
+    }
+
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+    dialog {
+      border: 0;
+      border-radius: 18px;
+      padding: 0;
+      width: min(92vw, 430px);
+      box-shadow: 0 20px 60px rgba(0,0,0,.25);
+    }
+
+    dialog::backdrop { background: rgba(0,0,0,.42); }
+    .dialog-content { padding: 18px; }
+    .dialog-content h2 { margin: 0 0 12px; }
+    .dialog-content input {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      margin: 5px 0 12px;
+    }
+    .dialog-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+    @media (max-width: 390px) {
+      .stat strong { font-size: 17px; }
+      .weight-item { grid-template-columns: 45px 1fr 60px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <div>
+        <h1>Pesées parcs 10 à 13</h1>
+        <div class="subtitle">Objectif : 80 pesées par parc</div>
+      </div>
+      <button class="icon-btn" id="settingsBtn" aria-label="Réglages">⚙︎</button>
+    </header>
+
+    <nav class="park-tabs" aria-label="Choix du parc">
+      <button class="park-tab active" data-park="10">Parc 10</button>
+      <button class="park-tab" data-park="11">Parc 11</button>
+      <button class="park-tab" data-park="12">Parc 12</button>
+      <button class="park-tab" data-park="13">Parc 13</button>
+    </nav>
+
+    <section class="card">
+      <div class="progress-row">
+        <div class="counter"><span id="countValue">0</span><small> / <span id="targetValue">80</span></small></div>
+        <div class="park-title">Parc <span id="parkValue">10</span></div>
+      </div>
+      <div class="progress"><div id="progressBar"></div></div>
+
+      <div class="stats">
+        <div class="stat"><strong id="averageValue">—</strong><span>Moyenne</span></div>
+        <div class="stat"><strong id="minValue">—</strong><span>Minimum</span></div>
+        <div class="stat"><strong id="maxValue">—</strong><span>Maximum</span></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <form id="weightForm" autocomplete="off">
+        <label for="weightInput">Pesée n° <span id="nextNumber">1</span></label>
+        <div class="entry-row">
+          <input id="weightInput" type="text" inputmode="decimal" enterkeyhint="done" placeholder="Ex. 3250" autofocus />
+          <select id="unitSelect" aria-label="Unité">
+            <option value="g">g</option>
+            <option value="kg">kg</option>
+          </select>
+        </div>
+        <button class="primary-btn" id="saveBtn" type="submit">Valider et suivante</button>
+        <div class="helper">Les données restent enregistrées sur l’iPhone.</div>
+      </form>
+    </section>
+
+    <section class="actions">
+      <button class="secondary-btn" id="undoBtn">↩ Annuler la dernière</button>
+      <button class="secondary-btn" id="exportBtn">⇩ Exporter CSV</button>
+    </section>
+
+    <section class="card" style="margin-top:12px">
+      <div class="list-header">
+        <h2>Dernières pesées</h2>
+        <button class="danger-btn" id="clearParkBtn">Vider ce parc</button>
+      </div>
+      <div class="weights-list" id="weightsList"></div>
+    </section>
+  </main>
+
+  <dialog id="settingsDialog">
+    <div class="dialog-content">
+      <h2>Réglages</h2>
+      <label for="targetInput">Nombre de pesées par parc</label>
+      <input id="targetInput" type="number" inputmode="numeric" min="1" max="500" value="80" />
+      <div class="dialog-actions">
+        <button class="secondary-btn" id="closeSettingsBtn" type="button">Annuler</button>
+        <button class="primary-btn" id="saveSettingsBtn" type="button" style="margin-top:0">Enregistrer</button>
+      </div>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (() => {
+      const STORAGE_KEY = 'afr_pesees_parcs_10_13_v1';
+      const parks = ['10', '11', '12', '13'];
+      let activePark = '10';
+      let state = loadState();
+
+      const els = {
+        count: document.getElementById('countValue'),
+        target: document.getElementById('targetValue'),
+        park: document.getElementById('parkValue'),
+        progress: document.getElementById('progressBar'),
+        average: document.getElementById('averageValue'),
+        min: document.getElementById('minValue'),
+        max: document.getElementById('maxValue'),
+        next: document.getElementById('nextNumber'),
+        input: document.getElementById('weightInput'),
+        unit: document.getElementById('unitSelect'),
+        form: document.getElementById('weightForm'),
+        save: document.getElementById('saveBtn'),
+        list: document.getElementById('weightsList'),
+        undo: document.getElementById('undoBtn'),
+        export: document.getElementById('exportBtn'),
+        clear: document.getElementById('clearParkBtn'),
+        tabs: [...document.querySelectorAll('.park-tab')],
+        toast: document.getElementById('toast'),
+        settingsBtn: document.getElementById('settingsBtn'),
+        settingsDialog: document.getElementById('settingsDialog'),
+        targetInput: document.getElementById('targetInput'),
+        closeSettingsBtn: document.getElementById('closeSettingsBtn'),
+        saveSettingsBtn: document.getElementById('saveSettingsBtn')
+      };
+
+      function defaultState() {
+        return {
+          target: 80,
+          unit: 'g',
+          parks: Object.fromEntries(parks.map(p => [p, []]))
+        };
+      }
+
+      function loadState() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+          const base = defaultState();
+          if (!saved || typeof saved !== 'object') return base;
+          return {
+            target: Number(saved.target) > 0 ? Number(saved.target) : 80,
+            unit: saved.unit === 'kg' ? 'kg' : 'g',
+            parks: Object.fromEntries(parks.map(p => [p, Array.isArray(saved.parks?.[p]) ? saved.parks[p] : []]))
+          };
+        } catch {
+          return defaultState();
+        }
+      }
+
+      function saveState() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      }
+
+      function formatNumber(value) {
+        const decimals = state.unit === 'kg' ? 3 : 0;
+        return new Intl.NumberFormat('fr-FR', {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: decimals
+        }).format(value);
+      }
+
+      function showToast(message) {
+        els.toast.textContent = message;
+        els.toast.classList.add('show');
+        clearTimeout(showToast.timer);
+        showToast.timer = setTimeout(() => els.toast.classList.remove('show'), 1600);
+      }
+
+      function parseWeight(raw) {
+        const normalized = raw.trim().replace(',', '.').replace(/\s+/g, '');
+        if (!normalized) return null;
+        const value = Number(normalized);
+        if (!Number.isFinite(value) || value <= 0) return null;
+        return value;
+      }
+
+      function render() {
+        const values = state.parks[activePark];
+        const count = values.length;
+        const target = state.target;
+        const numericValues = values.map(v => v.value);
+        const avg = count ? numericValues.reduce((a, b) => a + b, 0) / count : null;
+        const min = count ? Math.min(...numericValues) : null;
+        const max = count ? Math.max(...numericValues) : null;
+
+        els.count.textContent = count;
+        els.target.textContent = target;
+        els.park.textContent = activePark;
+        els.next.textContent = count + 1;
+        els.progress.style.width = `${Math.min(100, (count / target) * 100)}%`;
+        els.average.textContent = avg === null ? '—' : `${formatNumber(avg)} ${state.unit}`;
+        els.min.textContent = min === null ? '—' : `${formatNumber(min)} ${state.unit}`;
+        els.max.textContent = max === null ? '—' : `${formatNumber(max)} ${state.unit}`;
+        els.unit.value = state.unit;
+        els.save.disabled = count >= target;
+        els.save.textContent = count >= target ? 'Parc terminé ✓' : 'Valider et suivante';
+        els.undo.disabled = count === 0;
+
+        els.tabs.forEach(tab => {
+          const park = tab.dataset.park;
+          tab.classList.toggle('active', park === activePark);
+          tab.classList.toggle('done', state.parks[park].length >= target);
+          tab.setAttribute('aria-current', park === activePark ? 'page' : 'false');
+        });
+
+        if (!count) {
+          els.list.innerHTML = '<div class="empty">Aucune pesée enregistrée.</div>';
+        } else {
+          els.list.innerHTML = values
+            .map((entry, index) => ({ entry, index }))
+            .reverse()
+            .slice(0, 20)
+            .map(({ entry, index }) => `
+              <div class="weight-item">
+                <div class="weight-num">n° ${index + 1}</div>
+                <div class="weight-value">${formatNumber(entry.value)} ${state.unit}</div>
+                <button class="delete-one" data-index="${index}" type="button">Effacer</button>
+              </div>
+            `).join('');
+        }
+      }
+
+      function selectPark(park) {
+        if (!parks.includes(park)) return;
+        activePark = park;
+        render();
+        requestAnimationFrame(() => els.input.focus());
+      }
+
+      function addWeight() {
+        const values = state.parks[activePark];
+        if (values.length >= state.target) {
+          showToast('Objectif déjà atteint');
+          return;
+        }
+
+        const value = parseWeight(els.input.value);
+        if (value === null) {
+          showToast('Entre un poids valide');
+          els.input.focus();
+          return;
+        }
+
+        values.push({ value, timestamp: new Date().toISOString() });
+        saveState();
+        els.input.value = '';
+        render();
+
+        if (navigator.vibrate) navigator.vibrate(35);
+
+        if (values.length >= state.target) {
+          showToast(`Parc ${activePark} terminé ✓`);
+          const nextPark = parks.find(p => state.parks[p].length < state.target);
+          if (nextPark && nextPark !== activePark) setTimeout(() => selectPark(nextPark), 450);
+        } else {
+          showToast(`Pesée ${values.length} enregistrée`);
+          els.input.focus();
+        }
+      }
+
+      function deleteAt(index) {
+        const values = state.parks[activePark];
+        if (!Number.isInteger(index) || index < 0 || index >= values.length) return;
+        values.splice(index, 1);
+        saveState();
+        render();
+        showToast('Pesée effacée');
+      }
+
+      function undoLast() {
+        const values = state.parks[activePark];
+        if (!values.length) return;
+        values.pop();
+        saveState();
+        render();
+        showToast('Dernière pesée annulée');
+        els.input.focus();
+      }
+
+      function clearPark() {
+        if (!state.parks[activePark].length) return;
+        const ok = confirm(`Effacer toutes les pesées du parc ${activePark} ?`);
+        if (!ok) return;
+        state.parks[activePark] = [];
+        saveState();
+        render();
+        showToast(`Parc ${activePark} vidé`);
+      }
+
+      function escapeCsv(value) {
+        const text = String(value ?? '');
+        return /[;"\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+      }
+
+      function exportCsv() {
+        const rows = [['Parc', 'Numero', `Poids_${state.unit}`, 'Date_heure']];
+        parks.forEach(park => {
+          state.parks[park].forEach((entry, i) => {
+            rows.push([park, i + 1, entry.value, entry.timestamp]);
+          });
+        });
+
+        const csv = '\ufeff' + rows.map(row => row.map(escapeCsv).join(';')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const date = new Date().toISOString().slice(0, 10);
+        a.href = url;
+        a.download = `pesees_parcs_10_13_${date}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        showToast('Export CSV créé');
+      }
+
+      els.tabs.forEach(tab => tab.addEventListener('click', () => selectPark(tab.dataset.park)));
+      els.form.addEventListener('submit', event => {
+        event.preventDefault();
+        addWeight();
+      });
+      els.unit.addEventListener('change', () => {
+        const previous = state.unit;
+        const next = els.unit.value;
+        if (previous === next) return;
+
+        const hasData = parks.some(p => state.parks[p].length > 0);
+        if (hasData) {
+          const ok = confirm(`Convertir toutes les pesées de ${previous} vers ${next} ?`);
+          if (!ok) {
+            els.unit.value = previous;
+            return;
+          }
+          const factor = previous === 'g' && next === 'kg' ? 1 / 1000 : 1000;
+          parks.forEach(p => state.parks[p].forEach(entry => entry.value *= factor));
+        }
+        state.unit = next;
+        saveState();
+        render();
+      });
+      els.undo.addEventListener('click', undoLast);
+      els.export.addEventListener('click', exportCsv);
+      els.clear.addEventListener('click', clearPark);
+      els.list.addEventListener('click', event => {
+        const button = event.target.closest('[data-index]');
+        if (!button) return;
+        deleteAt(Number(button.dataset.index));
+      });
+
+      els.settingsBtn.addEventListener('click', () => {
+        els.targetInput.value = state.target;
+        els.settingsDialog.showModal();
+      });
+      els.closeSettingsBtn.addEventListener('click', () => els.settingsDialog.close());
+      els.saveSettingsBtn.addEventListener('click', () => {
+        const target = Number(els.targetInput.value);
+        if (!Number.isInteger(target) || target < 1 || target > 500) {
+          showToast('Objectif entre 1 et 500');
+          return;
+        }
+        state.target = target;
+        saveState();
+        els.settingsDialog.close();
+        render();
+        showToast('Objectif enregistré');
+      });
+
+      window.addEventListener('load', () => {
+        render();
+        setTimeout(() => els.input.focus(), 300);
+      });
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      }
+    })();
+  </script>
+</body>
+</html>
