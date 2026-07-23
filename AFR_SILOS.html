@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Niveaux des silos — AFR</title>
+<!--
+  Lecture Firebase RTDB (projet afr-nt2), chemin : silos/{ID}
+  Chaque ESP32 écrit :  silos/{ID}/distance_cm , silos/{ID}/force , silos/{ID}/ts
+  L'app convertit la distance en tonnes via la géométrie de chaque silo.
+
+  HISTORIQUE : silos_history/{ID}/{ts} = { t, d, bv?, bp? }
+  - L'app journalise automatiquement chaque nouvelle mesure vue (clé = ts → idempotent,
+    plusieurs clients ouverts n'écrivent jamais de doublon).
+  - Idéalement l'ESP32 écrit AUSSI dans silos_history (voir note en bas de page)
+    pour ne rien perdre quand aucune page n'est ouverte.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Barlow:wght@400;500;600&family=DM+Sans:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0f1117; --surface:#171a21; --surface2:#1c2029; --border:#262b36;
+    --border-strong:#39414f; --text:#e6e9ef; --muted:#8b93a3; --accent:#3b82f6;
+    --ok:#22c55e; --warn:#f59e0b; --crit:#ef4444;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:'Barlow',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased; padding:env(safe-area-inset-top) 0 40px;
+    min-height:100vh;
+  }
+  .wrap{max-width:1100px;margin:0 auto;padding:0 16px}
+
+  header{padding:24px 0 18px}
+  .title{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+  h1{font-family:'Syne',sans-serif;font-weight:800;font-size:26px;letter-spacing:-.5px}
+  .title .sub{color:var(--muted);font-size:14px}
+
+  .summary{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;align-items:center}
+  .stat{
+    background:var(--surface);border:1px solid var(--border);border-radius:12px;
+    padding:10px 14px;display:flex;flex-direction:column;gap:2px
+  }
+  .stat .v{font-family:'DM Sans',sans-serif;font-weight:700;font-size:20px;font-variant-numeric:tabular-nums}
+  .stat .l{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+  .stat.crit .v{color:var(--crit)} .stat.warn .v{color:var(--warn)}
+  .spacer{flex:1}
+  .demo-btn{
+    background:var(--surface2);border:1px solid var(--border);color:var(--muted);
+    border-radius:10px;padding:9px 14px;font-family:'Barlow';font-size:13px;font-weight:500;
+    cursor:pointer;transition:.15s
+  }
+  .demo-btn:hover{border-color:var(--border-strong);color:var(--text)}
+  .demo-btn.on{background:rgba(59,130,246,.12);border-color:var(--accent);color:var(--accent)}
+
+  .grid{
+    display:grid;gap:14px;margin-top:8px;
+    grid-template-columns:repeat(auto-fill,minmax(290px,1fr))
+  }
+
+  .card{
+    background:var(--surface);border:1px solid var(--border);border-radius:16px;
+    padding:16px;display:grid;grid-template-columns:84px 1fr;gap:14px;align-items:center;
+    position:relative;overflow:hidden
+  }
+  .card.open{grid-column:1/-1}
+  .card.empty{opacity:.62}
+  .card .accent{position:absolute;left:0;top:0;bottom:0;width:3px}
+
+  .silo-svg{width:84px;height:150px}
+
+  .info{display:flex;flex-direction:column;gap:6px;min-width:0}
+  .row1{display:flex;align-items:center;gap:8px}
+  .silo-name{font-family:'Syne',sans-serif;font-weight:700;font-size:19px}
+  .badge{font-size:11px;font-weight:500;padding:2px 8px;border-radius:20px;white-space:nowrap}
+
+  .big{font-family:'DM Sans',sans-serif;font-weight:700;font-variant-numeric:tabular-nums;
+    font-size:30px;line-height:1;margin-top:2px}
+  .big .u{font-size:15px;color:var(--muted);font-weight:500;margin-left:3px}
+  .pct{font-family:'DM Sans';font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+
+  .meta{display:flex;flex-direction:column;gap:3px;margin-top:4px;font-size:12.5px;color:var(--muted)}
+  .meta .dist{font-variant-numeric:tabular-nums}
+
+  .status{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:500;margin-top:4px}
+  .dot{width:8px;height:8px;border-radius:50%}
+  .pill-stale{font-size:10.5px;color:var(--warn);border:1px solid rgba(245,158,11,.4);
+    border-radius:6px;padding:1px 6px}
+  .pill-cal{font-size:10.5px;color:var(--accent);border:1px solid rgba(59,130,246,.4);
+    border-radius:6px;padding:1px 6px}
+  .batt{display:inline-flex;align-items:center;gap:4px;font-variant-numeric:tabular-nums}
+  .batt-body{position:relative;width:20px;height:10px;border:1.5px solid var(--border-strong);
+    border-radius:2px;display:inline-block}
+  .batt-fill{position:absolute;left:1px;top:1px;bottom:1px;border-radius:1px}
+  .batt-cap{width:2px;height:5px;background:var(--border-strong);border-radius:0 1px 1px 0;
+    display:inline-block;margin-left:1px}
+
+  .empty-txt{color:var(--muted);font-size:13px;margin-top:4px}
+
+  /* ---- badge de connexion ---- */
+  .conn{font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:20px;
+    display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+  .conn .cdot{width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block}
+  .conn.on{color:var(--ok);background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.35)}
+  .conn.off{color:var(--crit);background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.35)}
+  .conn.warn{color:var(--warn);background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.4)}
+
+  /* ---- historique ---- */
+  .hist-btn{
+    background:none;border:none;color:var(--accent);font-family:'Barlow';
+    font-size:12.5px;font-weight:500;cursor:pointer;padding:0;text-align:left;margin-top:6px
+  }
+  .hist-btn:hover{text-decoration:underline}
+  .hist{grid-column:1/-1;border-top:1px solid var(--border);margin-top:12px;padding-top:12px}
+  .hist-head{display:flex;gap:6px;align-items:center;margin-bottom:10px}
+  .hist-head .ht{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-right:auto}
+  .rbtn{
+    background:var(--surface2);border:1px solid var(--border);color:var(--muted);
+    border-radius:8px;padding:4px 10px;font-family:'Barlow';font-size:12px;cursor:pointer;transition:.15s
+  }
+  .rbtn:hover{border-color:var(--border-strong);color:var(--text)}
+  .rbtn.on{background:rgba(59,130,246,.12);border-color:var(--accent);color:var(--accent)}
+  .hist-cv{position:relative;height:190px}
+  .hist-msg{color:var(--muted);font-size:12.5px;padding:6px 0}
+
+  /* ---- réapprovisionnements ---- */
+  .refill-bar{margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .refill-add{
+    background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.5);color:#a78bfa;
+    border-radius:8px;padding:5px 11px;font-family:'Barlow';font-size:12px;font-weight:500;cursor:pointer;transition:.15s
+  }
+  .refill-add:hover{background:rgba(139,92,246,.22);border-color:#8b5cf6}
+  .refill-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;display:inline-flex;align-items:center}
+  .rdot{display:inline-block;width:9px;height:9px;border-radius:2px;background:#8b5cf6;margin-right:5px}
+  .rchip{
+    display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);
+    border-radius:20px;padding:3px 5px 3px 10px;font-size:11.5px;color:var(--text);font-variant-numeric:tabular-nums
+  }
+  .rchip-x{background:none;border:none;color:var(--muted);cursor:pointer;font-size:11px;line-height:1;padding:0 3px}
+  .rchip-x:hover{color:var(--crit)}
+  .refill-none{font-size:12px;color:var(--muted)}
+
+  footer{margin-top:26px;color:var(--muted);font-size:12px;line-height:1.6;text-align:center}
+  footer code{background:var(--surface2);padding:1px 6px;border-radius:5px;font-size:11px}
+
+  @media(max-width:380px){
+    .card{grid-template-columns:70px 1fr} .silo-svg{width:70px;height:128px}
+    h1{font-size:22px}
+    .hist-cv{height:160px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="title">
+      <h1>Niveaux des silos</h1>
+      <span class="sub">AFR · litière paille granulés</span>
+    </div>
+    <div class="summary">
+      <div class="stat"><span class="v" id="sumT">—</span><span class="l">Total estimé</span></div>
+      <div class="stat warn"><span class="v" id="sumWarn">0</span><span class="l">À surveiller</span></div>
+      <div class="stat crit"><span class="v" id="sumCrit">0</span><span class="l">À commander</span></div>
+      <div class="spacer"></div>
+      <button class="demo-btn" id="demoBtn" onclick="toggleDemo()">Mode démo</button>
+    </div>
+  </header>
+
+  <div class="grid" id="grid"></div>
+
+  <footer>
+    Données en temps réel depuis Firebase · chemin <code>silos/{ID}</code> · historique <code>silos_history/{ID}/{ts}</code> · réappro <code>silos_events/{ID}/{ts}</code><br>
+    Tonnage estimé à partir de la distance mesurée et de la géométrie de chaque silo.
+  </footer>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+// ============ CONFIG FIREBASE (projet afr-nt2) ============
+const firebaseConfig = {
+  apiKey: "AIzaSyCSw10bFLStcem4A_CO4IXmKeQbLH9NXsM",
+  authDomain: "afr-nt2.firebaseapp.com",
+  databaseURL: "https://afr-nt2-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "afr-nt2",
+  storageBucket: "afr-nt2.firebasestorage.app",
+  messagingSenderId: "169851474976",
+  appId: "1:169851474976:web:be14c24366b0af024f9845",
+  measurementId: "G-HYBY42TVJZ"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ============ GÉOMÉTRIE STANDARD (silo EQUIPEL SILO20) ============
+// densite : recalee sur une livraison reelle (silo plein annonce a 12,1 T
+// alors que l'app affichait 13,03 T avec 0,65). A reconfirmer sur les
+// prochains chargements — une seule livraison reste un point de mesure unique.
+const GEO_STD = { rayon:1.05, hCone:1.819, hCyl:5.181, dTop:0.30, densite:0.625 };
+
+// ============ LISTE DES SILOS ============
+const SILOS = [
+  { id:'VS',  nom:'VS',  site:'AFR 47 · Varès', couleur:'#22c55e' },
+  { id:'NV1', nom:'NV1', site:'AFR 33 · NV',    couleur:'#0ea5e9' },
+  { id:'NV2', nom:'NV2', site:'AFR 33 · NV',    couleur:'#0ea5e9' },
+  { id:'NT1', nom:'NT1', site:'AFR 33 · NT',    couleur:'#3b82f6' },
+  { id:'ST1', nom:'ST1', site:'AFR 33 · ST',    couleur:'#14b8a6' },
+  { id:'ST2', nom:'ST2', site:'AFR 33 · ST',    couleur:'#14b8a6', aModifier:true },
+  { id:'SG1', nom:'SG1', site:'AFR 40 · SG',    couleur:'#f59e0b' },
+  { id:'SG2', nom:'SG2', site:'AFR 40 · SG',    couleur:'#f59e0b' },
+].map(s => ({ ...s, geo: { ...GEO_STD } }));
+
+const IDS = new Set(SILOS.map(s=>s.id));
+
+// ============ SEUILS (tonnes) ============
+const SEUIL_BAS  = 4.0;            // en dessous = à surveiller
+const SEUIL_CRIT = 2.0;            // en dessous = commander
+const STALE_MS   = 6*3600*1000;    // 6 h sans donnée = capteur hors ligne
+// Fenêtre pour considérer le capteur EN LIGNE.
+// Deep sleep : un créneau par heure de 8h à 18h. Plus grand écart = 18h->8h = 14h.
+// On met 15h : hors ligne uniquement si un créneau attendu est manqué.
+const ONLINE_WINDOW_MS = 15*60*60*1000;   // 15 h
+// Créneaux d'envoi de l'ESP — doivent correspondre au firmware (SLOTS[]).
+const SLOTS_H = [8,9,10,11,12,13,14,15,16,17,18];
+
+let DATA = {};      // données Firebase
+let DEMO = false;   // mode démo
+let DEMO_VALS = {}; // distances factices
+let DEMO_BATT = {}; // batteries factices
+
+// ---- état historique ----
+let OPEN   = {};    // panneaux historiques ouverts par silo
+let RANGE  = {};    // plage affichée (heures) par silo, défaut 168 (7 j)
+let HIST   = {};    // cache des points par silo
+let CHARTS = {};    // instances Chart.js
+let lastLogged = {};// dernier ts journalisé par silo (évite les écritures inutiles)
+let EVENTS = {};    // repères de réapprovisionnement par silo (silos_events/{ID})
+
+// ---- conversion distance (cm) -> niveau ----
+function calcSilo(distCm, geo){
+  const A = Math.PI*geo.rayon*geo.rayon;
+  const vCone = (1/3)*A*geo.hCone;
+  const vTot  = vCone + A*geo.hCyl;
+  const hSensor = geo.hCyl+geo.hCone+geo.dTop;
+  const zs = hSensor - distCm/100;
+  let vol;
+  if (zs<=0) vol=0;
+  else if (zs>=geo.hCone+geo.hCyl) vol=vTot;
+  else if (zs<=geo.hCone) vol=(1/3)*A*zs*zs*zs/(geo.hCone*geo.hCone);
+  else vol=vCone+A*(zs-geo.hCone);
+  return { vol, tonnes:vol*geo.densite, pct:vol/vTot*100, tTot:vTot*geo.densite,
+           fill:Math.max(0,Math.min(1,zs/(geo.hCone+geo.hCyl))) };
+}
+
+function statut(t){
+  if (t<=SEUIL_CRIT) return {cls:'crit',label:'À commander',col:'var(--crit)'};
+  if (t<=SEUIL_BAS)  return {cls:'warn',label:'À surveiller',col:'var(--warn)'};
+  return {cls:'ok',label:'Niveau correct',col:'var(--ok)'};
+}
+
+function depuis(ts){
+  if(!ts) return '—';
+  const s=(Date.now()-ts)/1000;
+  if(s<60) return "à l'instant";
+  if(s<3600) return 'il y a '+Math.floor(s/60)+' min';
+  if(s<86400){const h=Math.floor(s/3600);return 'il y a '+h+' h';}
+  return 'il y a '+Math.floor(s/86400)+' j';
+}
+
+// prochain créneau d'envoi attendu, d'après l'heure locale
+function prochainCreneau(now){
+  const h = now.getHours() + now.getMinutes()/60;
+  for(const s of SLOTS_H){ if(h < s) return s; }
+  return SLOTS_H[0];   // après le dernier créneau -> premier de demain
+}
+
+// tension Li-ion 1 cellule -> % (approximatif)
+function vToPct(v){
+  const pts=[[4.15,100],[4.00,85],[3.85,65],[3.70,45],[3.55,25],[3.40,10],[3.30,0]];
+  if(v>=pts[0][0]) return 100;
+  if(v<=pts[pts.length-1][0]) return 0;
+  for(let i=0;i<pts.length-1;i++){
+    if(v<=pts[i][0] && v>=pts[i+1][0]){
+      const [v1,p1]=pts[i],[v2,p2]=pts[i+1];
+      return Math.round(p1+(v-v1)*(p2-p1)/(v2-v1));
+    }
+  }
+  return null;
+}
+
+function batterie(pct){
+  if(pct==null) return '';
+  const col = pct>50?'var(--ok)':pct>20?'var(--warn)':'var(--crit)';
+  const w = Math.max(2, Math.round(pct/100*16));
+  return `<span class="batt" title="Batterie ${pct}%">
+    <span class="batt-body"><span class="batt-fill" style="width:${w}px;background:${col}"></span></span>
+    <span class="batt-cap"></span>
+    <span style="color:${col}">${pct}%</span></span>`;
+}
+
+// ============ HISTORIQUE ============
+
+// Journalisation idempotente : clé = ts, donc plusieurs clients ouverts
+// en même temps réécrivent la même entrée sans créer de doublon.
+function logHistory(){
+  Object.keys(DATA||{}).forEach(id=>{
+    if(!IDS.has(id)) return;
+    const d = DATA[id];
+    if(!d || typeof d.distance_cm!=='number' || !d.ts) return;
+    if(lastLogged[id]===d.ts) return;
+    const e = { t:d.ts, d:d.distance_cm };
+    if(typeof d.battery_pct==='number') e.bp = d.battery_pct;
+    if(typeof d.battery_v==='number')  e.bv = d.battery_v;
+    db.ref('silos_history/'+id+'/'+d.ts).set(e).catch(()=>{});
+    lastLogged[id]=d.ts;
+  });
+}
+
+function loadHist(id){
+  if(DEMO){ HIST[id]=demoHist(id); return Promise.resolve(); }
+  return db.ref('silos_history/'+id).orderByKey().limitToLast(2000).once('value')
+    .then(snap=>{
+      const v = snap.val()||{};
+      HIST[id] = Object.values(v)
+        .filter(e=>e && typeof e.t==='number' && typeof e.d==='number')
+        .sort((a,b)=>a.t-b.t);
+    })
+    .catch(()=>{ HIST[id]=[]; });
+}
+
+// historique factice (mode démo) : consommation progressive + livraisons
+function demoHist(id){
+  const out=[], now=Date.now(), start=now-30*86400000;
+  let dist=80+Math.random()*150, batt=95;
+  for(let t=start;t<=now;t+=2*3600*1000){
+    dist += Math.random()*4;                                   // consommation
+    if(dist>600 && Math.random()<0.35) dist=60+Math.random()*60; // livraison
+    batt -= 0.05+Math.random()*0.06;
+    if(batt<8) batt=100;                                       // recharge/échange
+    out.push({ t, d:Math.round(dist), bp:Math.round(batt) });
+  }
+  return out;
+}
+
+// sous-échantillonnage pour garder le graphique fluide
+function thin(arr,max){
+  if(arr.length<=max) return arr;
+  const step=arr.length/max, out=[];
+  for(let i=0;i<max;i++) out.push(arr[Math.floor(i*step)]);
+  out.push(arr[arr.length-1]);
+  return out;
+}
+
+// ============ RÉAPPROVISIONNEMENTS (repères sur l'historique) ============
+// silos_events/{ID}/{ts} = { t:<ms>, type:'refill' }   (clé = ts -> idempotent)
+
+function fmtEvt(t){
+  return new Date(t).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+}
+
+function loadEvents(id){
+  if(DEMO){ EVENTS[id]=[]; return Promise.resolve(); }
+  return db.ref('silos_events/'+id).orderByKey().once('value')
+    .then(snap=>{
+      const v=snap.val()||{};
+      EVENTS[id]=Object.values(v).filter(e=>e&&typeof e.t==='number').sort((a,b)=>a.t-b.t);
+    })
+    .catch(()=>{ EVENTS[id]=[]; });
+}
+
+function markRefill(id){
+  if(DEMO) return;
+  const now=Date.now();
+  if(!confirm('Marquer un réapprovisionnement de '+id+' maintenant ?\n'+fmtEvt(now))) return;
+  db.ref('silos_events/'+id+'/'+now).set({ t:now, type:'refill' })
+    .then(()=>loadEvents(id)).then(render)
+    .catch(()=>alert('Échec de l’enregistrement du repère.'));
+}
+
+function delRefill(id,t){
+  if(!confirm('Supprimer ce repère de réapprovisionnement ?')) return;
+  db.ref('silos_events/'+id+'/'+t).remove()
+    .then(()=>loadEvents(id)).then(render)
+    .catch(()=>alert('Échec de la suppression.'));
+}
+
+function toggleHist(id){
+  OPEN[id]=!OPEN[id];
+  render();
+  if(OPEN[id]){ loadHist(id).then(render); loadEvents(id).then(render); }
+}
+
+function setRange(id,h){
+  RANGE[id]=h;
+  render();
+}
+
+function drawChart(s){
+  const id=s.id, cv=document.getElementById('cv_'+id);
+  if(!cv) return;
+  const hours = RANGE[id]||168;
+  const cut = Date.now()-hours*3600*1000;
+  let pts = (HIST[id]||[]).filter(e=>e.t>=cut);
+  const msg = document.getElementById('histmsg_'+id);
+  const box = cv.parentElement;
+  if(!pts.length){
+    if(msg) msg.style.display='block';
+    box.style.display='none';
+    return;
+  }
+  if(msg) msg.style.display='none';
+  box.style.display='block';
+  pts = thin(pts,300);
+
+  const fmt = hours<=24 ? {hour:'2-digit',minute:'2-digit'} : {day:'2-digit',month:'2-digit'};
+  const labels = pts.map(e=>new Date(e.t).toLocaleString('fr-FR',fmt));
+  const tonnes = pts.map(e=>+calcSilo(e.d,s.geo).tonnes.toFixed(2));
+  const batt   = pts.map(e=> typeof e.bp==='number' ? e.bp
+                          : (typeof e.bv==='number' ? vToPct(e.bv) : null));
+  const tMax = calcSilo(0,s.geo).tTot;
+
+  // repères de réapprovisionnement (traits verticaux violets sur la période visible)
+  const evsChart = (EVENTS[id]||[]).filter(e=>e.t>=cut && pts.length && e.t>=pts[0].t && e.t<=pts[pts.length-1].t);
+  const refillPlugin = {
+    id:'refills',
+    afterDatasetsDraw(chart){
+      if(!evsChart.length) return;
+      const ctx=chart.ctx, area=chart.chartArea, xs=chart.scales.x;
+      const xForT = te=>{
+        if(te<=pts[0].t) return xs.getPixelForValue(0);
+        if(te>=pts[pts.length-1].t) return xs.getPixelForValue(pts.length-1);
+        let i=0; while(i<pts.length-1 && pts[i+1].t<te) i++;
+        const f=(pts[i+1].t===pts[i].t)?0:(te-pts[i].t)/(pts[i+1].t-pts[i].t);
+        return xs.getPixelForValue(i)+f*(xs.getPixelForValue(i+1)-xs.getPixelForValue(i));
+      };
+      evsChart.forEach(e=>{
+        const x=xForT(e.t);
+        ctx.save();
+        ctx.strokeStyle='#8b5cf6'; ctx.lineWidth=1.5; ctx.setLineDash([3,3]);
+        ctx.beginPath(); ctx.moveTo(x,area.top); ctx.lineTo(x,area.bottom); ctx.stroke();
+        ctx.setLineDash([]); ctx.fillStyle='#8b5cf6';
+        ctx.beginPath(); ctx.moveTo(x-4,area.top); ctx.lineTo(x+4,area.top); ctx.lineTo(x,area.top+7); ctx.closePath(); ctx.fill();
+        ctx.restore();
+      });
+    }
+  };
+
+  if(CHARTS[id]) CHARTS[id].destroy();
+  CHARTS[id] = new Chart(cv,{
+    type:'line',
+    plugins:[refillPlugin],
+    data:{ labels, datasets:[
+      { label:'Niveau (t)', data:tonnes, borderColor:s.couleur,
+        backgroundColor:s.couleur+'26', fill:true, tension:.25,
+        pointRadius:0, borderWidth:2, yAxisID:'y' },
+      { label:'Batterie (%)', data:batt, borderColor:'#8b93a3',
+        tension:.25, pointRadius:0, borderWidth:1.5, borderDash:[4,3],
+        yAxisID:'y2', spanGaps:true }
+    ]},
+    options:{
+      animation:false, maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{labels:{color:'#8b93a3',boxWidth:14,boxHeight:2,font:{family:'Barlow',size:11}}},
+        tooltip:{backgroundColor:'#1c2029',borderColor:'#39414f',borderWidth:1,
+                 titleColor:'#e6e9ef',bodyColor:'#e6e9ef'}
+      },
+      scales:{
+        x:{ ticks:{color:'#8b93a3',maxTicksLimit:6,font:{family:'Barlow',size:10}},
+            grid:{color:'rgba(57,65,79,.25)'} },
+        y:{ min:0, suggestedMax:Math.ceil(tMax),
+            ticks:{color:'#8b93a3',font:{family:'Barlow',size:10}},
+            grid:{color:'rgba(57,65,79,.25)'},
+            title:{display:true,text:'tonnes',color:'#8b93a3',font:{family:'Barlow',size:10}} },
+        y2:{ min:0, max:100, position:'right',
+             ticks:{color:'#8b93a3',font:{family:'Barlow',size:10},callback:v=>v+'%'},
+             grid:{display:false} }
+      }
+    }
+  });
+}
+
+// ---- silhouette de silo remplie ----
+function siloSVG(id, fill, color, hasData){
+  const yTop=24, yCone=104, yBot=134;
+  const yFill = yBot - fill*(yBot-yTop);
+  const interior = `M16,${yTop} L64,${yTop} L64,${yCone} L46,${yBot} L34,${yBot} L16,${yCone} Z`;
+  const clip = 'clip_'+id;
+  const fillBlock = hasData ? `
+      <rect x="8" y="${yFill}" width="64" height="${yBot-yFill+1}" fill="${color}" opacity="0.92" clip-path="url(#${clip})"/>
+      <rect x="8" y="${yFill}" width="64" height="2.5" fill="#fff" opacity="0.35" clip-path="url(#${clip})"/>` : '';
+  return `<svg class="silo-svg" viewBox="0 0 80 150" xmlns="http://www.w3.org/2000/svg">
+    <defs><clipPath id="${clip}"><path d="${interior}"/></clipPath></defs>
+    <path d="M16,24 C16,11 64,11 64,24" fill="var(--surface2)" stroke="var(--border-strong)" stroke-width="1.4"/>
+    <line x1="40" y1="9" x2="40" y2="4" stroke="var(--border-strong)" stroke-width="1.4"/>
+    ${fillBlock}
+    <path d="${interior}" fill="none" stroke="var(--border-strong)" stroke-width="1.6"/>
+    <line x1="34" y1="134" x2="29" y2="148" stroke="var(--border-strong)" stroke-width="1.4"/>
+    <line x1="46" y1="134" x2="51" y2="148" stroke="var(--border-strong)" stroke-width="1.4"/>
+    <rect x="35" y="134" width="10" height="5" rx="1" fill="var(--surface2)" stroke="var(--border-strong)" stroke-width="1.2"/>
+  </svg>`;
+}
+
+function carte(s){
+  const d = DATA[s.id];
+  const dist = DEMO ? DEMO_VALS[s.id] : (d && typeof d.distance_cm==='number' ? d.distance_cm : null);
+  const calBadge = s.aModifier ? `<span class="pill-cal">à calibrer</span>` : '';
+
+  // état de connexion — basé sur "seen" (battement de cœur), indépendant de la validité du capteur
+  const seen = d ? (typeof d.seen==='number' ? d.seen : (typeof d.ts==='number' ? d.ts : null)) : null;
+  const fresh = !DEMO && seen && (Date.now()-seen <= ONLINE_WINDOW_MS);
+  const muet  = !DEMO && fresh && d && d.sensor==='muet';
+  const nextH = prochainCreneau(new Date());   // prochain créneau d'envoi attendu
+  const connChip = DEMO ? '' :
+    (!fresh ? `<span class="conn off"><span class="cdot"></span>Hors ligne</span>`
+     : muet ? `<span class="conn warn" title="ESP connecté, mais le capteur ne renvoie pas de mesure — prochaine tentative à ${nextH}h"><span class="cdot"></span>Muet · prochain ${nextH}h</span>`
+            : `<span class="conn on" title="Capteur en ligne — prochain envoi prévu à ${nextH}h"><span class="cdot"></span>Prochain ${nextH}h</span>`);
+
+  if (dist==null){
+    return `<div class="card empty">
+      <span class="accent" style="background:${s.couleur}"></span>
+      ${siloSVG(s.id,0,s.couleur,false)}
+      <div class="info">
+        <div class="row1"><span class="silo-name">${s.nom}</span>
+          <span class="badge" style="background:${s.couleur}22;color:${s.couleur}">${s.site}</span>${calBadge}
+          ${connChip||'<span class="conn off"><span class="cdot"></span>Hors ligne</span>'}</div>
+        <div class="empty-txt">En attente de données du capteur</div>
+      </div></div>`;
+  }
+
+  const c = calcSilo(dist, s.geo);
+  const st = statut(c.tonnes);
+  const maj = DEMO ? 'démo' : depuis(d && d.ts);
+  const pct = DEMO ? DEMO_BATT[s.id]
+            : (d && typeof d.battery_pct==='number' ? d.battery_pct
+            : (d && typeof d.battery_v==='number' ? vToPct(d.battery_v) : null));
+  const battLine = pct!=null ? `<span>Batterie : ${batterie(pct)}</span>` : '';
+
+  const open = !!OPEN[s.id];
+  const r = RANGE[s.id]||168;
+  const evsCard = (EVENTS[s.id]||[]).slice().sort((a,b)=>b.t-a.t);
+  const refillChips = evsCard.length
+    ? evsCard.map(e=>`<span class="rchip">${fmtEvt(e.t)}<button class="rchip-x" title="Supprimer ce repère" onclick="delRefill('${s.id}',${e.t})">✕</button></span>`).join('')
+    : `<span class="refill-none">Aucun réapprovisionnement marqué</span>`;
+  const histBtn = `<button class="hist-btn" onclick="toggleHist('${s.id}')">${open?'Masquer l’historique ▴':'Voir l’historique ▾'}</button>`;
+  const histPanel = open ? `
+    <div class="hist">
+      <div class="hist-head">
+        <span class="ht">Niveau &amp; batterie</span>
+        ${[['24 h',24],['7 j',168],['30 j',720]].map(([l,h])=>
+          `<button class="rbtn${r===h?' on':''}" onclick="setRange('${s.id}',${h})">${l}</button>`).join('')}
+      </div>
+      <div class="hist-msg" id="histmsg_${s.id}" style="display:none">
+        Aucun point sur cette période — l’historique se construit à chaque nouvelle mesure du capteur.
+      </div>
+      <div class="hist-cv"><canvas id="cv_${s.id}"></canvas></div>
+      <div class="refill-bar">
+        ${DEMO?'':`<button class="refill-add" onclick="markRefill('${s.id}')">＋ Marquer un réapprovisionnement</button>`}
+        <span class="refill-lbl"><span class="rdot"></span>Réapprovisionnements</span>
+        ${refillChips}
+      </div>
+    </div>` : '';
+
+  return `<div class="card${open?' open':''}">
+    <span class="accent" style="background:${s.couleur}"></span>
+    ${siloSVG(s.id,c.fill,st.col,true)}
+    <div class="info">
+      <div class="row1"><span class="silo-name">${s.nom}</span>
+        <span class="badge" style="background:${s.couleur}22;color:${s.couleur}">${s.site}</span>
+        ${connChip}${calBadge}</div>
+      <div class="big">${c.tonnes.toFixed(1)}<span class="u">t</span>
+        <span class="pct">· ${c.pct.toFixed(0)} % · ${c.vol.toFixed(1)} m³</span></div>
+      <div class="status"><span class="dot" style="background:${st.col}"></span>${st.label}</div>
+      <div class="meta">
+        <span class="dist">Distance mesurée : ${dist} cm</span>
+        ${battLine}
+        <span>Mis à jour ${maj}</span>
+      </div>
+      ${histBtn}
+    </div>
+    ${histPanel}</div>`;
+}
+
+function render(){
+  let totT=0, nWarn=0, nCrit=0, nData=0;
+  SILOS.forEach(s=>{
+    const d=DATA[s.id];
+    const dist = DEMO ? DEMO_VALS[s.id] : (d && typeof d.distance_cm==='number'? d.distance_cm:null);
+    if(dist==null) return;
+    const c=calcSilo(dist,s.geo), st=statut(c.tonnes);
+    totT+=c.tonnes; nData++;
+    if(st.cls==='crit') nCrit++; else if(st.cls==='warn') nWarn++;
+  });
+  document.getElementById('grid').innerHTML = SILOS.map(carte).join('');
+  document.getElementById('sumT').textContent = nData ? totT.toFixed(1)+' t' : '—';
+  document.getElementById('sumWarn').textContent = nWarn;
+  document.getElementById('sumCrit').textContent = nCrit;
+  // redessine les graphiques des panneaux ouverts (le innerHTML a détruit les canvas)
+  SILOS.forEach(s=>{ if(OPEN[s.id] && HIST[s.id]) drawChart(s); });
+}
+
+function toggleDemo(){
+  DEMO=!DEMO;
+  document.getElementById('demoBtn').classList.toggle('on',DEMO);
+  HIST={}; // force le rechargement des historiques (réels ou factices)
+  if(DEMO){
+    DEMO_VALS={}; DEMO_BATT={};
+    SILOS.forEach(s=>{
+      DEMO_VALS[s.id]=Math.round(30+Math.random()*620);
+      DEMO_BATT[s.id]=Math.round(15+Math.random()*85);
+    });
+  }
+  render();
+  SILOS.forEach(s=>{ if(OPEN[s.id]) loadHist(s.id).then(render); });
+}
+
+// ---- temps réel ----
+db.ref('silos').on('value', snap=>{
+  DATA = snap.val()||{};
+  logHistory();                                   // journalise toute nouvelle mesure
+  if(!DEMO){
+    render();
+    // rafraîchit les historiques ouverts avec le nouveau point
+    SILOS.forEach(s=>{ if(OPEN[s.id]) loadHist(s.id).then(render); });
+  }
+});
+setInterval(()=>{ if(!DEMO) render(); }, 30000); // rafraîchit les "il y a X min" et le prochain créneau
+render();
+</script>
+</body>
+</html>
