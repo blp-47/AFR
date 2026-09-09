@@ -1,0 +1,1256 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AFR — Prélèvements Salmonelle / Influenza</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+:root{
+  --marine:#1a3a6b; --marine-fonce:#14305a; --marine-clair:#2c5aa0;
+  --bg:#eef2f7; --surface:#ffffff; --surface-2:#eaeff6;
+  --ink:#1c2635; --ink-2:#5b6a80; --ink-3:#8d9bb0;
+  --line:#dde4ee; --line-2:#c6d0e0;
+  --vert:#1a3a6b; --vert-2:#2c5aa0; --vert-bg:#e6edf7;
+  --or:#e0a02a; --or-bg:#fdf3de;
+  --ambre:#b4740f; --ambre-bg:#fdf1dd;
+  --rouge:#b03636; --rouge-bg:#fbe9e9;
+  --vert-ok:#1d7a4f; --vert-ok-bg:#e4f3ea;
+  --bleu:#1a3a6b; --bleu-bg:#e6edf7;
+  --violet:#6a4a8f; --violet-bg:#f0eaf7;
+  --r:14px; --r-sm:9px;
+  --sh:0 1px 2px rgba(20,35,60,.06), 0 10px 28px -18px rgba(20,35,60,.45);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:15px/1.5 ui-sans-serif,system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased}
+
+/* ---------- En-tête ---------- */
+header{position:sticky;top:0;z-index:30;background:linear-gradient(135deg,var(--marine-fonce),var(--marine) 55%,var(--marine-clair));
+  color:#fff;padding:14px 20px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;
+  box-shadow:0 1px 0 rgba(255,255,255,.08) inset, 0 8px 22px -14px #0b1930}
+header h1{font-size:16px;margin:0;font-weight:600;letter-spacing:-.01em}
+header .sub{color:#a8bcd9;font-size:12.5px}
+nav{margin-left:auto;display:flex;gap:3px;background:rgba(255,255,255,.08);padding:3px;border-radius:999px}
+nav button{background:transparent;border:none;color:#cddcf0;padding:7px 15px;border-radius:999px;
+  cursor:pointer;font-size:13.5px;font-weight:500;transition:background .15s,color .15s}
+nav button:hover{color:#fff;background:rgba(255,255,255,.09)}
+nav button.on{background:#fff;color:var(--marine)}
+main{padding:22px 20px 60px;max-width:1420px;margin:0 auto}
+
+/* ---------- Blocs ---------- */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+  padding:18px;margin-bottom:16px;box-shadow:var(--sh)}
+.panel h2{margin:0 0 4px;font-size:16px;font-weight:600;letter-spacing:-.01em}
+.panel h3{margin:18px 0 8px;font-size:13px;font-weight:600;color:var(--ink-2)}
+.hint{font-size:13px;color:var(--ink-2);margin:0 0 14px}
+.panel h2+.hint{margin-top:2px}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+  padding:14px 16px;box-shadow:var(--sh)}
+.card .n{font-size:30px;font-weight:700;line-height:1.05;letter-spacing:-.02em;color:var(--marine)}
+.card .l{font-size:12.5px;color:var(--ink-2);margin-top:3px}
+.card.alerte .n{color:var(--rouge)}
+.card.proche .n{color:var(--ambre)}
+
+/* ---------- Tableaux ---------- */
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r-sm)}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:13.5px}
+th,td{padding:9px 11px;text-align:left;vertical-align:middle;border-bottom:1px solid var(--line)}
+th{background:var(--surface-2);font-weight:600;font-size:11.5px;color:var(--ink-2);
+  letter-spacing:.02em;white-space:nowrap;position:sticky;top:0}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:#f6f9fd}
+td.center,th.center{text-align:center}
+td.right,th.right{text-align:right}
+.mini{font-size:11.5px;color:var(--ink-3)}
+.vide{padding:26px;text-align:center;color:var(--ink-3);font-size:13.5px}
+
+/* ---------- Champs ---------- */
+input,select,textarea{font:inherit;font-size:13.5px;padding:7px 9px;border:1px solid var(--line-2);
+  border-radius:var(--r-sm);background:#fff;width:100%;color:var(--ink);transition:border-color .15s,box-shadow .15s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--vert-2);
+  box-shadow:0 0 0 3px rgba(44,90,160,.18)}
+input[type=checkbox]{width:16px;height:16px;accent-color:var(--vert);cursor:pointer}
+table input,table select{padding:5px 7px}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+.f{display:flex;flex-direction:column;gap:4px;min-width:0}
+.f label{font-size:11.5px;color:var(--ink-2);font-weight:500}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+
+/* ---------- Boutons ---------- */
+button{font:inherit;cursor:pointer}
+.btn{background:var(--vert);color:#fff;border:1px solid var(--vert);padding:8px 15px;
+  border-radius:var(--r-sm);font-size:13.5px;font-weight:500;transition:filter .15s,box-shadow .15s}
+.btn:hover{filter:brightness(1.08)}
+.btn:focus-visible{outline:2px solid var(--vert-2);outline-offset:2px}
+.btn.sec{background:#fff;color:var(--ink);border-color:var(--line-2)}
+.btn.sec:hover{background:var(--surface-2);filter:none}
+.btn.dgr{background:#fff;color:var(--rouge);border-color:#eccccc}
+.btn.dgr:hover{background:var(--rouge-bg);filter:none}
+.btn.sm{padding:4px 10px;font-size:12.5px}
+
+/* ---------- Pastilles ---------- */
+.tag{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.t-ret{background:var(--rouge-bg);color:var(--rouge)}
+.t-du{background:var(--ambre-bg);color:var(--ambre)}
+.t-ok{background:var(--vert-ok-bg);color:var(--vert-ok)}
+.t-ia{background:var(--bleu-bg);color:var(--bleu)}
+.t-sal{background:var(--violet-bg);color:var(--violet)}
+.t-man{background:var(--surface-2);color:var(--ink-2)}
+
+/* ---------- Sous-onglets ---------- */
+.subtabs{display:flex;gap:4px;margin-bottom:16px;flex-wrap:wrap;background:var(--surface);
+  border:1px solid var(--line);border-radius:999px;padding:4px;width:fit-content;box-shadow:var(--sh)}
+.subtabs button{background:transparent;border:none;padding:7px 14px;border-radius:999px;
+  font-size:13.5px;color:var(--ink-2);font-weight:500}
+.subtabs button:hover{background:var(--surface-2);color:var(--ink)}
+.subtabs button.on{background:var(--ink);color:#fff}
+
+/* ---------- Chips ---------- */
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{border:1px solid var(--line-2);border-radius:999px;padding:5px 13px;font-size:13px;
+  cursor:pointer;background:#fff;user-select:none;transition:all .12s}
+.chip:hover{border-color:var(--vert-2)}
+.chip.on{background:var(--vert);color:#fff;border-color:var(--vert)}
+
+/* ---------- Modales ---------- */
+.modal{position:fixed;inset:0;background:rgba(16,28,48,.55);backdrop-filter:blur(3px);
+  display:none;align-items:flex-start;justify-content:center;padding:28px 18px;overflow:auto;z-index:60}
+.modal.on{display:flex;animation:fade .18s ease-out}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.modal .box{background:var(--surface);border-radius:14px;padding:20px;width:100%;max-width:780px;
+  box-shadow:0 30px 70px -30px rgba(10,22,45,.6)}
+.modal .box.wide{max-width:1040px}
+.modal h2{margin:0 0 14px;font-size:17px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media(max-width:700px){
+  main{padding:16px 12px 40px}
+  header{padding:12px 14px}
+  nav{margin-left:0;width:100%;overflow:auto}
+}
+
+/* ---------- Bordereaux (impression fidèle) ---------- */
+#bordArea{display:none}
+.sheet{background:#fff;width:210mm;min-height:296mm;padding:9mm 8mm;margin:0 auto;
+  font:9.3pt/1.22 Calibri,"Segoe UI",Arial,sans-serif;color:#000;
+  box-shadow:0 10px 40px -20px rgba(0,0,0,.5)}
+.sheet table{border-collapse:collapse;width:100%;font-size:8.8pt;table-layout:fixed}
+.sheet td,.sheet th{border:1px solid #000;padding:2px 4px;overflow:hidden;word-wrap:break-word}
+.sheet .nb td{border:none}
+.sheet .ttl{font-size:19pt;font-weight:700;text-align:center;letter-spacing:-.2pt}
+.sheet .ttl2{font-size:14pt;font-weight:700;text-align:center}
+.sheet .sec{background:#000;color:#fff;font-weight:700;text-align:center;font-size:9pt;letter-spacing:.2pt}
+.sheet .xb{background:#000;color:#fff;text-align:center;font-weight:700}
+.sheet table.box{border:2px solid #000}
+.sheet table.box>tbody>tr>td{border:1px solid #000}
+.sheet .x{text-align:center;font-weight:700}
+.sheet .rouge{color:#c00000;font-weight:700}
+.sheet .bleu{color:#0563c1}
+.sheet .cy{background:#dbeef4}
+.sheet .gris{background:#f2f2f2}
+.sheet .hdr{background:#d9d9d9;font-weight:700;text-align:center}
+.sheet .sm{font-size:7.8pt}
+.sheet .b{font-weight:700}
+.sheet .c{text-align:center}
+.sheet .lab{font-size:8.6pt}
+.sheet .h{margin:5px 0 2px;font-size:9.5pt;text-align:center;font-weight:700}
+.sheet .ln{height:14px}
+@media print{
+  body{background:#fff}
+  body>*{display:none!important}
+  #bordArea{display:block!important}
+  .sheet{width:auto;min-height:auto;padding:0;box-shadow:none;margin:0}
+  @page{size:A4 portrait;margin:8mm}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Prélèvements <span style="opacity:.55;font-weight:400">— Salmonelle &amp; Influenza aviaire</span></h1>
+  <span class="sub" id="hdrInfo"></span>
+  <nav>
+    <button data-v="planning" class="on">📅 Planning</button>
+    <button data-v="manuel">📝 Bordereau manuel</button>
+    <button data-v="historique">📋 Historique</button>
+    <button data-v="params">⚙ Paramètres</button>
+  </nav>
+</header>
+
+<main>
+  <!-- ================= PLANNING ================= -->
+  <section id="v-planning">
+    <div class="cards" id="kpi"></div>
+    <div class="panel">
+      <h2>🧪 Prélèvements à réaliser</h2>
+      <div class="row" style="margin:12px 0 14px">
+        <div class="f"><label>Analyse</label>
+          <select id="fType"><option value="">Toutes</option><option value="SALMO">Salmonelle</option><option value="IA">Influenza</option></select></div>
+        <div class="f"><label>Horizon</label>
+          <select id="fHorizon"><option value="14">14 jours</option><option value="30" selected>30 jours</option><option value="60">60 jours</option><option value="9999">Tout</option></select></div>
+        <button class="btn sec" onclick="render()">↻ Actualiser</button>
+      </div>
+      <div class="tw"><table id="tblPlanning"></table></div>
+    </div>
+    <div class="panel">
+      <h2>📅 Calendrier prévisionnel</h2>
+      <p class="hint">Projection sur 10 semaines à partir du programme de chaque cible.</p>
+      <div class="tw"><table id="tblCal"></table></div>
+    </div>
+  </section>
+
+  <!-- ================= BORDEREAU MANUEL ================= -->
+  <section id="v-manuel" style="display:none">
+    <div class="panel">
+      <h2>📝 Bordereau hors programme</h2>
+      <p class="hint">Pour un prélèvement exceptionnel : mortalité anormale, sujets à autopsier, contrôle officiel, demande vétérinaire. Il n'entre pas dans le calcul des échéances du programme.</p>
+      <div id="formManuel"></div>
+    </div>
+    <div class="panel">
+      <h2>📋 Bordereaux manuels émis</h2>
+      <div class="tw"><table id="tblManuel"></table></div>
+    </div>
+  </section>
+
+  <!-- ================= HISTORIQUE ================= -->
+  <section id="v-historique" style="display:none">
+    <div class="panel">
+      <h2>📋 Prélèvements enregistrés</h2>
+      <div class="row" style="margin:12px 0 14px">
+        <div class="f"><label>Analyse</label><select id="hType"><option value="">Toutes</option><option value="SALMO">Salmonelle</option><option value="IA">Influenza</option><option value="MANUEL">Hors programme</option></select></div>
+        <div class="f"><label>Depuis</label><input type="date" id="hDate"></div>
+        <button class="btn sec" onclick="renderHisto()">Filtrer</button>
+        <button class="btn sec" onclick="exportXlsx()">📊 Exporter Excel</button>
+      </div>
+      <div class="tw"><table id="tblHisto"></table></div>
+    </div>
+  </section>
+
+  <!-- ================= PARAMETRES ================= -->
+  <section id="v-params" style="display:none">
+    <div class="subtabs">
+      <button data-p="lots" class="on">Lots &amp; bâtiments</button>
+      <button data-p="groupes">Regroupements</button>
+      <button data-p="prog">Programmes</button>
+      <button data-p="sites">Fermes</button>
+      <button data-p="contacts">Contacts &amp; bordereaux</button>
+      <button data-p="data">Données</button>
+    </div>
+
+    <div class="panel" id="p-lots">
+      <h2>🦆 Lots en place</h2>
+      <p class="hint">L'âge est calculé à partir de la date de naissance. Mise en place, n° de lot ORVIA et n° de lot AFR sont repris sur les bordereaux et les exports.</p>
+      <div class="tw"><table id="tblLots"></table></div>
+      <div style="margin-top:12px"><button class="btn" onclick="addLot()">Ajouter un bâtiment</button></div>
+    </div>
+
+    <div class="panel" id="p-groupes" style="display:none">
+      <h2>🔗 Regroupements de prélèvement</h2>
+      <p class="hint">Un regroupement = un seul prélèvement et un seul bordereau pour plusieurs bâtiments. Les bâtiments non regroupés sont prélevés individuellement.</p>
+      <div id="listGroupes"></div>
+      <div style="margin-top:12px"><button class="btn" onclick="addGroupe()">Créer un regroupement</button></div>
+    </div>
+
+    <div class="panel" id="p-prog" style="display:none">
+      <h2>🗓 Programmes de prélèvement</h2>
+      <p class="hint">Fréquence, jour de passage et supports prélevés à chaque tournée.</p>
+      <div id="listProg"></div>
+    </div>
+
+    <div class="panel" id="p-sites" style="display:none">
+      <h2>🏠 Fermes</h2>
+      <p class="hint">Coordonnées reprises en tête des bordereaux, INUAV et adresse de la DDPP compétente.</p>
+      <div class="tw"><table id="tblSites"></table></div>
+      <div style="margin-top:12px"><button class="btn" onclick="addSite()">Ajouter une ferme</button></div>
+    </div>
+
+    <div class="panel" id="p-contacts" style="display:none">
+      <h2>✉ Contacts et mentions des bordereaux</h2>
+      <p class="hint">Laboratoires, destinataires des résultats, facturation et propriétaire des oiseaux.</p>
+      <div id="formContacts"></div>
+    </div>
+
+    <div class="panel" id="p-data" style="display:none">
+      <h2>💾 Données</h2>
+      <p class="hint">Synchronisation : <b id="modeSync"></b></p>
+      <div class="row">
+        <button class="btn sec" onclick="exportJson()">Sauvegarde JSON</button>
+        <button class="btn sec" onclick="document.getElementById('impFile').click()">Restaurer une sauvegarde</button>
+        <input type="file" id="impFile" accept=".json" style="display:none" onchange="importJson(this)">
+        <button class="btn sec" onclick="rechargerFiche()">Recharger fermes et lots</button>
+        <button class="btn dgr" onclick="resetAll()">Réinitialiser</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ============ MODALE SAISIE ============ -->
+<div class="modal" id="mSaisie"><div class="box"><div id="saisieBody"></div></div></div>
+<!-- ============ MODALE BORDEREAU ============ -->
+<div class="modal" id="mBord"><div class="box wide">
+  <div class="row" style="margin-bottom:10px">
+    <button class="btn" onclick="window.print()">🖨 Imprimer / PDF</button>
+    <button class="btn sec" onclick="closeModal('mBord')">Fermer</button>
+    <span class="mini">Le bordereau s'imprime seul (A4 portrait).</span>
+  </div>
+  <div id="bordPreview" style="overflow:auto;background:#e9ece9;padding:10px"></div>
+</div></div>
+<div id="bordArea"></div>
+
+<script>
+/* =========================================================================
+   CONFIGURATION FIREBASE — coller ici le firebaseConfig des autres apps AFR.
+   Laisser vide pour un fonctionnement local (stockage navigateur).
+   ========================================================================= */
+const FB_CONFIG = {
+  apiKey: "",
+  authDomain: "",
+  databaseURL: "",      // ex: https://afr-nt2-default-rtdb.europe-west1.firebasedatabase.app
+  projectId: "afr-nt2"
+};
+const FB_PATH = "prelevements";
+
+/* ====================== MODÈLE DE DONNÉES ====================== */
+const ESPECES = ["Pékin","Barbarie","Mulard","Autres"];
+const NATURES = {
+  SALMO:["Chiffonnettes","Fientes (Pédi-chiffonnettes)","Fonds de boîte","Autres"],
+  IA:["Écouvillons trachéaux et cloacaux","Chiffonnettes","Prélèvements d'environnement"],
+  MANUEL:["Chiffonnettes","Pédi-chiffonnettes","Fonds de boîte","Sujets",
+          "Écouvillons trachéaux et cloacaux","Prélèvements d'environnement","Prises de sang"]
+};
+const EXAMENS_MANUEL = ["Présence ou absence de salmonelle","Typage complet","Autopsie",
+                        "Sans antibiogramme","Avec antibiogramme","P.C.R. Influenza virus type A"];
+const JOURS = ["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"];
+
+const DATA_VERSION = 2;   // incrémenter à chaque mise à jour de la fiche des lots/fermes
+
+const DEFAUT = {
+  version: DATA_VERSION,
+  sites:[
+    {code:"ST", nom:"St Sauveur", adresse:"Favereau", cp:"33660", ville:"St Sauveur de Puynormand",
+     inuav:"V033AGE", ets:"AFR ELEVAGE (33660)", ddpp:"julie.grabot@gironde.gouv.fr"},
+    {code:"NV", nom:"Nivelle", adresse:"Nivelle", cp:"33570", ville:"Petit-Palais et Cornemps",
+     inuav:"V033AEM", ets:"AFR ELEVAGE (33570)", ddpp:"julie.grabot@gironde.gouv.fr"},
+    {code:"NT", nom:"La Courtade", adresse:"Courtade", cp:"33570", ville:"Petit-Palais et Cornemps",
+     inuav:"V033AGF", ets:"AFR ELEVAGE (33570)", ddpp:"julie.grabot@gironde.gouv.fr"},
+    {code:"VS", nom:"Varès", adresse:"1200 route de Hautesvignes", cp:"47400", ville:"Varès",
+     inuav:"V047AOX", ets:"AFR ELEVAGE (47400)", ddpp:"lorraine.duchenait@lot-et-garonne.gouv.fr"},
+    {code:"SG", nom:"Sanguinet", adresse:"5111 route de Lugos", cp:"40460", ville:"Sanguinet",
+     inuav:"V040CUB", ets:"AFR ELEVAGE (40460)", ddpp:"corinne.dauba@landes.gouv.fr"}
+  ],
+  lots:[
+    {id:"ST1",site:"ST",bat:"AFR ST1",lot:"PP 26191",lotAfr:"AFR-E-10",stade:"♀ Élevage",
+     naissance:"2026-05-07",mep:"2026-05-07",sortie:"2026-10-16",espece:"Pékin",actif:true},
+    {id:"ST2",site:"ST",bat:"AFR ST2",lot:"PP 16192",lotAfr:"AFR-E-10",stade:"♀ Élevage",
+     naissance:"2026-05-07",mep:"2026-05-07",sortie:"2026-10-16",espece:"Pékin",actif:true},
+    {id:"ST3",site:"ST",bat:"AFR ST3",lot:"PIA 26161",lotAfr:"AFR-E-10",stade:"♂ Élevage",
+     naissance:"2026-04-17",mep:"2026-04-17",sortie:"2026-10-16",espece:"Barbarie",actif:true},
+    {id:"NV1",site:"NV",bat:"M82",lot:"282251",lotAfr:"AFR-P-03",stade:"♀ Ponte",
+     naissance:"2025-03-27",mep:"2025-09-02",sortie:"2026-08-13",espece:"Pékin",actif:true},
+    {id:"NV2",site:"NV",bat:"M83",lot:"283251",lotAfr:"AFR-P-03",stade:"♀ Ponte",
+     naissance:"2025-03-27",mep:"2025-09-02",sortie:"2026-08-13",espece:"Pékin",actif:true},
+    {id:"NT1",site:"NT",bat:"M81",lot:"281251",lotAfr:"AFR-P-03",stade:"♀ Ponte",
+     naissance:"2025-03-27",mep:"2025-09-02",sortie:"2026-08-13",espece:"Pékin",actif:true},
+    {id:"NT2",site:"NT",bat:"IA80",lot:"IA802523AS",lotAfr:"AFR-P-03",stade:"♂ I.A.",
+     naissance:"2025-06-04",mep:"2025-12-02",sortie:"2026-08-13",espece:"Barbarie",actif:true},
+    {id:"VS1",site:"VS",bat:"AFR VS",lot:"PIA 26021",lotAfr:"AFR-E-09",stade:"♂ Élevage",
+     naissance:"2026-01-07",mep:"2026-01-07",sortie:"2026-06-24",espece:"Barbarie",actif:true},
+    {id:"SG1",site:"SG",bat:"M85",lot:"1085431",lotAfr:"AFR-P-04",stade:"♀ Ponte",
+     naissance:"2025-10-20",mep:"2026-03-25",sortie:"2027-03-08",espece:"Pékin",actif:true},
+    {id:"SG2",site:"SG",bat:"M86",lot:"1086432",lotAfr:"AFR-P-04",stade:"♀ Ponte",
+     naissance:"2025-10-20",mep:"2026-03-25",sortie:"2027-03-08",espece:"Pékin",actif:true},
+    {id:"SG3",site:"SG",bat:"IA84",lot:"IA85381",lotAfr:"AFR-P-04",stade:"♂ I.A.",
+     naissance:"2025-09-16",mep:"2026-03-25",sortie:"2027-03-08",espece:"Barbarie",actif:true}
+  ],
+  groupes:[
+    {id:"g_st", nom:"", types:["SALMO","IA"], membres:["ST1","ST2"]},
+    {id:"g_nv", nom:"", types:["SALMO","IA"], membres:["NV1","NV2"]},
+    {id:"g_sg", nom:"", types:["SALMO","IA"], membres:["SG1","SG2"]}
+  ],
+  programmes:{
+    SALMO:{nom:"Recherche de Salmonelle",labo:"FILIAVET",freq:3,jour:2,ageDebut:22,ageFin:0,
+      natures:[{n:"Chiffonnettes",q:2},{n:"Fientes (Pédi-chiffonnettes)",q:2}], actif:true},
+    IA:{nom:"Influenza aviaire",labo:"LABOVET CONSEIL",freq:1,jour:2,ageDebut:0,ageFin:0,
+      natures:[{n:"Écouvillons trachéaux et cloacaux",q:5}], actif:true}
+  },
+  contacts:{
+    eleveur:"AFR ELEVAGE S.A.S.", eleveurAdr:"31 avenue du parc des sports",
+    eleveurCp:"33230 St Médard de Guizières", eleveurTel:"05 57 69 68 68",
+    labSalNom:"FILIAVET", labSalAdr:"7 rue des Artisans\n79300 BRESSUIRE",
+    labSalMail:"filiavet.bressuire@reseaucristal.fr", labSalTel:"05 49 82 07 40",
+    labIaNom:"LABOVET CONSEIL", labIaAdr:"22 rue Olivier de Serres\n85500 LES HERBIERS",
+    labIaMail:"secretariatlabo.lesherbiers@labovet.fr", labIaTel:"02.51.91.29.05",
+    proprio:"ORVIA Couvoir Sèvre-Maine", proprioAdr:"17 rue Petite Roche - Le Peux", proprioCp:"79140 LE PIN",
+    techOrvia:"Éric BOUDAUD", mailOrvia:"eric.boudaud@orvia.fr",
+    techAfr:"Mostafa Rhouass", preleveur:"Mostafa RHOUASS",
+    veto:"Laurent DEFFREIX", mailVeto:"l.deffreix@socsa.fr",
+    mailsEleveur:"benoit.le.pottier@afr33.fr\njerome.le.pottier@afr33.fr",
+    mailDdpp:"julie.grabot@gironde.gouv.fr",
+    factSalmo:"ORVIA Couvoir Sèvre Maine", factIa:"Couvoir ORVIA Sèvre Maine SAS",
+    groupement:"ORVIA Sèvre Maine", transGrpt:"Sophie BODIN, René PLENEL",
+    transEleveur:"Benoît LE POTTIER\nJérôme LE POTTIER",
+    typeControle:"Autocontrôle", typeElevage:"Selection- Multiplication",
+    examenSalmo:"Typage complet", production:"Reproducteur"
+  },
+  prelevements:[]
+};
+
+let D = null, db = null, sync = "local";
+
+/* ====================== STOCKAGE ====================== */
+function lsGet(){ try{ return JSON.parse(localStorage.getItem("afr_prel")||"null"); }catch(e){ return null; } }
+function lsSet(d){ try{ localStorage.setItem("afr_prel", JSON.stringify(d)); }catch(e){} }
+
+function save(){
+  lsSet(D);
+  if(db){ db.ref(FB_PATH).set(D).catch(e=>console.warn("Firebase:",e.message)); }
+}
+// Une version stockée plus ancienne = fiche des fermes/lots obsolète :
+// on garde les prélèvements, les contacts et les programmes, on reprend le reste du fichier.
+function migre(st){
+  if(!st) return {};
+  if((st.version||1) >= DATA_VERSION) return st;
+  return {version:DATA_VERSION, prelevements:st.prelevements||[],
+          contacts:st.contacts, programmes:st.programmes};
+}
+function boot(){
+  D = merge(DEFAUT, migre(lsGet()));
+  if(FB_CONFIG.databaseURL){
+    try{
+      firebase.initializeApp(FB_CONFIG); db = firebase.database();
+      sync = "Firebase (" + FB_CONFIG.projectId + ")";
+      db.ref(FB_PATH).once("value").then(s=>{
+        if(s.exists()){ D = merge(DEFAUT, migre(s.val())); lsSet(D); render(); }
+        else save();
+      });
+    }catch(e){ sync = "local (Firebase indisponible)"; }
+  } else sync = "locale — navigateur";
+  render();
+}
+function merge(base, over){
+  const out = JSON.parse(JSON.stringify(base));
+  for(const k in over){
+    if(over[k]===null||over[k]===undefined) continue;
+    if(Array.isArray(over[k])) out[k]=over[k];
+    else if(typeof over[k]==="object") out[k]=merge(out[k]||{}, over[k]);
+    else out[k]=over[k];
+  }
+  return out;
+}
+
+/* ====================== OUTILS DATES ====================== */
+const J = 86400000;
+function today(){ const d=new Date(); d.setHours(0,0,0,0); return d; }
+function d2s(d){ return d.toISOString().slice(0,10); }
+function s2d(s){ if(!s) return null; const d=new Date(s+"T00:00:00"); return isNaN(d)?null:d; }
+function fr(s){ if(!s) return ""; const d=s2d(s); return d? String(d.getDate()).padStart(2,"0")+"/"+String(d.getMonth()+1).padStart(2,"0")+"/"+d.getFullYear() : ""; }
+function frCourt(s){ const f=fr(s); return f? f.slice(0,6)+f.slice(8) : ""; }
+function addJ(d,n){ const x=new Date(d.getTime()+n*J); x.setHours(0,0,0,0); return x; }
+function ageSem(naissance, ref){
+  const n=s2d(naissance); if(!n) return null;
+  return Math.floor((ref.getTime()-n.getTime())/(7*J));
+}
+function numSemaine(d){
+  const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));
+  t.setUTCDate(t.getUTCDate()+4-(t.getUTCDay()||7));
+  const a=new Date(Date.UTC(t.getUTCFullYear(),0,1));
+  return {an:t.getUTCFullYear(), sem:Math.ceil(((t-a)/J+1)/7)};
+}
+function caleJour(d, jour){ // ramène au jour de semaine souhaité (même semaine, en avant)
+  const x=new Date(d); const delta=(jour - x.getDay() + 7)%7; return addJ(x,delta);
+}
+
+/* ====================== CIBLES (bâtiment isolé ou groupe) ====================== */
+function cibles(type){
+  const out=[], pris=new Set();
+  D.groupes.filter(g=>(g.types||[]).includes(type)).forEach(g=>{
+    const m=(g.membres||[]).filter(id=>lotActif(id));
+    if(!m.length) return;
+    m.forEach(id=>pris.add(id));
+    out.push({key:"G:"+g.id, nom:(g.nom||"").trim()||m.join(" + "), membres:m, groupe:true});
+  });
+  D.lots.filter(l=>l.actif && !pris.has(l.id)).forEach(l=>{
+    out.push({key:"B:"+l.id, nom:l.id, membres:[l.id], groupe:false});
+  });
+  return out;
+}
+function lotActif(id){ const l=D.lots.find(x=>x.id===id); return l && l.actif; }
+function lot(id){ return D.lots.find(x=>x.id===id)||{}; }
+function site(code){ return D.sites.find(s=>s.code===code)||{}; }
+
+/* ====================== ÉCHÉANCES ====================== */
+function dernier(type, key){
+  const l=D.prelevements.filter(p=>p.type===type && p.cible===key).sort((a,b)=>b.date.localeCompare(a.date));
+  return l[0]||null;
+}
+function prochaine(type, cible){
+  const P=D.programmes[type]; if(!P.actif) return null;
+  const der=dernier(type,cible.key);
+  const ages=cible.membres.map(id=>ageSem(lot(id).naissance, today())).filter(a=>a!==null);
+  const ageMax=ages.length?Math.max(...ages):null;
+  if(P.ageFin>0 && ageMax!==null && ageMax>P.ageFin) return null;
+  let d;
+  if(der){ d=addJ(s2d(der.date), P.freq*7); }
+  else {
+    // 1er prélèvement : à l'âge de début du programme
+    const nais=cible.membres.map(id=>s2d(lot(id).naissance)).filter(Boolean).sort((a,b)=>a-b)[0];
+    d = nais? addJ(nais, P.ageDebut*7) : today();
+    if(d<today()) d=today();
+  }
+  d=caleJour(d,P.jour);
+  const sorties=cible.membres.map(id=>s2d(lot(id).sortie)).filter(Boolean);
+  if(sorties.length===cible.membres.length && d>new Date(Math.max(...sorties))) return null;
+  return {date:d, dernier:der, ageMax:ageMax};
+}
+function statut(d){
+  const diff=Math.round((d-today())/J);
+  if(diff<0) return {c:"t-ret",l:"En retard ("+(-diff)+" j)"};
+  if(diff<=7) return {c:"t-du",l:diff===0?"Aujourd'hui":"Dans "+diff+" j"};
+  return {c:"t-ok",l:"Dans "+diff+" j"};
+}
+
+/* ====================== RENDU ====================== */
+function render(){
+  document.getElementById("hdrInfo").textContent =
+    D.lots.filter(l=>l.actif).length+" bâtiments · "+D.prelevements.length+" prélèvements enregistrés";
+  renderPlanning(); renderCal(); renderHisto(); renderManuel(); renderParams();
+  document.getElementById("modeSync").textContent = sync;
+}
+
+function ligneEcheances(){
+  const fT=document.getElementById("fType").value;
+  const horizon=+document.getElementById("fHorizon").value;
+  const res=[];
+  ["SALMO","IA"].forEach(type=>{
+    if(fT && fT!==type) return;
+    cibles(type).forEach(c=>{
+      const p=prochaine(type,c); if(!p) return;
+      const diff=Math.round((p.date-today())/J);
+      if(diff>horizon) return;
+      res.push({type,cible:c,...p});
+    });
+  });
+  return res.sort((a,b)=>a.date-b.date);
+}
+
+function renderPlanning(){
+  const L=ligneEcheances();
+  const ret=L.filter(x=>x.date<today()).length;
+  const sem=L.filter(x=>{const d=Math.round((x.date-today())/J); return d>=0&&d<=7;}).length;
+  document.getElementById("kpi").innerHTML=`
+   <div class="card${ret?" alerte":""}"><div class="n">${ret}</div><div class="l">En retard</div></div>
+   <div class="card${sem?" proche":""}"><div class="n">${sem}</div><div class="l">À faire sous 7 jours</div></div>
+   <div class="card"><div class="n">${cibles("SALMO").length}</div><div class="l">Cibles Salmonelle</div></div>
+   <div class="card"><div class="n">${cibles("IA").length}</div><div class="l">Cibles Influenza</div></div>`;
+  let h=`<tr><th>Échéance</th><th>Analyse</th><th>Cible</th><th>Bâtiments</th><th>Âge (sem.)</th>
+         <th>Nature / quantités</th><th>Dernier</th><th>Statut</th><th class="right">Action</th></tr>`;
+  if(!L.length) h+=`<tr><td colspan="9" class="vide">Aucune échéance sur cette période.</td></tr>`;
+  L.forEach(x=>{
+    const st=statut(x.date), P=D.programmes[x.type];
+    const ages=x.cible.membres.map(id=>{const a=ageSem(lot(id).naissance,x.date); return a===null?"?":a;}).join(" / ");
+    h+=`<tr>
+      <td><b>${fr(d2s(x.date))}</b><br><span class="mini">${JOURS[x.date.getDay()]}</span></td>
+      <td><span class="tag ${x.type==="IA"?"t-ia":"t-sal"}">${x.type==="IA"?"Influenza":"Salmonelle"}</span></td>
+      <td><b>${x.cible.nom}</b>${x.cible.groupe?'<br><span class="mini">regroupement</span>':""}</td>
+      <td>${x.cible.membres.map(id=>`${id} <span class="mini">${lot(id).bat||""} · ${lot(id).lot||""}</span>`).join("<br>")}</td>
+      <td class="center">${ages}</td>
+      <td class="mini">${P.natures.map(n=>n.n+" ×"+n.q).join("<br>")}</td>
+      <td>${x.dernier?fr(x.dernier.date):"<span class='mini'>—</span>"}</td>
+      <td><span class="tag ${st.c}">${st.l}</span></td>
+      <td class="right"><button class="btn sm" onclick="openSaisie('${x.type}','${x.cible.key}','${d2s(x.date)}')">Saisir</button></td>
+    </tr>`;
+  });
+  document.getElementById("tblPlanning").innerHTML=h;
+}
+
+function renderCal(){
+  const semaines=[]; let d=caleJour(today(),1); if(d>today()) d=addJ(d,-7);
+  for(let i=0;i<10;i++) semaines.push(addJ(d,i*7));
+  let h="<tr><th>Cible</th>"+semaines.map(s=>{const n=numSemaine(s);return `<th class="center">S${n.sem}<br><span class="mini">${frCourt(d2s(s))}</span></th>`}).join("")+"</tr>";
+  ["SALMO","IA"].forEach(type=>{
+    const P=D.programmes[type]; if(!P.actif) return;
+    cibles(type).forEach(c=>{
+      const p=prochaine(type,c); if(!p) return;
+      let cells="";
+      semaines.forEach(s=>{
+        const fin=addJ(s,7);
+        let occ=false, dd=new Date(p.date);
+        for(let k=0;k<40 && dd<fin;k++){ if(dd>=s&&dd<fin){occ=true;break;} dd=addJ(dd,P.freq*7); }
+        cells+=`<td class="center">${occ?`<span class="tag ${type==="IA"?"t-ia":"t-sal"}">×</span>`:""}</td>`;
+      });
+      h+=`<tr><td>${c.nom} <span class="mini">${type==="IA"?"IA":"Salmo"}</span></td>${cells}</tr>`;
+    });
+  });
+  document.getElementById("tblCal").innerHTML=h;
+}
+
+function renderHisto(){
+  const t=document.getElementById("hType").value, dep=document.getElementById("hDate").value;
+  const L=D.prelevements.filter(p=>(!t||p.type===t)&&(!dep||p.date>=dep)).sort((a,b)=>b.date.localeCompare(a.date));
+  let h=`<tr><th>Date</th><th>Analyse</th><th>Cible</th><th>Bâtiments</th><th>Bordereau n°</th><th>Nature</th><th>Préleveur</th><th class="right">Actions</th></tr>`;
+  if(!L.length) h+=`<tr><td colspan="8" class="vide">Aucun prélèvement enregistré.</td></tr>`;
+  L.forEach(p=>{
+    h+=`<tr><td>${fr(p.date)}</td>
+      <td>${badge(p)}</td>
+      <td>${p.nomCible}</td><td>${p.batiments.join(", ")}</td><td>${p.bordereau||""}</td>
+      <td class="mini">${p.natures.map(n=>n.n+" ×"+n.q).join("<br>")}</td><td>${p.preleveur||""}</td>
+      <td class="right">
+        <button class="btn sm sec" onclick="voirBordereau('${p.id}')">Bordereau</button>
+        <button class="btn sm sec" onclick="openSaisie(null,null,null,'${p.id}')">Modifier</button>
+        <button class="btn sm dgr" onclick="supPrel('${p.id}')">Suppr.</button></td></tr>`;
+  });
+  document.getElementById("tblHisto").innerHTML=h;
+}
+
+/* ====================== SAISIE ====================== */
+function openSaisie(type, key, date, editId){
+  let p;
+  if(editId){ p=JSON.parse(JSON.stringify(D.prelevements.find(x=>x.id===editId))); }
+  else{
+    const c=cibles(type).find(x=>x.key===key);
+    p={id:"p"+Date.now(), type, cible:key, nomCible:c.nom, batiments:c.membres.slice(),
+       date, preleveur:D.contacts.preleveur, technicien:D.contacts.techAfr,
+       bordereau:numBordereau(date),
+       natures:JSON.parse(JSON.stringify(D.programmes[type].natures)),
+       nbEchantillons:D.programmes[type].natures.reduce((s,n)=>s+ +n.q,0), code:"", commentaire:""};
+  }
+  const nat=NATURES[p.type];
+  document.getElementById("saisieBody").innerHTML=`
+   <h2 style="margin:0 0 12px">Enregistrer un prélèvement — ${p.type==="IA"?"Influenza aviaire":"Salmonelle"}</h2>
+   <div class="grid3">
+     <div class="f"><label>Date de prélèvement</label>
+       <input type="date" id="s_date" value="${p.date}" onchange="majNumBord('s','${p.id}')"></div>
+     <div class="f"><label>Préleveur</label><input id="s_prel" value="${p.preleveur||""}"></div>
+     <div class="f"><label>Bordereau n° <span class="mini">(auto : année + semaine + rang)</span></label>
+       <div class="row" style="gap:6px;flex-wrap:nowrap">
+         <input id="s_bord" value="${p.bordereau||""}" oninput="this.dataset.manuel='1'">
+         <button class="btn sec sm" title="Renuméroter d'après la date"
+           onclick="majNumBord('s','${p.id}',true)">↻</button></div></div>
+     <div class="f"><label>Type de contrôle</label><select id="s_ctrl">
+       <option ${p.typeControle!=="COHS"?"selected":""}>Autocontrôle</option>
+       <option ${p.typeControle==="COHS"?"selected":""}>COHS</option></select></div>
+   </div>
+   <h3>Bâtiments concernés — ${p.nomCible}</h3>
+   <div class="chips" id="s_bats">${D.lots.filter(l=>l.actif).map(l=>
+      `<span class="chip ${p.batiments.includes(l.id)?"on":""}" data-id="${l.id}" onclick="this.classList.toggle('on')">${l.id}</span>`).join("")}</div>
+   <h3>Nature et quantités</h3>
+   <div id="s_nat">${nat.map((n,i)=>{
+      const ex=p.natures.find(x=>x.n===n);
+      return `<div class="row" style="margin-bottom:5px">
+        <label style="min-width:280px;font-size:13px"><input type="checkbox" data-n="${n}" ${ex?"checked":""}> ${n}</label>
+        <input type="number" min="0" data-q="${n}" value="${ex?ex.q:0}" style="width:80px">
+      </div>`}).join("")}</div>
+   <div class="grid2" style="margin-top:10px">
+     <div class="f"><label>Code / réf. échantillons (labo)</label><input id="s_code" value="${p.code||""}"></div>
+     <div class="f"><label>Commentaire</label><input id="s_com" value="${p.commentaire||""}"></div>
+   </div>
+   <div class="row" style="margin-top:14px">
+     <button class="btn" onclick="saveSaisie('${p.id}',${editId?"true":"false"})">Enregistrer</button>
+     <button class="btn sec" onclick="closeModal('mSaisie')">Annuler</button>
+   </div>`;
+  window._p=p;
+  document.getElementById("mSaisie").classList.add("on");
+}
+function saveSaisie(id, edit){
+  const p=window._p;
+  p.date=document.getElementById("s_date").value;
+  p.preleveur=document.getElementById("s_prel").value;
+  p.bordereau=document.getElementById("s_bord").value.trim();
+  p.code=document.getElementById("s_code").value;
+  p.typeControle=document.getElementById("s_ctrl").value;
+  p.commentaire=document.getElementById("s_com").value;
+  p.batiments=[...document.querySelectorAll("#s_bats .chip.on")].map(c=>c.dataset.id);
+  p.natures=[...document.querySelectorAll("#s_nat input[type=checkbox]:checked")].map(cb=>({
+    n:cb.dataset.n, q:+document.querySelector(`#s_nat input[data-q="${cb.dataset.n}"]`).value||0}));
+  p.nbEchantillons=p.natures.reduce((s,n)=>s+n.q,0);
+  if(!p.batiments.length){ alert("Sélectionnez au moins un bâtiment."); return; }
+  if(edit){ const i=D.prelevements.findIndex(x=>x.id===id); D.prelevements[i]=p; }
+  else D.prelevements.push(p);
+  save(); closeModal("mSaisie"); render();
+  voirBordereau(p.id);
+}
+function supPrel(id){
+  if(!confirm("Supprimer ce prélèvement ?")) return;
+  D.prelevements=D.prelevements.filter(p=>p.id!==id); save(); render();
+}
+function closeModal(id){ document.getElementById(id).classList.remove("on"); }
+
+/* ====================== BORDEREAUX ====================== */
+function badge(p){
+  if(p.type==="MANUEL") return `<span class="tag t-man">Hors programme</span>`;
+  return `<span class="tag ${p.type==="IA"?"t-ia":"t-sal"}">${p.type==="IA"?"Influenza":"Salmonelle"}</span>`;
+}
+function voirBordereau(id){
+  const p=D.prelevements.find(x=>x.id===id);
+  const html = p.type==="MANUEL" ? (p.labo==="LABOVET"?bordIA(p):bordManuel(p))
+             : p.type==="SALMO"  ? bordSalmo(p) : bordIA(p);
+  document.getElementById("bordPreview").innerHTML=html;
+  document.getElementById("bordArea").innerHTML=html;
+  document.getElementById("mBord").classList.add("on");
+}
+function cols(p,n){ const c=p.batiments.slice(0,n); while(c.length<n) c.push(null); return c; }
+function nl(s){ return (s||"").replace(/\n/g,"<br>"); }
+function ageBord(p){
+  const ages=p.batiments.map(id=>ageSem(lot(id).naissance,s2d(p.date))).filter(a=>a!==null);
+  return ages.length?Math.max(...ages):"";
+}
+function especeX(p,e){ return p.batiments.some(id=>lot(id).espece===e)?"X":""; }
+function qte(p,n){ const x=p.natures.find(v=>v.n===n); return x?x.q:""; }
+function coche(p,n){ return p.natures.some(v=>v.n===n)?"X":""; }
+function cx(on){ return on?'<td class="xb">X</td>':'<td></td>'; }
+function cadreLabo(){
+  return `<table class="box" style="margin-top:5px">
+    <colgroup><col style="width:16%"><col style="width:16%"><col style="width:16%"><col style="width:14%"><col style="width:16%"><col style="width:22%"></colgroup>
+    <tr><td rowspan="3" class="c b">Reception<br>Laboratoire</td><td colspan="5">Initiales :</td></tr>
+    <tr><td colspan="2">Date : &nbsp;&nbsp;&nbsp; /&nbsp;&nbsp;&nbsp; /</td><td colspan="3">Heure : &nbsp;&nbsp;&nbsp; h</td></tr>
+    <tr><td colspan="2">Code facturation :</td><td colspan="3">Demandée par :</td></tr>
+    <tr><td colspan="6" class="sec">Cadre Reservé au laboratoire</td></tr>
+    <tr class="hdr"><td></td><td class="c b">MSRV 24h</td><td class="c b">MSRV 48h</td><td class="c b">XLT4</td><td class="c b">Résultat +/−</td><td class="c b">Typage</td></tr>
+    ${[1,2,3,4,5,6,7].map(i=>`<tr><td class="c">${i}</td><td class="ln"></td><td></td><td></td><td></td><td></td></tr>`).join("")}
+  </table>`;
+}
+function entetePied(p){ return p.commentaire?`<p class="sm"><b>Commentaire :</b> ${p.commentaire}</p>`:""; }
+
+/* ---------- Salmonelle — FILIAVET ---------- */
+function bordSalmo(p){
+  const C=D.contacts, cs=cols(p,4), s=site(lot(p.batiments[0]).site);
+  return `<div class="sheet">
+  <table class="nb"><tr>
+    <td style="width:34%" class="sm b">Laboratoire :<br>${C.labSalNom}<br>${nl(C.labSalAdr)}<br>${C.labSalMail}<br>Tél. : ${C.labSalTel}</td>
+    <td class="ttl">Recherche de Salmonelle</td>
+    <td style="width:22%" class="c b">COUVOIRS ORVIA<br>SÈVRE MAINE</td></tr></table>
+  <table class="box" style="margin-top:5px">
+    <colgroup><col style="width:14%"><col style="width:36%"><col style="width:16%"><col style="width:34%"></colgroup>
+    <tr><td class="b c">Éleveur</td><td class="b">${C.eleveur}<br>${C.eleveurAdr}<br>${C.eleveurCp}<br>Tél. : ${C.eleveurTel}</td>
+        <td class="b c">Ets de production</td><td class="b">${s.ets||""}<br>${s.adresse||""}<br>${s.cp||""} ${s.ville||""}</td></tr>
+  </table>
+  <table class="box" style="margin-top:5px">
+    <colgroup><col style="width:20%"><col style="width:8%"><col style="width:8%"><col style="width:16%">
+      <col style="width:12%"><col style="width:12%"><col style="width:12%"><col style="width:12%"></colgroup>
+    <tr><td>Eleveur :</td><td class="c">Site</td><td class="c">AFR</td><td class="b">${s.nom||""}</td>
+        ${cs.map(c=>`<td class="c b">${c||""}</td>`).join("")}</tr>
+    <tr><td>INUAV / Batiment :</td><td colspan="2" class="c rouge">${s.inuav||""}</td><td class="c">/</td>
+        ${cs.map(c=>`<td class="c rouge">${c?lot(c).bat||"":""}</td>`).join("")}</tr>
+    <tr><td>Date de MEP :</td><td colspan="3"></td>${cs.map(c=>`<td class="c">${c?frCourt(lot(c).mep):""}</td>`).join("")}</tr>
+    <tr><td>Numero de Lot :</td><td colspan="3"></td>${cs.map(c=>`<td class="c">${c?lot(c).lot||"":""}</td>`).join("")}</tr>
+    <tr><td>Age (semaines) :</td><td colspan="7" class="cy c b">${ageBord(p)}</td></tr>
+    <tr><td>Technicien :</td><td colspan="3">AFR : ${p.technicien||C.techAfr}</td><td colspan="4">ORVIA : ${C.techOrvia}</td></tr>
+    <tr><td>Préleveur :</td><td colspan="7">${p.preleveur||""}</td></tr>
+    <tr><td>Date de prélèvement :</td><td colspan="7" class="cy b">${fr(p.date)}</td></tr>
+    <tr><td>Facturation :</td><td colspan="7">${C.factSalmo}</td></tr>
+  </table>
+  <table class="box" style="margin-top:5px">
+    <colgroup><col style="width:20%"><col style="width:4%"><col style="width:30%"><col style="width:4%"><col style="width:42%"></colgroup>
+    <tr><td rowspan="2">Communiquer les résultats :</td>
+        <td class="x">X</td><td>Technicien ORVIA<br><span class="bleu">${C.mailOrvia}</span></td>
+        <td class="x">X</td><td>Eleveur<br><span class="bleu">${nl(C.mailsEleveur)}</span></td></tr>
+    <tr><td class="x">X</td><td>Vétérinaire sanitaire de l'élevage<br><span class="bleu">${C.mailVeto}</span></td>
+        <td class="x">${p.typeControle==="COHS"?"X":""}</td><td>DDPP / DDETSPP<br><span class="bleu">${s.ddpp||C.mailDdpp}</span></td></tr>
+  </table>
+  <table class="nb" style="margin-top:5px"><tr><td style="width:49%;vertical-align:top;padding:0">
+    <table class="box"><colgroup><col style="width:13%"><col style="width:87%"></colgroup>
+      <tr><td class="sec" colspan="2">Examens Demandés</td></tr>
+      ${["Présence ou absence","Typage restreint","Typage complet","Antibiogramme"].map(e=>
+        `<tr>${cx(C.examenSalmo===e)}<td class="${C.examenSalmo===e?"rouge":""}">${e}</td></tr>`).join("")}
+    </table>
+    <table class="box" style="margin-top:6px">
+      <colgroup><col style="width:10%"><col style="width:52%"><col style="width:38%"></colgroup>
+      <tr><td class="sec" colspan="2">Nombre et refs échantillons :</td><td class="sec">code</td></tr>
+      <tr><td class="c">1</td><td class="c b">${p.nbEchantillons} échantillon(s)</td><td class="c rouge">${p.code||""}</td></tr>
+      ${[2,3,4,5,6,7].map(i=>`<tr><td class="c">${i}</td><td class="ln"></td><td></td></tr>`).join("")}
+    </table>
+    <table class="box" style="margin-top:6px">
+      <colgroup><col style="width:34%"><col style="width:13%"><col style="width:53%"></colgroup>
+      <tr><td class="sec" colspan="3">Désinfectant dans les prélèvements</td></tr>
+      <tr><td class="c">oui</td>${cx(!!p.desinfectant)}<td>Non</td></tr>
+    </table>
+  </td><td style="width:2%"></td><td style="vertical-align:top;padding:0">
+    <table class="box"><colgroup><col style="width:10%"><col style="width:90%"></colgroup>
+      <tr><td class="sec" colspan="2">Type de Contrôle</td></tr>
+      <tr>${cx(p.typeControle!=="COHS")}<td>Autocontrôle</td></tr>
+      <tr>${cx(p.typeControle==="COHS")}<td>COHS</td></tr></table>
+    <table class="box" style="margin-top:6px">
+      <colgroup><col style="width:10%"><col style="width:50%"><col style="width:26%"><col style="width:14%"></colgroup>
+      <tr><td class="sec" colspan="4">Nature du prélevements</td></tr>
+      ${["Chiffonnettes","Fientes (Pédi-chiffonnettes)","Fonds de boîte"].map(n=>
+        `<tr>${cx(!!coche(p,n))}<td>${n}</td><td class="c">Nombre</td><td class="c b">${qte(p,n)}</td></tr>`).join("")}
+      <tr>${cx(!!coche(p,"Autres"))}<td>${coche(p,"Autres")?"Autres":""}</td><td class="c">Nombre</td><td class="c b">${qte(p,"Autres")}</td></tr>
+    </table>
+    <table class="box" style="margin-top:6px">
+      <colgroup><col style="width:10%"><col style="width:40%"><col style="width:10%"><col style="width:40%"></colgroup>
+      <tr><td class="sec" colspan="4">Espèces</td></tr>
+      <tr>${cx(!!especeX(p,"Pékin"))}<td class="b">Pékin</td>${cx(!!especeX(p,"Barbarie"))}<td class="b">Barbarie</td></tr>
+      <tr>${cx(!!especeX(p,"Mulard"))}<td>Mulard</td>${cx(!!especeX(p,"Autres"))}<td>Autres</td></tr></table>
+    <table class="box" style="margin-top:6px">
+      <colgroup><col style="width:10%"><col style="width:50%"><col style="width:10%"><col style="width:30%"></colgroup>
+      <tr><td class="sec" colspan="4">Elevage</td></tr>
+      <tr>${cx(true)}<td>${C.typeElevage}</td><td></td><td>Autres :</td></tr></table>
+  </td></tr></table>
+  ${cadreLabo()}${entetePied(p)}
+  </div>`;
+}
+
+/* ---------- Influenza aviaire — LABOVET ---------- */
+function bordIA(p){
+  const C=D.contacts, cs=cols(p,3), s=site(lot(p.batiments[0]).site);
+  const ch=n=>p.natures.some(v=>v.n===n)?"☒":"☐";
+  const q=n=>{const x=p.natures.find(v=>v.n===n); return x?x.q:0;};
+  return `<div class="sheet">
+  <table class="box"><colgroup><col style="width:26%"><col style="width:48%"><col style="width:26%"></colgroup>
+    <tr><td class="c b sm">RESALAB OUEST<br>LABOVET ANALYSES</td>
+        <td class="ttl2">Analyses<br>Influenza Aviaire</td>
+        <td class="c b sm">RESALAB OUEST<br>Notre passion, votre sécurité</td></tr></table>
+  <div class="h">Arrêté en vigueur</div>
+  <div class="c b sm">Mesure de BIOSÉCURITÉ dans les exploitations de volailles et d'oiseaux captifs</div>
+  <div class="c b" style="margin:3px 0 5px">Dépistage virologique <u>HEBDOMADAIRE</u> des animaux</div>
+  <table class="box">
+    <colgroup><col style="width:20%"><col style="width:14%"><col style="width:8%"><col style="width:14%">
+      <col style="width:14%"><col style="width:14%"><col style="width:16%"></colgroup>
+    <tr><td>LABO :</td><td colspan="3" class="rouge b">${C.labIaNom}</td><td colspan="2" class="c">Bordereau N°</td>
+        <td class="c rouge b">${p.bordereau||""}</td></tr>
+    <tr><td>ELEVEUR<br>Nom et Adresse</td><td colspan="6" class="b">${C.eleveur.replace(" S.A.S.","")}
+        &nbsp;&nbsp; Ferme ${s.code||""} — ${s.nom||""}<br>${s.adresse||""}<br>${s.cp||""} ${s.ville||""}</td></tr>
+    <tr><td>INUAV / BÂTIMENT</td><td class="c rouge b">${s.inuav||""}</td><td class="c">/</td>
+        ${cs.map(c=>`<td class="c b">${c?c+"<br>("+(lot(c).bat||"")+")":""}</td>`).join("")}<td></td></tr>
+    <tr><td>DATE MEP</td><td colspan="2"></td>${cs.map(c=>`<td class="c">${c?fr(lot(c).mep):""}</td>`).join("")}<td></td></tr>
+    <tr><td>NUMÉRO DE LOT</td><td colspan="2"></td>${cs.map(c=>`<td class="c">${c?lot(c).lot||"":""}</td>`).join("")}<td></td></tr>
+    <tr><td>TECHNICIEN</td><td colspan="6">ORVIA &nbsp;&nbsp; ${C.techOrvia}<br>AFR &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${p.technicien||C.techAfr}
+        &nbsp;&nbsp;&nbsp;&nbsp; Préleveur : ${p.preleveur||""}</td></tr>
+    <tr><td>FACTURATION</td><td colspan="6">${C.factIa}</td></tr>
+    <tr><td>GROUPEMENT</td><td colspan="6">${C.groupement}</td></tr>
+    <tr><td>TRANSMISSION</td><td colspan="6">Technicien &nbsp;&nbsp; ${C.techOrvia} &nbsp;&nbsp;&nbsp;&nbsp; ${nl(C.transEleveur)}<br>
+        Grpt &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${C.transGrpt}<br>
+        Véto &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${C.veto}</td></tr>
+    <tr><td>DATE DE PRÉLÈVEMENT</td><td colspan="6" class="b cy">${fr(p.date)}</td></tr>
+  </table>
+  <table class="nb" style="margin-top:5px"><tr>
+    <td style="width:44%;padding:0;vertical-align:top">
+      <table class="box"><colgroup><col style="width:16%"><col style="width:84%"></colgroup>
+        <tr><td class="sec" colspan="2">ESPÉCE</td></tr>
+        <tr>${cx(true)}<td>Canard</td></tr></table></td>
+    <td style="width:4%"></td>
+    <td style="padding:0;vertical-align:top">
+      <table class="box"><colgroup><col style="width:12%"><col style="width:44%"><col style="width:12%"><col style="width:32%"></colgroup>
+        <tr><td class="sec" colspan="4">PRODUCTION</td></tr>
+        <tr>${cx(C.production==="Reproducteur")}<td>Reproducteur</td>${cx(C.production==="Futur repro")}<td>Futur repro</td></tr></table></td>
+  </tr></table>
+  <table class="box" style="margin-top:5px">
+    <colgroup><col style="width:8%"><col style="width:44%"><col style="width:34%"><col style="width:14%"></colgroup>
+    <tr><td class="sec" colspan="4">ÉCHANTILLONS déposés — Hebdomadaire</td></tr>
+    <tr class="hdr"><td colspan="2" class="c b">Nature du prélèvement</td><td colspan="2" class="c b">Quantité</td></tr>
+    <tr>${cx(!!coche(p,"Chiffonnettes"))}<td>: chiffonnette</td><td>Chiffonnette :</td><td class="c b">${q("Chiffonnettes")}</td></tr>
+    <tr>${cx(!!coche(p,"Écouvillons trachéaux et cloacaux"))}<td>: Écouvillons trachéaux et cloacaux</td>
+        <td>Écouvillons trachéaux et cloacaux :</td><td class="c b">${q("Écouvillons trachéaux et cloacaux")}</td></tr>
+    <tr>${cx(!!coche(p,"Prélèvements d'environnement"))}<td>: Prélèvements d'environnement</td>
+        <td>Environnement :</td><td class="c b">${q("Prélèvements d'environnement")}</td></tr>
+  </table>
+  <table class="box" style="margin-top:5px">
+    <colgroup><col style="width:8%"><col style="width:34%"><col style="width:8%"><col style="width:18%"><col style="width:8%"><col style="width:24%"></colgroup>
+    <tr><td class="sec" colspan="6">EXAMENS demandés :</td></tr>
+    <tr>${cx(true)}<td class="b">P.C.R. Influenza virus type A</td>
+        ${cx(true)}<td>Gène M</td>
+        ${cx(true)}<td>Gènes H5 et H7 <i>(si gène M positif)</i></td></tr>
+  </table>
+  <table class="box" style="margin-top:5px" class="sm">
+    <colgroup><col style="width:26%"><col style="width:24%"><col style="width:26%"><col style="width:24%"></colgroup>
+    <tr><td colspan="4" class="b sm">(cadre réservé au laboratoire) &nbsp; RÉCEPTION</td></tr>
+    <tr class="sm"><td>DATE réception</td><td>&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;/</td><td>Date dépôt labo :</td><td>&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;/</td></tr>
+    <tr class="sm"><td>Commentaires</td><td colspan="3" class="ln"></td></tr>
+    <tr class="sm"><td>Client prévenu le &nbsp;&nbsp;/&nbsp;&nbsp;/ &nbsp; par :</td><td colspan="3">Heure : &nbsp;&nbsp; h</td></tr>
+    <tr class="sm"><td colspan="4">☐ Éch. ayant subi une congélation avant extraction — Date congélation : &nbsp;&nbsp;/&nbsp;&nbsp;/ &nbsp;&nbsp; Date analyse : &nbsp;&nbsp;/&nbsp;&nbsp;/</td></tr>
+  </table>
+  <table class="box sm" style="margin-top:5px">
+    <tr><td class="sec">GESTION DES RÉSERVES</td></tr>
+    <tr><td>☐ Écouvillons déposés au-delà de 24 h après prélèvement et prélèvements d'environnement au-delà de 48 h →
+      <i>« Analyses restituées avec réserve »</i></td></tr>
+    <tr><td>☐ Échantillons en nombre insuffisant →
+      <i>« Analyses restituées avec réserve, le nombre de prélèvements ne correspond pas aux exigences de la réglementation »</i></td></tr>
+  </table>
+  ${entetePied(p)}
+  </div>`;
+}
+
+/* ---------- Bordereau manuel (commémoratif FILIAVET) ---------- */
+function bordManuel(p){
+  const C=D.contacts, l=lot(p.batiments[0]), s=site(l.site);
+  const ex=e=>p.examens&&p.examens.includes(e);
+  const nat=["Chiffonnettes","Pédi-chiffonnettes","Fonds de boîte","Sujets","Prises de sang"];
+  return `<div class="sheet">
+  <table class="nb"><tr><td class="ttl2" style="text-align:left">Commémoratif — demande d'analyse</td>
+    <td class="b" style="text-align:right">Bordereau N° <span class="rouge">${p.bordereau||""}</span></td></tr></table>
+  <table class="box" style="margin-top:4px">
+    <colgroup><col style="width:22%"><col style="width:78%"></colgroup>
+    <tr><td class="c b">Laboratoire</td><td class="b">${C.labSalNom} — ${nl(C.labSalAdr).replace("<br>"," — ")}<br>
+      ${C.labSalMail} &nbsp;&nbsp; Tél. : ${C.labSalTel}</td></tr>
+  </table>
+  <table class="box" style="margin-top:5px">
+    <colgroup><col style="width:14%"><col style="width:36%"><col style="width:16%"><col style="width:34%"></colgroup>
+    <tr><td class="b c">Éleveur</td><td class="b">${C.eleveur}<br>${C.eleveurAdr}<br>${C.eleveurCp}<br>Tél. : ${C.eleveurTel}</td>
+        <td class="b c">Ets de production</td><td class="b">${s.ets||""}<br>${s.adresse||""}<br>${s.cp||""} ${s.ville||""}</td></tr>
+  </table>
+  <table class="box" style="margin-top:5px">
+    <colgroup><col style="width:24%"><col style="width:18%"><col style="width:20%"><col style="width:18%"><col style="width:20%"></colgroup>
+    <tr><td>Site de production :</td><td colspan="4" class="b">AFR ${s.nom||""}</td></tr>
+    <tr><td>Propriétaire des oiseaux :</td><td colspan="4">${C.proprio} — ${C.proprioAdr} — ${C.proprioCp}</td></tr>
+    <tr><td>INUAV / Bâtiment :</td><td class="c rouge">${s.inuav||""}</td><td class="c b">${p.batiments.join(" + ")}</td>
+        <td class="c">Réf. bâtiment</td><td class="c b">${p.batiments.map(id=>lot(id).bat||"").join(" / ")}</td></tr>
+    <tr><td>Date de naissance :</td><td colspan="2">${fr(l.naissance)}</td><td class="c">Âge</td><td class="c b">${ageBord(p)} semaines</td></tr>
+    <tr><td>Numero de Lot :</td><td colspan="2" class="b">${p.batiments.map(id=>lot(id).lot||"").join(" / ")}</td>
+        <td class="c">Lot AFR</td><td class="c">${p.batiments.map(id=>lot(id).lotAfr||"").join(" / ")}</td></tr>
+    <tr><td>Technicien(s) :</td><td colspan="2">AFR : ${p.technicien||C.techAfr}</td><td colspan="2">ORVIA : ${C.techOrvia}</td></tr>
+    <tr><td>Préleveur :</td><td colspan="4">${p.preleveur||""}</td></tr>
+    <tr><td>Date de prélèvement :</td><td colspan="4" class="cy b">${fr(p.date)}</td></tr>
+    <tr><td>Facturation des analyses à :</td><td colspan="4">${C.factSalmo} — ${C.proprioAdr} — ${C.proprioCp}</td></tr>
+  </table>
+  <table class="box" style="margin-top:5px">
+    <colgroup><col style="width:20%"><col style="width:4%"><col style="width:30%"><col style="width:4%"><col style="width:42%"></colgroup>
+    <tr><td rowspan="2">Communiquer les résultats :</td>
+        <td class="x">X</td><td>Technicien ORVIA<br><span class="bleu">${C.mailOrvia}</span></td>
+        <td class="x">X</td><td>Eleveur<br><span class="bleu">${nl(C.mailsEleveur)}</span></td></tr>
+    <tr><td class="x">X</td><td>Vétérinaire sanitaire de l'élevage<br><span class="bleu">${C.mailVeto}</span></td>
+        <td class="x">${p.typeControle==="COHS"?"X":""}</td><td>DDPP / DDETSPP<br><span class="bleu">${s.ddpp||C.mailDdpp}</span></td></tr>
+  </table>
+  <table class="nb" style="margin-top:5px"><tr><td style="width:49%;vertical-align:top;padding:0">
+    <table class="box"><tr><td class="sec">Motif de la demande</td></tr>
+      <tr><td style="height:58px;vertical-align:top">${p.motif||""}${p.commentaire?"<br>"+p.commentaire:""}</td></tr></table>
+    <table class="box" style="margin-top:6px"><colgroup><col style="width:13%"><col style="width:87%"></colgroup>
+      <tr><td class="sec" colspan="2">Examens Demandés</td></tr>
+      ${EXAMENS_MANUEL.map(e=>`<tr>${cx(ex(e))}<td class="${ex(e)?"b":""}">${e}</td></tr>`).join("")}
+    </table>
+    <table class="box" style="margin-top:6px">
+      <colgroup><col style="width:34%"><col style="width:13%"><col style="width:53%"></colgroup>
+      <tr><td class="sec" colspan="3">Désinfectant dans les prélèvements</td></tr>
+      <tr><td class="c">oui</td>${cx(!!p.desinfectant)}<td>Non</td></tr></table>
+  </td><td style="width:2%"></td><td style="vertical-align:top;padding:0">
+    <table class="box"><colgroup><col style="width:10%"><col style="width:90%"></colgroup>
+      <tr><td class="sec" colspan="2">Type de Contrôle</td></tr>
+      <tr>${cx(p.typeControle!=="COHS")}<td>Autocontrôle</td></tr>
+      <tr>${cx(p.typeControle==="COHS")}<td>COHS</td></tr></table>
+    <table class="box" style="margin-top:6px">
+      <colgroup><col style="width:10%"><col style="width:50%"><col style="width:26%"><col style="width:14%"></colgroup>
+      <tr><td class="sec" colspan="4">Nature du prélevements</td></tr>
+      ${nat.map(n=>`<tr>${cx(!!coche(p,n))}<td>${n}</td><td class="c">Nombre</td><td class="c b">${qte(p,n)}</td></tr>`).join("")}
+    </table>
+    <table class="box" style="margin-top:6px">
+      <colgroup><col style="width:10%"><col style="width:40%"><col style="width:10%"><col style="width:40%"></colgroup>
+      <tr><td class="sec" colspan="4">Espèces</td></tr>
+      <tr>${cx(!!especeX(p,"Pékin"))}<td class="b">Pékin</td>${cx(!!especeX(p,"Barbarie"))}<td class="b">Barbarie</td></tr>
+      <tr>${cx(!!especeX(p,"Mulard"))}<td>Mulard</td>${cx(!!especeX(p,"Autres"))}<td>Autres</td></tr></table>
+    <table class="box" style="margin-top:6px">
+      <colgroup><col style="width:10%"><col style="width:50%"><col style="width:10%"><col style="width:30%"></colgroup>
+      <tr><td class="sec" colspan="4">Elevage</td></tr>
+      <tr>${cx(true)}<td>${C.typeElevage}</td><td></td><td>Autres :</td></tr></table>
+  </td></tr></table>
+  ${cadreLabo()}
+  </div>`;
+}
+
+/* ====================== BORDEREAU MANUEL — SAISIE ====================== */
+function numBordereau(dateStr, excludeId){
+  const d=s2d(dateStr); if(!d) return "";
+  const n=numSemaine(d), base=`${n.an}${String(n.sem).padStart(2,"0")}`;
+  let max=0;
+  D.prelevements.forEach(p=>{
+    if(excludeId && p.id===excludeId) return;
+    const b=(p.bordereau||"").trim();
+    if(b.indexOf(base)===0){
+      const m=b.slice(base.length).match(/^\s*-?\s*(\d+)/);
+      max=Math.max(max, m?+m[1]:1);
+    }
+  });
+  return base+"-"+(max+1);
+}
+function majNumBord(pfx, excludeId, force){
+  const bd=document.getElementById(pfx+"_bord");
+  if(!bd || (bd.dataset.manuel==="1" && !force)) return;
+  bd.dataset.manuel="";
+  bd.value=numBordereau(document.getElementById(pfx+"_date").value, excludeId||null);
+}
+function renderManuel(){
+  const d=d2s(today()), C=D.contacts;
+  const f=document.getElementById("formManuel");
+  if(f && !f.dataset.pret){
+    f.dataset.pret="1";
+    f.innerHTML=`
+    <div class="grid3">
+      <div class="f"><label>Date de prélèvement</label><input type="date" id="m_date" value="${d}" onchange="majNumBord('m')"></div>
+      <div class="f"><label>Laboratoire</label><select id="m_labo">
+        <option value="FILIAVET">FILIAVET — salmonelles, autopsie, bactériologie</option>
+        <option value="LABOVET">LABOVET CONSEIL — influenza aviaire</option></select></div>
+      <div class="f"><label>Bordereau n° <span class="mini">(auto)</span></label>
+        <div class="row" style="gap:6px;flex-wrap:nowrap">
+          <input id="m_bord" value="${numBordereau(d)}" oninput="this.dataset.manuel='1'">
+          <button class="btn sec sm" title="Renuméroter d'après la date" onclick="majNumBord('m',null,true)">↻</button></div></div>
+      <div class="f"><label>Préleveur</label><input id="m_prel" value="${C.preleveur}"></div>
+      <div class="f"><label>Type de contrôle</label><select id="m_ctrl">
+        <option>Autocontrôle</option><option>COHS</option></select></div>
+      <div class="f"><label>Réf. échantillons (labo)</label><input id="m_code"></div>
+    </div>
+    <h3>Bâtiments concernés</h3>
+    <div class="chips" id="m_bats">${D.lots.filter(l=>l.actif).map(l=>
+      `<span class="chip" data-id="${l.id}" onclick="this.classList.toggle('on')">${l.id} <span class="mini">${l.bat||""}</span></span>`).join("")}</div>
+    <h3>Nature et quantités</h3>
+    <div class="grid3" id="m_nat">${NATURES.MANUEL.map(n=>
+      `<div class="row" style="gap:8px;align-items:center">
+         <label style="flex:1;font-size:13.5px"><input type="checkbox" data-n="${n}" style="margin-right:6px"> ${n}</label>
+         <input type="number" min="0" value="0" data-q="${n}" style="width:70px"></div>`).join("")}</div>
+    <h3>Examens demandés</h3>
+    <div class="chips" id="m_ex">${EXAMENS_MANUEL.map(e=>
+      `<span class="chip" data-e="${e}" onclick="this.classList.toggle('on')">${e}</span>`).join("")}</div>
+    <div class="grid2" style="margin-top:14px">
+      <div class="f"><label>Motif de la demande</label><input id="m_motif" placeholder="Mortalité anormale, suspicion clinique, contrôle officiel…"></div>
+      <div class="f"><label>Commentaire</label><input id="m_com" placeholder="Précisions transmises au laboratoire"></div>
+    </div>
+    <div class="row" style="margin-top:16px">
+      <button class="btn" onclick="creerManuel()">📄 Créer le bordereau</button>
+      <button class="btn sec" onclick="resetManuel()">Vider le formulaire</button>
+      <label style="font-size:13px;display:flex;align-items:center;gap:6px;margin-left:6px">
+        <input type="checkbox" id="m_desinf"> Désinfectant dans les prélèvements</label>
+    </div>`;
+  }
+  const L=D.prelevements.filter(p=>p.type==="MANUEL").sort((a,b)=>b.date.localeCompare(a.date));
+  let h=`<tr><th>Date</th><th>Laboratoire</th><th>Bâtiments</th><th>Motif</th><th>Nature</th>
+         <th>Bordereau n°</th><th class="right">Actions</th></tr>`;
+  if(!L.length) h+=`<tr><td colspan="7" class="vide">Aucun bordereau hors programme.</td></tr>`;
+  L.forEach(p=>{
+    h+=`<tr><td>${fr(p.date)}</td><td>${p.labo}</td><td>${p.batiments.join(", ")}</td>
+      <td>${p.motif||""}</td><td class="mini">${p.natures.map(n=>n.n+" ×"+n.q).join("<br>")}</td>
+      <td>${p.bordereau||""}</td>
+      <td class="right"><button class="btn sm sec" onclick="voirBordereau('${p.id}')">Bordereau</button>
+      <button class="btn sm dgr" onclick="supPrel('${p.id}')">Suppr.</button></td></tr>`;
+  });
+  document.getElementById("tblManuel").innerHTML=h;
+}
+function resetManuel(){
+  const f=document.getElementById("formManuel"); f.dataset.pret=""; renderManuel();
+}
+function creerManuel(){
+  const bats=[...document.querySelectorAll("#m_bats .chip.on")].map(c=>c.dataset.id);
+  if(!bats.length){ alert("Sélectionnez au moins un bâtiment."); return; }
+  const natures=[...document.querySelectorAll("#m_nat input[type=checkbox]:checked")].map(cb=>({
+    n:cb.dataset.n, q:+document.querySelector(`#m_nat input[data-q="${cb.dataset.n}"]`).value||0}));
+  if(!natures.length){ alert("Sélectionnez au moins un type de prélèvement."); return; }
+  const p={id:"p"+Date.now(), type:"MANUEL",
+    labo:document.getElementById("m_labo").value,
+    cible:"M:"+Date.now(), nomCible:bats.join(" + "), batiments:bats,
+    date:document.getElementById("m_date").value,
+    preleveur:document.getElementById("m_prel").value,
+    technicien:D.contacts.techAfr,
+    bordereau:document.getElementById("m_bord").value.trim(),
+    typeControle:document.getElementById("m_ctrl").value,
+    code:document.getElementById("m_code").value,
+    motif:document.getElementById("m_motif").value,
+    commentaire:document.getElementById("m_com").value,
+    desinfectant:document.getElementById("m_desinf").checked,
+    examens:[...document.querySelectorAll("#m_ex .chip.on")].map(c=>c.dataset.e),
+    natures, nbEchantillons:natures.reduce((s,n)=>s+n.q,0)};
+  D.prelevements.push(p); save(); resetManuel(); render(); voirBordereau(p.id);
+}
+
+/* ====================== PARAMÈTRES ====================== */
+function renderParams(){ renderLots(); renderGroupes(); renderProg(); renderSites(); renderContacts(); }
+
+function renderLots(){
+  let h=`<tr><th>Bât. AFR</th><th>Ferme</th><th>Bât. ORVIA</th><th>N° lot ORVIA</th><th>N° lot AFR</th>
+         <th>Stade</th><th>Naissance</th><th>Mise en place</th><th>Sortie prévue</th>
+         <th>Âge auj.</th><th>Espèce</th><th>Actif</th><th></th></tr>`;
+  D.lots.forEach((l,i)=>{
+    const a=ageSem(l.naissance,today());
+    h+=`<tr>
+      <td><input value="${l.id}" onchange="majLot(${i},'id',this.value)" style="width:70px"></td>
+      <td><select onchange="majLot(${i},'site',this.value)">${D.sites.map(s=>`<option ${s.code===l.site?"selected":""}>${s.code}</option>`).join("")}</select></td>
+      <td><input value="${l.bat||""}" onchange="majLot(${i},'bat',this.value)" style="width:85px"></td>
+      <td><input value="${l.lot||""}" onchange="majLot(${i},'lot',this.value)" style="width:105px"></td>
+      <td><input value="${l.lotAfr||""}" onchange="majLot(${i},'lotAfr',this.value)" style="width:90px"></td>
+      <td><input value="${l.stade||""}" onchange="majLot(${i},'stade',this.value)" style="width:95px"></td>
+      <td><input type="date" value="${l.naissance||""}" onchange="majLot(${i},'naissance',this.value)"></td>
+      <td><input type="date" value="${l.mep||""}" onchange="majLot(${i},'mep',this.value)"></td>
+      <td><input type="date" value="${l.sortie||""}" onchange="majLot(${i},'sortie',this.value)"></td>
+      <td class="center b">${a===null?"—":a+" sem."}</td>
+      <td><select onchange="majLot(${i},'espece',this.value)">${ESPECES.map(e=>`<option ${e===l.espece?"selected":""}>${e}</option>`).join("")}</select></td>
+      <td class="center"><input type="checkbox" ${l.actif?"checked":""} onchange="majLot(${i},'actif',this.checked)"></td>
+      <td><button class="btn sm dgr" onclick="supLot(${i})">×</button></td></tr>`;
+  });
+  document.getElementById("tblLots").innerHTML=h;
+}
+function majLot(i,k,v){ D.lots[i][k]=v; save(); render(); }
+function supLot(i){ if(confirm("Supprimer ce bâtiment ?")){ D.lots.splice(i,1); save(); render(); } }
+function addLot(){ D.lots.push({id:"NEW",site:D.sites[0].code,bat:"",lot:"",lotAfr:"",stade:"",
+  naissance:"",mep:"",sortie:"",espece:"Pékin",actif:true}); save(); render(); }
+
+function renderGroupes(){
+  let h="";
+  D.groupes.forEach((g,i)=>{
+    h+=`<div class="panel" style="background:#fbfcfb">
+      <div class="row">
+        <div class="f" style="flex:1"><label>Nom du regroupement <span class="mini">(vide = liste des bâtiments)</span></label>
+          <input value="${g.nom||""}" placeholder="${(g.membres||[]).join(" + ")||"ex. SG1 + SG2"}" onchange="majGrp(${i},'nom',this.value)"></div>
+        <div class="f"><label>Analyses concernées</label><div class="chips">
+          ${["SALMO","IA"].map(t=>`<span class="chip ${(g.types||[]).includes(t)?"on":""}" onclick="toggleType(${i},'${t}')">${t==="IA"?"Influenza":"Salmonelle"}</span>`).join("")}
+        </div></div>
+        <button class="btn sm dgr" onclick="supGrp(${i})">Supprimer</button>
+      </div>
+      <div class="f" style="margin-top:8px"><label>Bâtiments réunis sur un même prélèvement</label>
+      <div class="chips">${D.lots.map(l=>`<span class="chip ${(g.membres||[]).includes(l.id)?"on":""}" onclick="toggleMembre(${i},'${l.id}')">${l.id}</span>`).join("")}</div></div>
+    </div>`;
+  });
+  if(!D.groupes.length) h=`<p class="hint">Aucun regroupement : chaque bâtiment est prélevé séparément.</p>`;
+  document.getElementById("listGroupes").innerHTML=h;
+}
+function majGrp(i,k,v){ D.groupes[i][k]=v; save(); render(); }
+function toggleType(i,t){ const g=D.groupes[i]; g.types=g.types||[]; g.types.includes(t)?g.types=g.types.filter(x=>x!==t):g.types.push(t); save(); render(); }
+function toggleMembre(i,id){
+  const g=D.groupes[i]; g.membres=g.membres||[];
+  const auto=(g.nom||"").trim()==="" || (g.nom||"").trim()===g.membres.join(" + ");
+  g.membres.includes(id) ? g.membres=g.membres.filter(x=>x!==id) : g.membres.push(id);
+  g.membres.sort();
+  if(auto) g.nom=g.membres.join(" + ");
+  save(); render();
+}
+function supGrp(i){ if(confirm("Supprimer ce regroupement ?")){ D.groupes.splice(i,1); save(); render(); } }
+function addGroupe(){ D.groupes.push({id:"g"+Date.now(),nom:"",types:["SALMO"],membres:[]}); save(); render(); }
+
+function renderProg(){
+  let h="";
+  ["SALMO","IA"].forEach(t=>{
+    const P=D.programmes[t];
+    h+=`<div class="panel" style="background:#fbfcfb">
+      <div class="row">
+        <div class="f" style="flex:1"><label>Analyse</label><input value="${P.nom}" onchange="majProg('${t}','nom',this.value)"></div>
+        <div class="f"><label>Laboratoire</label><input value="${P.labo}" onchange="majProg('${t}','labo',this.value)"></div>
+        <div class="f"><label>Fréquence (semaines)</label><input type="number" min="1" value="${P.freq}" onchange="majProg('${t}','freq',+this.value)" style="width:90px"></div>
+        <div class="f"><label>Jour de prélèvement</label><select onchange="majProg('${t}','jour',+this.value)">
+          ${JOURS.map((j,k)=>`<option value="${k}" ${k===P.jour?"selected":""}>${j}</option>`).join("")}</select></div>
+        <div class="f"><label>Âge de début (sem.)</label><input type="number" min="0" value="${P.ageDebut}" onchange="majProg('${t}','ageDebut',+this.value)" style="width:90px"></div>
+        <div class="f"><label>Âge de fin (0 = illimité)</label><input type="number" min="0" value="${P.ageFin}" onchange="majProg('${t}','ageFin',+this.value)" style="width:110px"></div>
+        <div class="f"><label>Actif</label><input type="checkbox" ${P.actif?"checked":""} onchange="majProg('${t}','actif',this.checked)"></div>
+      </div>
+      <h3>Prélèvements réalisés à chaque passage</h3>
+      <div class="chips">${NATURES[t].map(n=>{
+        const ex=P.natures.find(x=>x.n===n);
+        return `<span class="chip ${ex?"on":""}" onclick="toggleNature('${t}','${n}')">${n}</span>`}).join("")}</div>
+      <div class="row" style="margin-top:8px">${P.natures.map((n,i)=>
+        `<div class="f"><label>${n.n}</label><input type="number" min="0" value="${n.q}" onchange="majNature('${t}',${i},+this.value)" style="width:90px"></div>`).join("")}</div>
+    </div>`;
+  });
+  document.getElementById("listProg").innerHTML=h;
+}
+function majProg(t,k,v){ D.programmes[t][k]=v; save(); render(); }
+function majNature(t,i,v){ D.programmes[t].natures[i].q=v; save(); render(); }
+function toggleNature(t,n){
+  const P=D.programmes[t];
+  P.natures.some(x=>x.n===n) ? P.natures=P.natures.filter(x=>x.n!==n) : P.natures.push({n,q:1});
+  save(); render();
+}
+
+function renderSites(){
+  let h=`<tr><th>Code</th><th>Nom de la ferme</th><th>Adresse</th><th>CP</th><th>Commune</th>
+         <th>INUAV</th><th>Ets de production</th><th>DDPP</th><th></th></tr>`;
+  D.sites.forEach((s,i)=>{
+    h+=`<tr>
+      <td><input value="${s.code}" onchange="majSite(${i},'code',this.value)" style="width:60px"></td>
+      <td><input value="${s.nom||""}" onchange="majSite(${i},'nom',this.value)"></td>
+      <td><input value="${s.adresse||""}" onchange="majSite(${i},'adresse',this.value)"></td>
+      <td><input value="${s.cp||""}" onchange="majSite(${i},'cp',this.value)" style="width:70px"></td>
+      <td><input value="${s.ville||""}" onchange="majSite(${i},'ville',this.value)"></td>
+      <td><input value="${s.inuav||""}" onchange="majSite(${i},'inuav',this.value)" style="width:100px"></td>
+      <td><input value="${s.ets||""}" onchange="majSite(${i},'ets',this.value)"></td>
+      <td><input value="${s.ddpp||""}" onchange="majSite(${i},'ddpp',this.value)"></td>
+      <td><button class="btn sm dgr" onclick="supSite(${i})">×</button></td></tr>`;
+  });
+  document.getElementById("tblSites").innerHTML=h;
+}
+function majSite(i,k,v){ D.sites[i][k]=v; save(); render(); }
+function supSite(i){ if(confirm("Supprimer ce site ?")){ D.sites.splice(i,1); save(); render(); } }
+function addSite(){ D.sites.push({code:"XX",nom:"",adresse:"",cp:"",ville:"",inuav:"",ets:"",ddpp:""}); save(); render(); }
+
+const LIB_CONTACTS={
+  eleveur:"Éleveur (raison sociale)", eleveurAdr:"Adresse éleveur", eleveurCp:"CP / ville éleveur", eleveurTel:"Téléphone",
+  labSalNom:"Laboratoire Salmonelle", labSalAdr:"Adresse laboratoire Salmonelle", labSalMail:"E-mail laboratoire", labSalTel:"Tél. laboratoire",
+  labIaNom:"Laboratoire Influenza", labIaAdr:"Adresse laboratoire Influenza",
+  labIaMail:"E-mail laboratoire Influenza", labIaTel:"Tél. laboratoire Influenza",
+  proprio:"Propriétaire des oiseaux", proprioAdr:"Adresse propriétaire", proprioCp:"CP / ville propriétaire",
+  techOrvia:"Technicien ORVIA", mailOrvia:"E-mail technicien ORVIA",
+  techAfr:"Technicien AFR", preleveur:"Préleveur par défaut",
+  veto:"Vétérinaire sanitaire", mailVeto:"E-mail vétérinaire",
+  mailsEleveur:"E-mails éleveur (1 par ligne)", mailDdpp:"E-mail DDPP",
+  factSalmo:"Facturation Salmonelle", factIa:"Facturation Influenza",
+  groupement:"Groupement", transGrpt:"Transmission groupement", transEleveur:"Transmission éleveur (1 par ligne)",
+  typeControle:"Type de contrôle", typeElevage:"Type d'élevage", examenSalmo:"Examen demandé (Salmonelle)", production:"Production"
+};
+function renderContacts(){
+  const h=Object.keys(LIB_CONTACTS).map(k=>{
+    const v=D.contacts[k]||"";
+    const multi=v.includes("\n")||k==="mailsEleveur"||k==="transEleveur"||k==="labSalAdr";
+    return `<div class="f"><label>${LIB_CONTACTS[k]}</label>${
+      multi?`<textarea rows="2" onchange="majContact('${k}',this.value)">${v}</textarea>`
+           :`<input value="${v.replace(/"/g,"&quot;")}" onchange="majContact('${k}',this.value)">`}</div>`;
+  }).join("");
+  document.getElementById("formContacts").innerHTML=`<div class="grid3">${h}</div>`;
+}
+function majContact(k,v){ D.contacts[k]=v; save(); }
+
+/* ====================== EXPORT ====================== */
+function exportXlsx(){
+  const rows=D.prelevements.slice().sort((a,b)=>a.date.localeCompare(b.date)).map(p=>({
+    Date:fr(p.date), Analyse:p.type==="IA"?"Influenza":p.type==="MANUEL"?"Hors programme ("+(p.labo||"")+")":"Salmonelle", Cible:p.nomCible,
+    Batiments:p.batiments.join(" + "),
+    Lots_ORVIA:p.batiments.map(id=>lot(id).lot||"").join(" / "),
+    Lots_AFR:p.batiments.map(id=>lot(id).lotAfr||"").join(" / "),
+    Ages:p.batiments.map(id=>ageSem(lot(id).naissance,s2d(p.date))).join(" / "),
+    Bordereau:p.bordereau||"", Nature:p.natures.map(n=>n.n+" ×"+n.q).join(" ; "),
+    Total_echantillons:p.nbEchantillons, Preleveur:p.preleveur||"", Code:p.code||"", Commentaire:p.commentaire||""
+  }));
+  const ws=XLSX.utils.json_to_sheet(rows), wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,"Prélèvements");
+  XLSX.writeFile(wb,"AFR_prelevements_"+d2s(today())+".xlsx");
+}
+function exportJson(){
+  const b=new Blob([JSON.stringify(D,null,2)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(b);
+  a.download="AFR_prelevements_"+d2s(today())+".json"; a.click();
+}
+function importJson(inp){
+  const f=inp.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{ try{ D=merge(DEFAUT,JSON.parse(r.result)); save(); render(); alert("Sauvegarde restaurée."); }
+                 catch(e){ alert("Fichier illisible."); } };
+  r.readAsText(f); inp.value="";
+}
+function rechargerFiche(){
+  if(!confirm("Reprendre les fermes, lots et regroupements du fichier ? Les prélèvements enregistrés sont conservés.")) return;
+  D.sites=JSON.parse(JSON.stringify(DEFAUT.sites));
+  D.lots=JSON.parse(JSON.stringify(DEFAUT.lots));
+  D.groupes=JSON.parse(JSON.stringify(DEFAUT.groupes));
+  D.version=DATA_VERSION;
+  save(); render(); alert("Fermes et lots rechargés.");
+}
+function resetAll(){
+  if(!confirm("Effacer toutes les données et revenir à la configuration d'origine ?")) return;
+  D=JSON.parse(JSON.stringify(DEFAUT)); save(); render();
+}
+
+/* ====================== NAVIGATION ====================== */
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("nav button").forEach(x=>x.classList.remove("on")); b.classList.add("on");
+  ["planning","manuel","historique","params"].forEach(v=>document.getElementById("v-"+v).style.display = v===b.dataset.v?"":"none");
+});
+document.querySelectorAll(".subtabs button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll(".subtabs button").forEach(x=>x.classList.remove("on")); b.classList.add("on");
+  ["lots","groupes","prog","sites","contacts","data"].forEach(p=>document.getElementById("p-"+p).style.display = p===b.dataset.p?"":"none");
+});
+document.querySelectorAll(".modal").forEach(m=>m.onclick=e=>{ if(e.target===m) m.classList.remove("on"); });
+document.getElementById("fType").onchange=render;
+document.getElementById("fHorizon").onchange=render;
+
+boot();
+</script>
+</body>
+</html>
