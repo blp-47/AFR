@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AFR - Consommation d'eau</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💧</text></svg>">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<style>
+:root{
+  --marine:#1a3a6b; --marine-clair:#2b5490; --eau:#0d9ddb; --eau-clair:#e6f4fb;
+  --fond:#f4f6f9; --texte:#22303f; --gris:#6b7a8c; --bord:#e2e8f0;
+  --ok:#16a34a; --alerte:#dc2626; --warn:#f59e0b;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+     background:var(--fond);color:var(--texte);padding-bottom:40px;-webkit-tap-highlight-color:transparent}
+header{background:var(--marine);color:#fff;padding:14px 16px;position:sticky;top:0;z-index:20;
+       box-shadow:0 2px 10px rgba(0,0,0,.15)}
+header h1{font-size:17px;font-weight:600;display:flex;align-items:center;gap:8px}
+header .sub{font-size:12px;opacity:.75;margin-top:2px}
+.wrap{max-width:960px;margin:0 auto;padding:14px}
+select,button,input{font-family:inherit;font-size:14px}
+.barre{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+select,input[type=date]{padding:9px 11px;border:1px solid var(--bord);border-radius:9px;background:#fff;color:var(--texte)}
+.btn{padding:9px 13px;border:1px solid var(--bord);border-radius:9px;background:#fff;cursor:pointer;font-weight:600;color:var(--marine)}
+.btn.on{background:var(--marine);color:#fff;border-color:var(--marine)}
+.btn.plein{background:var(--eau);color:#fff;border-color:var(--eau)}
+.grille{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.carte{background:#fff;border-radius:14px;padding:14px;box-shadow:0 1px 3px rgba(26,58,107,.08);border:1px solid var(--bord)}
+.carte .lib{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--gris);font-weight:700}
+.carte .val{font-size:26px;font-weight:700;color:var(--marine);margin-top:5px;line-height:1.1}
+.carte .val small{font-size:14px;font-weight:600;color:var(--gris)}
+.carte .note{font-size:12px;color:var(--gris);margin-top:4px}
+.bloc{background:#fff;border-radius:14px;padding:14px;margin-bottom:14px;border:1px solid var(--bord);
+      box-shadow:0 1px 3px rgba(26,58,107,.08)}
+.bloc h2{font-size:15px;color:var(--marine);margin-bottom:10px;display:flex;align-items:center;gap:7px;
+         justify-content:space-between;flex-wrap:wrap;gap:8px}
+.bloc h2 span.t{display:flex;align-items:center;gap:7px}
+.chart{position:relative;height:290px}
+.onglets{display:flex;gap:6px;background:#fff;padding:5px;border-radius:12px;margin-bottom:14px;border:1px solid var(--bord)}
+.onglets button{flex:1;padding:10px;border:0;border-radius:9px;background:transparent;color:var(--gris);
+                font-weight:600;cursor:pointer}
+.onglets button.on{background:var(--marine);color:#fff}
+.pastille{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}
+.p-ok{background:var(--ok)}.p-ko{background:var(--alerte)}.p-w{background:var(--warn)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:8px 6px;text-align:left;border-bottom:1px solid var(--bord)}
+th{color:var(--gris);font-size:11px;text-transform:uppercase;letter-spacing:.4px}
+td.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.alerte-box{background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:11px 13px;border-radius:11px;
+            font-size:13px;margin-bottom:14px;font-weight:600}
+.info-box{background:var(--eau-clair);border:1px solid #bae0f2;color:#0b4d6b;padding:11px 13px;
+          border-radius:11px;font-size:13px;margin-bottom:14px}
+.vide{text-align:center;color:var(--gris);padding:26px;font-size:14px}
+.hidden{display:none}
+footer{text-align:center;color:var(--gris);font-size:11px;padding:16px}
+@media(max-width:520px){.carte .val{font-size:22px}.chart{height:250px}}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>💧 Consommation d'eau</h1>
+  <div class="sub">AFR Élevage · relevé automatique par créneaux de 30 min</div>
+</header>
+
+<div class="wrap">
+
+  <div class="barre">
+    <select id="selCompteur"></select>
+    <input type="date" id="selDate">
+    <button class="btn" id="btnAuj">Aujourd'hui</button>
+  </div>
+
+  <div id="alerteCom" class="alerte-box hidden"></div>
+  <div id="alerteFuite" class="alerte-box hidden"></div>
+
+  <div class="grille">
+    <div class="carte"><div class="lib">Conso du jour</div>
+      <div class="val" id="vJour">–</div><div class="note" id="nJour">créneaux 00h–24h</div></div>
+    <div class="carte"><div class="lib">Plage 6h–23h</div>
+      <div class="val" id="vPlage">–</div><div class="note" id="nPlage"></div></div>
+    <div class="carte"><div class="lib">Débit actuel</div>
+      <div class="val" id="vDebit">–</div><div class="note" id="nDebit"></div></div>
+    <div class="carte"><div class="lib">Index compteur</div>
+      <div class="val" id="vIndex">–</div><div class="note" id="nIndex"></div></div>
+  </div>
+
+  <div class="onglets">
+    <button class="on" data-vue="jour">Journée</button>
+    <button data-vue="histo">Historique</button>
+    <button data-vue="detail">Détail</button>
+  </div>
+
+  <!-- ---------------- Vue journée ---------------- -->
+  <div id="vueJour">
+    <div class="bloc">
+      <h2><span class="t">📊 Créneaux de 30 minutes</span>
+        <span>
+          <button class="btn on" id="btnPlage">6h–23h</button>
+          <button class="btn" id="btn24">24h</button>
+        </span>
+      </h2>
+      <div class="chart"><canvas id="chJour"></canvas></div>
+    </div>
+    <div class="bloc">
+      <h2><span class="t">📈 Cumul de la journée</span></h2>
+      <div class="chart"><canvas id="chCumul"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ---------------- Vue historique ---------------- -->
+  <div id="vueHisto" class="hidden">
+    <div class="bloc">
+      <h2><span class="t">🗓️ Totaux journaliers</span>
+        <span>
+          <button class="btn on" data-jours="7">7 j</button>
+          <button class="btn" data-jours="30">30 j</button>
+          <button class="btn" data-jours="90">90 j</button>
+        </span>
+      </h2>
+      <div class="chart"><canvas id="chHisto"></canvas></div>
+    </div>
+    <div class="bloc">
+      <h2><span class="t">📋 Récapitulatif</span>
+        <button class="btn plein" id="btnExport">⬇️ Excel</button>
+      </h2>
+      <div id="tabHisto"></div>
+    </div>
+  </div>
+
+  <!-- ---------------- Vue détail ---------------- -->
+  <div id="vueDetail" class="hidden">
+    <div class="bloc">
+      <h2><span class="t">🔎 Détail des créneaux</span>
+        <button class="btn plein" id="btnExportJour">⬇️ Excel</button>
+      </h2>
+      <div id="tabJour"></div>
+    </div>
+    <div class="bloc">
+      <h2><span class="t">🔌 État du boîtier</span></h2>
+      <div id="tabEtat"></div>
+    </div>
+  </div>
+
+</div>
+
+<footer>AFR Élevage · données Firebase <span id="fbid"></span></footer>
+
+<script>
+/* ======================================================================
+   ⚠️  À FAIRE : colle ici la config Firebase de tes autres apps (afr-nt2)
+   ====================================================================== */
+const firebaseConfig = {
+  apiKey: "COLLE_TA_CLE",
+  authDomain: "afr-nt2.firebaseapp.com",
+  databaseURL: "https://afr-nt2-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "afr-nt2",
+  storageBucket: "afr-nt2.appspot.com",
+  messagingSenderId: "COLLE_ID",
+  appId: "COLLE_APPID"
+};
+
+/* ----------------------- Paramètres d'affichage ----------------------- */
+const PLAGE_DEB = 6, PLAGE_FIN = 23;   // heures affichées par défaut
+const SEUIL_COM_MIN = 10;              // alerte si pas de com depuis X min
+const SEUIL_FUITE_NUIT = 5;            // L/30 min entre 23h et 6h => suspicion
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+document.getElementById('fbid').textContent = firebaseConfig.projectId;
+
+let compteurs = {}, idCourant = null, dateCourante = auj();
+let dataJour = {}, etatCourant = {}, plage24 = false, nbJoursHisto = 7;
+let chJour, chCumul, chHisto, refEtat = null, refJour = null;
+
+/* ------------------------------ Outils -------------------------------- */
+function auj(){ const d=new Date(); return d.toISOString().slice(0,10); }
+function fmtL(v){
+  if(v==null) return '–';
+  return v>=1000 ? (v/1000).toFixed(2).replace('.',',')+' m³' : Math.round(v)+' L';
+}
+function slots(){ const a=[]; for(let h=0;h<24;h++){a.push(pad(h)+'00');a.push(pad(h)+'30');} return a; }
+function pad(n){ return String(n).padStart(2,'0'); }
+function libSlot(k){ return k.slice(0,2)+'h'+k.slice(2); }
+function dansPlage(k){ const h=+k.slice(0,2); return h>=PLAGE_DEB && h<PLAGE_FIN; }
+
+/* --------------------------- Liste compteurs --------------------------- */
+db.ref('compteurs_eau').on('value', s=>{
+  compteurs = s.val() || {};
+  const sel = document.getElementById('selCompteur');
+  const ids = Object.keys(compteurs).sort();
+  if(!ids.length){ sel.innerHTML='<option>Aucun compteur</option>'; return; }
+  sel.innerHTML = ids.map(id=>{
+    const nom = (compteurs[id].meta && compteurs[id].meta.nom) || id;
+    return `<option value="${id}">${nom}</option>`;
+  }).join('');
+  if(!idCourant || !ids.includes(idCourant)) idCourant = ids[0];
+  sel.value = idCourant;
+  charger();
+});
+
+document.getElementById('selCompteur').onchange = e=>{ idCourant=e.target.value; charger(); };
+document.getElementById('selDate').value = dateCourante;
+document.getElementById('selDate').onchange = e=>{ dateCourante=e.target.value; charger(); };
+document.getElementById('btnAuj').onclick = ()=>{
+  dateCourante=auj(); document.getElementById('selDate').value=dateCourante; charger();
+};
+document.getElementById('btnPlage').onclick=()=>{ plage24=false; majBoutonsPlage(); dessinerJour(); };
+document.getElementById('btn24').onclick   =()=>{ plage24=true;  majBoutonsPlage(); dessinerJour(); };
+function majBoutonsPlage(){
+  document.getElementById('btnPlage').classList.toggle('on',!plage24);
+  document.getElementById('btn24').classList.toggle('on',plage24);
+}
+document.querySelectorAll('.onglets button').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('.onglets button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    ['jour','histo','detail'].forEach(v=>{
+      document.getElementById('vue'+v[0].toUpperCase()+v.slice(1)).classList.toggle('hidden', v!==b.dataset.vue);
+    });
+    if(b.dataset.vue==='histo') chargerHisto();
+    if(b.dataset.vue==='jour') { if(chJour) chJour.resize(); if(chCumul) chCumul.resize(); }
+  };
+});
+document.querySelectorAll('[data-jours]').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('[data-jours]').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on'); nbJoursHisto=+b.dataset.jours; chargerHisto();
+  };
+});
+
+/* ------------------------------ Chargement ---------------------------- */
+function charger(){
+  if(!idCourant) return;
+  if(refEtat) refEtat.off(); if(refJour) refJour.off();
+
+  refEtat = db.ref(`compteurs_eau/${idCourant}/etat`);
+  refEtat.on('value', s=>{ etatCourant = s.val()||{}; majEtat(); });
+
+  refJour = db.ref(`compteurs_eau/${idCourant}/historique/${dateCourante}`);
+  refJour.on('value', s=>{ dataJour = s.val()||{}; dessinerJour(); majCartes(); tableauJour(); });
+}
+
+/* ------------------------------- Cartes -------------------------------- */
+function totalJour(filtrePlage){
+  let t=0;
+  Object.keys(dataJour).forEach(k=>{
+    if(filtrePlage && !dansPlage(k)) return;
+    t += (dataJour[k].l||0);
+  });
+  return t;
+}
+function majCartes(){
+  const tj = totalJour(false), tp = totalJour(true);
+  document.getElementById('vJour').innerHTML  = fmtL(tj);
+  document.getElementById('vPlage').innerHTML = fmtL(tp);
+  const n = Object.keys(dataJour).length;
+  document.getElementById('nJour').textContent = n+' créneau'+(n>1?'x':'')+' enregistré'+(n>1?'s':'');
+  document.getElementById('nPlage').textContent = tj>0 ? Math.round(tp/tj*100)+' % de la journée' : '';
+
+  // suspicion de fuite : consommation nocturne régulière
+  const nuit = Object.keys(dataJour).filter(k=>{const h=+k.slice(0,2);return h>=23||h<PLAGE_DEB;});
+  const nuitConso = nuit.filter(k=>(dataJour[k].l||0)>=SEUIL_FUITE_NUIT);
+  const box = document.getElementById('alerteFuite');
+  if(nuitConso.length>=4){
+    box.classList.remove('hidden');
+    box.innerHTML = `⚠️ Consommation nocturne sur ${nuitConso.length} créneaux (≥ ${SEUIL_FUITE_NUIT} L) — vérifier une fuite ou un abreuvement continu.`;
+  } else box.classList.add('hidden');
+}
+function majEtat(){
+  const e = etatCourant;
+  document.getElementById('vDebit').innerHTML = e.debit_lh!=null
+      ? Math.round(e.debit_lh)+' <small>L/h</small>' : '–';
+  document.getElementById('vIndex').innerHTML = e.index_l!=null
+      ? (e.index_l/1000).toFixed(2).replace('.',',')+' <small>m³</small>' : '–';
+  document.getElementById('nIndex').textContent = e.index_l!=null ? e.index_l+' L au total' : '';
+
+  const box = document.getElementById('alerteCom');
+  if(e.ts){
+    const min = Math.round((Date.now()/1000 - e.ts)/60);
+    document.getElementById('nDebit').textContent = 'MAJ il y a '+(min<1?'moins d\'1 min':min+' min');
+    if(min > SEUIL_COM_MIN){
+      box.classList.remove('hidden');
+      box.innerHTML = `🔴 Aucune communication depuis ${min} min — vérifier l'alimentation ou le WiFi du boîtier.`;
+    } else box.classList.add('hidden');
+  } else box.classList.add('hidden');
+  tableauEtat();
+}
+
+/* ------------------------------ Graphiques ----------------------------- */
+function dessinerJour(){
+  const keys = slots().filter(k=> plage24 ? true : dansPlage(k));
+  const vals = keys.map(k=> dataJour[k] ? (dataJour[k].l||0) : 0);
+  const labels = keys.map(libSlot);
+  const opt = {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.parsed.y+' L'}}},
+    scales:{
+      y:{beginAtZero:true,title:{display:true,text:'Litres / 30 min'},grid:{color:'#eef2f6'}},
+      x:{ticks:{maxRotation:90,minRotation:45,autoSkip:true,maxTicksLimit:18},grid:{display:false}}
+    }
+  };
+  if(chJour) chJour.destroy();
+  chJour = new Chart(document.getElementById('chJour'),{
+    type:'bar',
+    data:{labels,datasets:[{data:vals,backgroundColor:'#0d9ddb',borderRadius:4}]},
+    options:opt
+  });
+
+  let c=0; const cum = vals.map(v=> c+=v );
+  if(chCumul) chCumul.destroy();
+  chCumul = new Chart(document.getElementById('chCumul'),{
+    type:'line',
+    data:{labels,datasets:[{data:cum,borderColor:'#1a3a6b',backgroundColor:'rgba(26,58,107,.10)',
+          fill:true,tension:.25,pointRadius:0,borderWidth:2}]},
+    options:{...opt, plugins:{legend:{display:false},
+      tooltip:{callbacks:{label:c=>'Cumul : '+c.parsed.y+' L'}}},
+      scales:{...opt.scales, y:{...opt.scales.y,title:{display:true,text:'Cumul (L)'}}}}
+  });
+}
+
+/* ------------------------------ Historique ----------------------------- */
+let histoData = [];
+function chargerHisto(){
+  if(!idCourant) return;
+  db.ref(`compteurs_eau/${idCourant}/historique`).once('value').then(s=>{
+    const tout = s.val()||{};
+    const dates = Object.keys(tout).sort().slice(-nbJoursHisto);
+    histoData = dates.map(d=>{
+      const slotsJ = tout[d]||{};
+      let tot=0, plage=0, nuit=0, pic=0, picK='';
+      Object.keys(slotsJ).forEach(k=>{
+        const l = slotsJ[k].l||0; tot+=l;
+        if(dansPlage(k)) plage+=l; else nuit+=l;
+        if(l>pic){pic=l;picK=k;}
+      });
+      return {date:d, total:tot, plage, nuit, pic, picK};
+    });
+    dessinerHisto(); tableauHisto();
+  });
+}
+function dessinerHisto(){
+  const labels = histoData.map(d=>d.date.slice(8)+'/'+d.date.slice(5,7));
+  if(chHisto) chHisto.destroy();
+  chHisto = new Chart(document.getElementById('chHisto'),{
+    type:'bar',
+    data:{labels,datasets:[
+      {label:'6h–23h',backgroundColor:'#0d9ddb',borderRadius:4,data:histoData.map(d=>d.plage)},
+      {label:'Nuit',   backgroundColor:'#1a3a6b',borderRadius:4,data:histoData.map(d=>d.nuit)}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:c=>c.dataset.label+' : '+c.parsed.y+' L'}}},
+      scales:{x:{stacked:true,grid:{display:false}},
+              y:{stacked:true,beginAtZero:true,title:{display:true,text:'Litres / jour'},grid:{color:'#eef2f6'}}}}
+  });
+}
+
+/* -------------------------------- Tableaux ----------------------------- */
+function tableauHisto(){
+  if(!histoData.length){ document.getElementById('tabHisto').innerHTML='<div class="vide">Aucune donnée</div>'; return; }
+  const moy = histoData.reduce((a,b)=>a+b.total,0)/histoData.length;
+  let h = `<table><tr><th>Date</th><th class="num">6h–23h</th><th class="num">Nuit</th>
+           <th class="num">Total</th><th class="num">Pic 30 min</th></tr>`;
+  histoData.slice().reverse().forEach(d=>{
+    const alerte = d.total > moy*1.4 ? ' style="color:#dc2626"' : '';
+    h += `<tr><td>${d.date.split('-').reverse().join('/')}</td>
+      <td class="num">${d.plage} L</td><td class="num">${d.nuit} L</td>
+      <td class="num"${alerte}>${fmtL(d.total)}</td>
+      <td class="num">${d.pic} L${d.picK?' ('+libSlot(d.picK)+')':''}</td></tr>`;
+  });
+  h += `<tr><td><b>Moyenne</b></td><td class="num"></td><td class="num"></td>
+        <td class="num"><b>${fmtL(moy)}</b></td><td></td></tr></table>`;
+  document.getElementById('tabHisto').innerHTML = h;
+}
+function tableauJour(){
+  const keys = Object.keys(dataJour).sort();
+  if(!keys.length){ document.getElementById('tabJour').innerHTML='<div class="vide">Aucun créneau pour cette date</div>'; return; }
+  let h = `<table><tr><th>Créneau</th><th class="num">Litres</th><th class="num">Index (m³)</th></tr>`;
+  keys.forEach(k=>{
+    const d=dataJour[k];
+    h += `<tr><td>${libSlot(k)} – ${libSlot(slotSuivant(k))}</td>
+      <td class="num">${d.l||0} L</td>
+      <td class="num">${d.idx!=null?(d.idx/1000).toFixed(3).replace('.',','):'–'}</td></tr>`;
+  });
+  h += '</table>';
+  document.getElementById('tabJour').innerHTML = h;
+}
+function slotSuivant(k){
+  let h=+k.slice(0,2), m=+k.slice(2);
+  m+=30; if(m>=60){m=0;h=(h+1)%24;}
+  return pad(h)+pad(m);
+}
+function tableauEtat(){
+  const e=etatCourant;
+  if(!e.ts){ document.getElementById('tabEtat').innerHTML='<div class="vide">Aucun état reçu</div>'; return; }
+  const min = Math.round((Date.now()/1000-e.ts)/60);
+  const p = min<=SEUIL_COM_MIN?'p-ok':(min<60?'p-w':'p-ko');
+  const meta = (compteurs[idCourant]&&compteurs[idCourant].meta)||{};
+  document.getElementById('tabEtat').innerHTML = `<table>
+    <tr><td><span class="pastille ${p}"></span>Dernière communication</td><td class="num">${new Date(e.ts*1000).toLocaleString('fr-FR')}</td></tr>
+    <tr><td>Index compteur</td><td class="num">${e.index_l} L</td></tr>
+    <tr><td>Débit instantané</td><td class="num">${Math.round(e.debit_lh||0)} L/h</td></tr>
+    <tr><td>Créneau en cours</td><td class="num">${e.creneau?libSlot(e.creneau):'–'} · ${e.creneau_l||0} L</td></tr>
+    <tr><td>Signal WiFi</td><td class="num">${e.rssi||'–'} dBm</td></tr>
+    <tr><td>Créneaux en attente d'envoi</td><td class="num">${e.buffer||0}</td></tr>
+    <tr><td>Fonctionnement depuis</td><td class="num">${Math.floor((e.uptime_s||0)/3600)} h</td></tr>
+    <tr><td>Firmware / IP</td><td class="num">${meta.firmware||'–'} · ${meta.ip||'–'}</td></tr>
+  </table>`;
+}
+
+/* -------------------------------- Exports ------------------------------ */
+document.getElementById('btnExport').onclick = ()=>{
+  const lignes = histoData.map(d=>({
+    Date:d.date, 'Conso 6h-23h (L)':d.plage, 'Conso nuit (L)':d.nuit,
+    'Total (L)':d.total, 'Total (m3)':+(d.total/1000).toFixed(3),
+    'Pic 30 min (L)':d.pic, 'Créneau du pic':d.picK?libSlot(d.picK):''
+  }));
+  exporter(lignes, `Eau_${idCourant}_${nbJoursHisto}j`);
+};
+document.getElementById('btnExportJour').onclick = ()=>{
+  const lignes = Object.keys(dataJour).sort().map(k=>({
+    Date:dateCourante, Créneau:libSlot(k)+'-'+libSlot(slotSuivant(k)),
+    'Litres':dataJour[k].l||0, 'Index (L)':dataJour[k].idx||''
+  }));
+  exporter(lignes, `Eau_${idCourant}_${dateCourante}`);
+};
+function exporter(lignes, nom){
+  if(!lignes.length){ alert('Aucune donnée à exporter.'); return; }
+  const ws = XLSX.utils.json_to_sheet(lignes);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Consommation');
+  XLSX.writeFile(wb, nom+'.xlsx');
+}
+</script>
+</body>
+</html>
