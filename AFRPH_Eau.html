@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Analyse d'eau — AFR</title>
+<!--
+  Lecture Firebase RTDB (projet afr-nt2)
+    Mesure en direct  : eau/{SITE}              = { ph_v, orp_v, rssi, up, ts }   (écrit par l'ESP32 toutes les 15 s)
+    Historique        : eau_history/{SITE}/{id} = { t, pv, ov }                   (écrit par l'ESP32 toutes les 10 min)
+    Calibration       : eau_config/{SITE}       = { v7, v4, orpZero, orpOff, maj } (page Réglages)
+
+  L'ESP32 envoie les TENSIONS brutes (après correction du pont diviseur ×1,5).
+  Le pH et le redox sont calculés ICI avec la calibration Firebase : on recalibre
+  depuis le téléphone, sans reflasher la carte.
+    pH  = 7 + (V - v7) × 3 / (v7 - v4)        (droite passant par les tampons 7 et 4)
+    ORP = (orpZero - V) × 1000 + orpOff       (mV)
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Barlow:wght@400;500;600&family=DM+Sans:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0f1117; --surface:#171a21; --surface2:#1c2029; --border:#262b36;
+    --border-strong:#39414f; --text:#e6e9ef; --muted:#8b93a3; --accent:#3b82f6;
+    --ok:#22c55e; --warn:#f59e0b; --crit:#ef4444; --ph:#06b6d4; --orp:#a855f7;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Barlow',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;padding:env(safe-area-inset-top) 0 40px;min-height:100vh}
+  .wrap{max-width:1100px;margin:0 auto;padding:0 16px}
+  header{padding:24px 0 16px}
+  .title{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  h1{font-family:'Syne',sans-serif;font-weight:800;font-size:26px;letter-spacing:-.5px}
+  .sub{color:var(--muted);font-size:14px;margin-top:4px}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:14px}
+  .spacer{flex:1}
+  .tabs{display:flex;flex-wrap:wrap;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:4px}
+  .tab{background:none;border:none;color:var(--muted);font-family:'Syne',sans-serif;font-weight:700;font-size:14px;
+    padding:7px 14px;border-radius:9px;cursor:pointer}
+  .tab.on{background:var(--surface2);color:var(--text);box-shadow:inset 0 0 0 1px var(--border-strong)}
+  .btn-s{background:var(--surface2);border:1px solid var(--border);color:var(--muted);border-radius:10px;
+    padding:8px 13px;font-family:'Barlow';font-size:13px;font-weight:500;cursor:pointer}
+  .btn-s:hover{border-color:var(--border-strong);color:var(--text)}
+  .btn-s.on{background:rgba(59,130,246,.12);border-color:var(--accent);color:var(--accent)}
+
+  .conn{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+  .conn .cdot{width:7px;height:7px;border-radius:50%;background:currentColor}
+  .conn.on{color:var(--ok);background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.35)}
+  .conn.on .cdot{animation:pulse 1.6s ease-in-out infinite}
+  .conn.off{color:var(--crit);background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.35)}
+  .home{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:10px;
+    background:var(--surface);border:1px solid var(--border);color:var(--muted);text-decoration:none;flex:none}
+  .home:hover{color:var(--text);border-color:var(--border-strong)}
+  .home svg{width:20px;height:20px}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+  .grid{display:grid;gap:14px;grid-template-columns:1fr 1fr;margin-top:6px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:18px;position:relative;overflow:hidden}
+  .card .accent{position:absolute;left:0;top:0;bottom:0;width:3px}
+  .full{grid-column:1/-1}
+  .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+  .big{font-family:'DM Sans',sans-serif;font-weight:700;font-size:48px;line-height:1.05;margin-top:6px;font-variant-numeric:tabular-nums}
+  .big .u{font-size:18px;color:var(--muted);font-weight:500;margin-left:4px}
+  .status{display:inline-flex;align-items:center;gap:7px;font-size:13.5px;font-weight:500;margin-top:6px}
+  .dot{width:9px;height:9px;border-radius:50%}
+  .meta{font-size:12.5px;color:var(--muted);margin-top:10px;font-variant-numeric:tabular-nums}
+
+  .gauge{position:relative;height:12px;border-radius:6px;overflow:hidden;display:flex;margin-top:16px}
+  .gauge span{height:100%}
+  .gwrap{position:relative}
+  .marker{position:absolute;top:-5px;width:4px;height:22px;background:var(--text);border-radius:2px;
+    transform:translateX(-2px);transition:left .6s ease;box-shadow:0 0 0 2px var(--bg)}
+  .ticks{display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);margin-top:6px;font-variant-numeric:tabular-nums}
+
+  .verdict{display:flex;gap:14px;align-items:center}
+  .vicon{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex:none}
+  .vt{font-family:'Syne',sans-serif;font-weight:700;font-size:17px}
+  .vd{color:var(--muted);font-size:13px;margin-top:3px;line-height:1.5}
+
+  .hist-head{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+  .hist-head .lbl{margin-right:auto}
+  .rbtn{background:var(--surface2);border:1px solid var(--border);color:var(--muted);border-radius:8px;
+    padding:4px 10px;font-family:'Barlow';font-size:12px;cursor:pointer}
+  .rbtn.on{background:rgba(59,130,246,.12);border-color:var(--accent);color:var(--accent)}
+  .cv{position:relative;height:260px}
+  .msg{color:var(--muted);font-size:13px;padding:30px 0;text-align:center}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
+  .st{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 10px}
+  .st .v{font-family:'DM Sans';font-weight:700;font-size:16px;font-variant-numeric:tabular-nums}
+  .st .l{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+
+  footer{margin-top:26px;color:var(--muted);font-size:12px;line-height:1.7;text-align:center}
+  footer code{background:var(--surface2);padding:1px 6px;border-radius:5px;font-size:11px}
+
+  .modal{position:fixed;inset:0;background:rgba(8,10,14,.8);display:none;z-index:60;align-items:flex-start;justify-content:center;padding:20px 12px;overflow-y:auto}
+  .modal.on{display:flex}
+  .sheet{background:var(--surface);border:1px solid var(--border-strong);border-radius:16px;width:100%;max-width:640px;padding:20px;margin:auto 0}
+  .sheet-head{display:flex;justify-content:space-between;gap:12px;margin-bottom:14px}
+  .sheet h2{font-family:'Syne',sans-serif;font-weight:800;font-size:19px}
+  .lead{color:var(--muted);font-size:12.5px;line-height:1.6;margin-top:4px}
+  .x-btn{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer}
+  .sec{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px}
+  .sec h3{font-family:'Syne',sans-serif;font-weight:700;font-size:15px;margin-bottom:4px}
+  .live{font-family:'DM Sans';font-size:13px;color:var(--muted);margin-bottom:10px;font-variant-numeric:tabular-nums}
+  .live b{color:var(--text)}
+  .row{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-top:8px}
+  .fld{display:flex;flex-direction:column;gap:4px;flex:1;min-width:120px}
+  .fld label{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .fld input{background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:9px;padding:8px 10px;
+    font-family:'DM Sans';font-size:14px;width:100%;font-variant-numeric:tabular-nums}
+  .fld input:focus{outline:none;border-color:var(--accent)}
+  .btn{background:var(--accent);border:none;color:#fff;border-radius:9px;padding:9px 14px;font-family:'Syne',sans-serif;font-weight:700;font-size:12.5px;cursor:pointer;white-space:nowrap}
+  .btn.ghost{background:none;border:1px solid var(--border-strong);color:var(--muted)}
+  .btn.ghost:hover{color:var(--text)}
+  .cmsg{font-size:12.5px;color:var(--muted);margin-top:8px;min-height:16px;line-height:1.5}
+  .cmsg.ok{color:var(--ok)} .cmsg.ko{color:var(--crit)}
+
+  @media(max-width:700px){ .grid{grid-template-columns:1fr} .stats{grid-template-columns:1fr 1fr} .big{font-size:42px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="title"><a class="home" href="https://afrelevage.fr/index.html" title="Retour au portail AFR" aria-label="Retour au portail AFR"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/></svg></a><h1>Analyse d'eau</h1><span id="conn"></span></div>
+    <div class="sub" id="sub">pH & redox en direct</div>
+    <div class="bar">
+      <div class="tabs" id="tabs"></div>
+      <div class="spacer"></div>
+      <button class="btn-s" onclick="openCfg()">⚙ Calibration</button>
+    </div>
+  </header>
+
+  <div class="grid">
+    <div class="card full" id="verdict"></div>
+    <div class="card" id="cardPh"></div>
+    <div class="card" id="cardOrp"></div>
+    <div class="card full">
+      <div class="hist-head">
+        <span class="lbl">Historique</span>
+        <button class="rbtn" data-h="6" onclick="setRange(6)">6 h</button>
+        <button class="rbtn" data-h="24" onclick="setRange(24)">24 h</button>
+        <button class="rbtn" data-h="168" onclick="setRange(168)">7 j</button>
+        <button class="rbtn" data-h="720" onclick="setRange(720)">30 j</button>
+      </div>
+      <div class="msg" id="histMsg" style="display:none">Pas encore de points sur cette période — l'ESP32 archive une mesure toutes les 10 min.</div>
+      <div class="cv" id="cvBox"><canvas id="cv"></canvas></div>
+      <div class="stats" id="stats"></div>
+    </div>
+  </div>
+
+  <footer>
+    Temps réel Firebase · <code>eau/{SITE}</code> · historique <code>eau_history/{SITE}</code> · calibration <code>eau_config/{SITE}</code><br>
+    Repères : chloration efficace pour un redox ≥ 650 mV avec un pH entre 6 et 7. Au-dessus de pH 7,5 le chlore perd l'essentiel de son efficacité.
+  </footer>
+</div>
+
+<div class="modal" id="cfgModal" onclick="if(event.target===this)closeCfg()">
+  <div class="sheet">
+    <div class="sheet-head">
+      <div><h2>Calibration des sondes</h2><p class="lead" id="cfgLead">Accès réservé — ces valeurs changent l'affichage pour tout le monde.</p></div>
+      <button class="x-btn" onclick="closeCfg()">✕</button>
+    </div>
+    <div id="cfgBody"></div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+// ============ CONFIG FIREBASE (projet afr-nt2) ============
+const firebaseConfig = {
+  apiKey: "AIzaSyCSw10bFLStcem4A_CO4IXmKeQbLH9NXsM",
+  authDomain: "afr-nt2.firebaseapp.com",
+  databaseURL: "https://afr-nt2-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "afr-nt2",
+  storageBucket: "afr-nt2.firebasestorage.app",
+  messagingSenderId: "169851474976",
+  appId: "1:169851474976:web:be14c24366b0af024f9845",
+  measurementId: "G-HYBY42TVJZ"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ============ SITES ============
+// L'ID doit être EXACTEMENT celui du firmware (SITE_ID). Ajouter une ligne par nouveau boîtier.
+const SITES = [
+  { id:'ST1', nom:'ST1', site:'AFR 33 · ST',    couleur:'#14b8a6' },
+  { id:'ST2', nom:'ST2', site:'AFR 33 · ST',    couleur:'#14b8a6' },
+  { id:'VS',  nom:'VS',  site:'AFR 47 · Varès', couleur:'#22c55e' },
+  { id:'NT1', nom:'NT1', site:'AFR 33 · NT',    couleur:'#3b82f6' },
+  { id:'NT2', nom:'NT2', site:'AFR 33 · NT',    couleur:'#3b82f6' },
+  { id:'NV1', nom:'NV1', site:'AFR 33 · NV',    couleur:'#0ea5e9' },
+  { id:'NV2', nom:'NV2', site:'AFR 33 · NV',    couleur:'#0ea5e9' },
+  { id:'SG1', nom:'SG1', site:'AFR 40 · SG',    couleur:'#f59e0b' },
+  { id:'SG2', nom:'SG2', site:'AFR 40 · SG',    couleur:'#f59e0b' },
+  { id:'SG3', nom:'SG3', site:'AFR 40 · SG',    couleur:'#f59e0b' },
+];
+let SITE = SITES[0].id;
+
+// ============ CALIBRATION PAR DÉFAUT (écrasée par eau_config/{SITE}) ============
+// v7 / v4 : tension (V, sortie du module) lue dans les tampons pH 7 et pH 4.
+// orpZero : tension correspondant à 0 mV · orpOff : décalage relevé sur solution étalon.
+const DEF_CAL = { v7:2.50, v4:3.03, orpZero:2.00, orpOff:0 };
+
+// ============ ZONES (eau de boisson, chloration) — à ajuster ============
+const ZONES = {
+  ph : { min:4,   max:10,   bands:[[4,5.5,'crit'],[5.5,6,'warn'],[6,7,'ok'],[7,7.5,'warn'],[7.5,10,'crit']] },
+  orp: { min:200, max:1000, bands:[[200,550,'crit'],[550,650,'warn'],[650,850,'ok'],[850,1000,'warn']] }
+};
+const COL = { ok:'var(--ok)', warn:'var(--warn)', crit:'var(--crit)' };
+const COLHEX = { ok:'#22c55e', warn:'#f59e0b', crit:'#ef4444' };
+const ONLINE_MS = 3*60*1000;          // plus de 3 min sans mesure = hors ligne
+
+// Mot de passe Réglages (empreinte SHA-256, même que AFR_Silos : AFR-silos-2026)
+// Simple garde-fou contre les fausses manips : le vrai contrôle, ce sont les règles Firebase.
+const MDP_HASH = 'c9b78a48504ba831f33656a61df7c60fad7034ae0b02f8bd3b8aa4da7a9d83c6';
+
+let DATA = {}, CAL = {}, HIST = [], RANGE = 24, CHART = null, UNLOCKED = false;
+let refLive = null, lastTs = null;
+
+const cal = () => ({ ...DEF_CAL, ...(CAL[SITE]||{}) });
+const phDe  = (v,c=cal()) => 7 + (v - c.v7) * 3 / (c.v7 - c.v4);
+const orpDe = (v,c=cal()) => (c.orpZero - v) * 1000 + c.orpOff;
+// Lecture plausible : une entrée en l'air ou une sonde débranchée donne une tension hors plage
+const pvOk = v => typeof v==='number' && v>=0.3 && v<=4.7 && (p=>p>=0 && p<=14)(phDe(v));
+const ovOk = v => typeof v==='number' && v>=0.05 && v<=4.9;
+const zone  = (k,v) => { for(const [a,b,z] of ZONES[k].bands) if(v>=a && v<b) return z; return v<ZONES[k].min ? ZONES[k].bands[0][2] : ZONES[k].bands.at(-1)[2]; };
+const $ = id => document.getElementById(id);
+
+function depuis(ts){
+  if(!ts) return '—';
+  const s=(Date.now()-ts)/1000;
+  if(s<60) return 'il y a '+Math.max(1,Math.floor(s))+' s';
+  if(s<3600) return 'il y a '+Math.floor(s/60)+' min';
+  if(s<86400) return 'il y a '+Math.floor(s/3600)+' h';
+  return 'il y a '+Math.floor(s/86400)+' j';
+}
+
+// ============ JAUGES ============
+function jauge(k, v){
+  const Z=ZONES[k], span=Z.max-Z.min;
+  const segs = Z.bands.map(([a,b,z])=>`<span style="width:${(b-a)/span*100}%;background:${COLHEX[z]};opacity:.75"></span>`).join('');
+  const pos = Math.max(0,Math.min(100,(v-Z.min)/span*100));
+  const ticks = k==='ph' ? [4,5,6,7,8,9,10] : [200,400,600,800,1000];
+  return `<div class="gwrap"><div class="gauge">${segs}</div>${v==null?'':`<div class="marker" style="left:${pos}%"></div>`}</div>
+    <div class="ticks">${ticks.map(t=>`<span>${t}</span>`).join('')}</div>`;
+}
+
+const LIB = {
+  ph : { ok:'pH correct', warn:'pH limite', crit:'pH hors plage' },
+  orp: { ok:'Désinfection efficace', warn:'Redox limite', crit:'Redox insuffisant' }
+};
+
+function carteMesure(k, v, extra){
+  const titre = k==='ph' ? 'pH' : 'Redox (ORP)';
+  const coul  = k==='ph' ? 'var(--ph)' : 'var(--orp)';
+  if(v==null) return `<span class="accent" style="background:${coul}"></span><div class="lbl">${titre}</div>
+    <div class="big" style="color:var(--muted)">—</div><div class="meta">${extra||'En attente de mesure'}</div>${jauge(k,null)}`;
+  const z = zone(k,v);
+  const val = k==='ph' ? v.toFixed(2) : Math.round(v)+'<span class="u">mV</span>';
+  return `<span class="accent" style="background:${coul}"></span><div class="lbl">${titre}</div>
+    <div class="big">${val}</div>
+    <div class="status"><span class="dot" style="background:${COL[z]}"></span>${LIB[k][z]}</div>
+    ${jauge(k,v)}<div class="meta">${extra}</div>`;
+}
+
+function verdict(ph, orp){
+  if(ph==null && orp==null) return ['⏳','var(--surface2)','En attente du boîtier','Aucune mesure valide reçue pour ce site.'];
+  if(ph==null) return ['◐','rgba(245,158,11,.15)','Sonde pH absente',`Redox ${Math.round(orp)} mV — le verdict complet nécessite aussi le pH.`];
+  if(orp==null) return ['◐','rgba(245,158,11,.15)','Sonde redox absente',`pH ${ph.toFixed(2)} — le verdict complet nécessite aussi le redox.`];
+  const zp=zone('ph',ph), zo=zone('orp',orp);
+  if(ph>7.5) return ['⚠','rgba(239,68,68,.15)','pH trop élevé',`pH ${ph.toFixed(2)} : au-dessus de 7,5 le chlore devient peu actif, même si le redox semble correct. Acidifier l'eau.`];
+  if(zo==='crit') return ['⚠','rgba(239,68,68,.15)','Désinfection insuffisante',`Redox ${Math.round(orp)} mV < 550 mV : vérifier la pompe doseuse, le bidon de chlore et le point d'injection.`];
+  if(zp==='crit') return ['⚠','rgba(239,68,68,.15)','pH trop acide',`pH ${ph.toFixed(2)} < 5,5 : vérifier le dosage d'acidifiant (corrosion, appétence de l'eau).`];
+  if(zp==='warn' || zo==='warn') return ['◐','rgba(245,158,11,.15)','À surveiller',`pH ${ph.toFixed(2)} · redox ${Math.round(orp)} mV : valeurs en limite de plage.`];
+  return ['✓','rgba(34,197,94,.15)','Eau conforme',`pH ${ph.toFixed(2)} · redox ${Math.round(orp)} mV : chloration efficace.`];
+}
+
+// ============ RENDU ============
+function render(){
+  const s = SITES.find(x=>x.id===SITE), d = DATA[SITE];
+  $('sub').textContent = `${s.site} · pH & redox en direct`;
+  $('tabs').innerHTML = SITES.map(x=>`<button class="tab${x.id===SITE?' on':''}" onclick="setSite('${x.id}')">${x.nom}</button>`).join('');
+
+  const ok = d && typeof d.ph_v==='number';
+  const ph  = ok && pvOk(d.ph_v)  ? phDe(d.ph_v)   : null;   // entrée en l'air ou sonde débranchée -> null
+  const orp = d && ovOk(d.orp_v)  ? orpDe(d.orp_v) : null;
+  const online = (d && d.ts && Date.now()-d.ts < ONLINE_MS);
+  $('conn').innerHTML = online ? `<span class="conn on"><span class="cdot"></span>En direct</span>`
+             : `<span class="conn off"><span class="cdot"></span>Hors ligne${d&&d.ts?' · '+depuis(d.ts):''}</span>`;
+
+  const maj = d && d.ts ? 'Mis à jour '+depuis(d.ts) : '';
+  const horsPh  = ok && ph==null ? `Sonde non branchée ou lecture invalide (${d.ph_v.toFixed(3)} V)` : '';
+  const horsOrp = d && typeof d.orp_v==='number' && orp==null ? `Sonde non branchée ou lecture invalide (${d.orp_v.toFixed(3)} V)` : '';
+  $('cardPh').innerHTML  = carteMesure('ph',  ph,  ph!=null ? `Tension ${d.ph_v.toFixed(3)} V · ${maj}` : horsPh);
+  $('cardOrp').innerHTML = carteMesure('orp', orp, orp!=null ? `Tension ${d.orp_v.toFixed(3)} V${typeof d.rssi==='number'?' · WiFi '+d.rssi+' dBm':''}` : horsOrp);
+
+  const [ic,bg,t,txt] = verdict(ph,orp);
+  $('verdict').innerHTML = `<div class="verdict"><div class="vicon" style="background:${bg}">${ic}</div>
+    <div><div class="vt">${t}</div><div class="vd">${txt}</div></div></div>`;
+  if(UNLOCKED && cfgOuvert()) majLive();
+}
+
+// ============ HISTORIQUE ============
+function thin(a,max){ if(a.length<=max) return a; const st=a.length/max,o=[]; for(let i=0;i<max;i++) o.push(a[Math.floor(i*st)]); o.push(a.at(-1)); return o; }
+
+function loadHist(){
+  db.ref('eau_history/'+SITE).orderByKey().limitToLast(5000).once('value').then(snap=>{
+    const v=snap.val()||{};
+    HIST=Object.values(v).filter(e=>e&&typeof e.t==='number'&&typeof e.pv==='number').sort((a,b)=>a.t-b.t);
+    drawChart();
+  }).catch(()=>{ HIST=[]; drawChart(); });
+}
+
+function setRange(h){ RANGE=h; drawChart(); }
+
+function drawChart(){
+  document.querySelectorAll('.rbtn').forEach(b=>b.classList.toggle('on',+b.dataset.h===RANGE));
+  const cut=Date.now()-RANGE*3600e3;
+  let pts=HIST.filter(e=>e.t>=cut);
+  // ajoute la mesure en direct pour que la courbe suive le temps réel
+  const d=DATA[SITE];
+  if(d && d.ts && typeof d.ph_v==='number' && (!pts.length || d.ts>pts.at(-1).t)) pts=[...pts,{t:d.ts,pv:d.ph_v,ov:d.orp_v}];
+  if(pts.length<2){ $('histMsg').style.display='block'; $('cvBox').style.display='none'; $('stats').innerHTML=''; return; }
+  $('histMsg').style.display='none'; $('cvBox').style.display='block';
+  const c=cal();
+  const all=pts.map(e=>({t:e.t,ph:pvOk(e.pv)?phDe(e.pv,c):null,orp:ovOk(e.ov)?orpDe(e.ov,c):null}));
+  stats(all);
+  const p=thin(all,400);
+  const fmt=RANGE<=24?{hour:'2-digit',minute:'2-digit'}:{day:'2-digit',month:'2-digit',hour:'2-digit'};
+  const labels=p.map(e=>new Date(e.t).toLocaleString('fr-FR',fmt));
+  const tick={color:'#8b93a3',font:{family:'Barlow',size:10}};
+  if(CHART) CHART.destroy();
+  CHART=new Chart($('cv'),{
+    type:'line',
+    data:{labels,datasets:[
+      {label:'pH',data:p.map(e=>e.ph==null?null:+e.ph.toFixed(2)),spanGaps:true,borderColor:'#06b6d4',backgroundColor:'#06b6d422',pointRadius:0,borderWidth:2,tension:.25,yAxisID:'y'},
+      {label:'Redox (mV)',data:p.map(e=>e.orp==null?null:Math.round(e.orp)),borderColor:'#a855f7',pointRadius:0,borderWidth:2,tension:.25,yAxisID:'y2',spanGaps:true}
+    ]},
+    options:{animation:false,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      plugins:{legend:{labels:{color:'#8b93a3',boxWidth:14,boxHeight:2,font:{family:'Barlow',size:11}}},
+        tooltip:{backgroundColor:'#1c2029',borderColor:'#39414f',borderWidth:1,titleColor:'#e6e9ef',bodyColor:'#e6e9ef'}},
+      scales:{
+        x:{ticks:{...tick,maxTicksLimit:7},grid:{color:'rgba(57,65,79,.25)'}},
+        y:{suggestedMin:5,suggestedMax:8,ticks:tick,grid:{color:'rgba(57,65,79,.25)'},title:{display:true,text:'pH',color:'#06b6d4',font:{family:'Barlow',size:11}}},
+        y2:{position:'right',suggestedMin:400,suggestedMax:900,ticks:tick,grid:{display:false},title:{display:true,text:'mV',color:'#a855f7',font:{family:'Barlow',size:11}}}
+      }}
+  });
+}
+
+function stats(a){
+  const ph=a.filter(e=>e.ph!=null).map(e=>e.ph), orp=a.filter(e=>e.orp!=null).map(e=>e.orp);
+  const moy=x=>x.reduce((s,v)=>s+v,0)/x.length;
+  const horsPh=a.filter(e=>e.ph!=null&&zone('ph',e.ph)==='crit').length, horsOrp=a.filter(e=>e.orp!=null&&zone('orp',e.orp)==='crit').length;
+  $('stats').innerHTML=[
+    ['pH moyen', ph.length?moy(ph).toFixed(2):'—'],
+    ['pH min / max', ph.length?Math.min(...ph).toFixed(2)+' / '+Math.max(...ph).toFixed(2):'—'],
+    ['Redox moyen', orp.length?Math.round(moy(orp))+' mV':'—'],
+    ['Temps hors plage', Math.round(Math.max(horsPh,horsOrp)/a.length*100)+' %']
+  ].map(([l,v])=>`<div class="st"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
+}
+
+// ============ TEMPS RÉEL ============
+function ecoute(){
+  if(refLive) refLive.off();
+  refLive=db.ref('eau/'+SITE);
+  refLive.on('value',snap=>{
+    DATA[SITE]=snap.val()||null;
+    render();
+    const ts=DATA[SITE]&&DATA[SITE].ts;
+    if(ts && ts!==lastTs){ lastTs=ts; drawChart(); }
+  });
+}
+db.ref('eau_config').on('value',snap=>{
+  const raw=snap.val()||{}; CAL={};
+  Object.entries(raw).forEach(([id,v])=>{
+    if(!v||typeof v!=='object') return; const o={};
+    ['v7','v4','orpZero','orpOff'].forEach(k=>{ if(typeof v[k]==='number'&&isFinite(v[k])) o[k]=v[k]; });
+    CAL[id]=o;
+  });
+  render(); drawChart();
+});
+
+function setSite(id){ if(id===SITE) return; SITE=id; lastTs=null; HIST=[]; ecoute(); render(); loadHist(); }
+
+// ============ CALIBRATION ============
+const cfgOuvert=()=>$('cfgModal').classList.contains('on');
+const nb=v=>{const t=String(v??'').trim().replace(',','.');return t===''?null:Number(t);};
+async function sha256(t){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');}
+function openCfg(){ $('cfgModal').classList.add('on'); UNLOCKED?cfgForm():cfgLock(); }
+function closeCfg(){ $('cfgModal').classList.remove('on'); }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&cfgOuvert()) closeCfg(); });
+
+function cfgLock(err){
+  $('cfgBody').innerHTML=`<div class="row"><div class="fld"><label>Mot de passe</label>
+    <input type="password" id="pwd" onkeydown="if(event.key==='Enter')cfgUnlock()"></div>
+    <button class="btn" onclick="cfgUnlock()">Déverrouiller</button></div><div class="cmsg ko">${err||''}</div>`;
+  setTimeout(()=>$('pwd')&&$('pwd').focus(),60);
+}
+async function cfgUnlock(){
+  const v=$('pwd').value; if(!v) return;
+  let h; try{h=await sha256(v);}catch(e){return cfgLock('La page doit être servie en HTTPS.');}
+  if(h===MDP_HASH){UNLOCKED=true;cfgForm();} else cfgLock('Mot de passe incorrect.');
+}
+
+function cfgForm(){
+  const c=cal();
+  $('cfgLead').innerHTML=`Site <b>${SITE}</b> — enregistré dans <code>eau_config/${SITE}</code>, appliqué aussitôt sur tous les écrans. Rincer la sonde à l'eau claire entre chaque solution et attendre que la tension se stabilise (1 à 2 min).`;
+  $('cfgBody').innerHTML=`
+  <div class="sec"><h3>Sonde pH</h3>
+    <div class="live" id="livePh"></div>
+    <div class="row">
+      <div class="fld"><label>Tension tampon pH 7 (V)</label><input id="c_v7" inputmode="decimal" value="${c.v7}"></div>
+      <button class="btn ghost" onclick="capte('c_v7','ph_v')">Capturer (dans pH 7)</button>
+    </div>
+    <div class="row">
+      <div class="fld"><label>Tension tampon pH 4 (V)</label><input id="c_v4" inputmode="decimal" value="${c.v4}"></div>
+      <button class="btn ghost" onclick="capte('c_v4','ph_v')">Capturer (dans pH 4)</button>
+    </div>
+    <div class="cmsg" id="pente"></div>
+  </div>
+  <div class="sec"><h3>Sonde redox</h3>
+    <div class="live" id="liveOrp"></div>
+    <div class="row">
+      <div class="fld"><label>Tension à 0 mV (V)</label><input id="c_orpZero" inputmode="decimal" value="${c.orpZero}"></div>
+      <div class="fld"><label>Décalage (mV)</label><input id="c_orpOff" inputmode="decimal" value="${c.orpOff}"></div>
+    </div>
+    <div class="row">
+      <div class="fld"><label>Solution étalon (mV)</label><input id="c_sol" inputmode="decimal" placeholder="ex. 225 ou 256"></div>
+      <button class="btn ghost" onclick="calerOrp()">Caler sur la solution</button>
+    </div>
+  </div>
+  <div class="row">
+    <button class="btn" onclick="cfgSave()">Enregistrer</button>
+    <button class="btn ghost" onclick="cfgReset()">Réinitialiser</button>
+  </div>
+  <div class="cmsg" id="cfgMsg"></div>`;
+  ['c_v7','c_v4'].forEach(i=>$(i).addEventListener('input',majPente));
+  majLive(); majPente();
+}
+
+function majLive(){
+  const d=DATA[SITE]; if(!$('livePh')) return;
+  $('livePh').innerHTML = d&&typeof d.ph_v==='number' ? `Lecture actuelle : <b>${d.ph_v.toFixed(3)} V</b> → pH ${phDe(d.ph_v).toFixed(2)} · ${depuis(d.ts)}` : 'Aucune lecture du boîtier';
+  $('liveOrp').innerHTML = d&&typeof d.orp_v==='number' ? `Lecture actuelle : <b>${d.orp_v.toFixed(3)} V</b> → ${Math.round(orpDe(d.orp_v))} mV` : 'Aucune lecture du boîtier';
+}
+
+// Pente de la sonde : ~59 mV/pH théorique au niveau de l'électrode, amplifiée par le module.
+// Une pente qui s'effondre d'une calibration à l'autre = électrode usée.
+function majPente(){
+  const v7=nb($('c_v7').value), v4=nb($('c_v4').value);
+  if(v7==null||v4==null||v7===v4){ $('pente').textContent=''; return; }
+  const p=(v4-v7)/3*1000;
+  $('pente').className='cmsg'+(Math.abs(p)<80||Math.abs(p)>300?' ko':'');
+  $('pente').textContent=`Pente : ${p.toFixed(0)} mV/pH`+(Math.abs(p)<80?' — trop faible : électrode usée, sèche ou tampon mal lu.':Math.abs(p)>300?' — anormalement forte : vérifier les tampons.':'');
+}
+
+function capte(inp,k){
+  const d=DATA[SITE];
+  if(!d||typeof d[k]!=='number') return msg('Pas de lecture du boîtier.','ko');
+  $(inp).value=d[k].toFixed(3); majPente(); msg('Valeur capturée — vérifier puis Enregistrer.','');
+}
+
+function calerOrp(){
+  const d=DATA[SITE], sol=nb($('c_sol').value), z=nb($('c_orpZero').value);
+  if(!d||typeof d.orp_v!=='number') return msg('Pas de lecture du boîtier.','ko');
+  if(sol==null||!isFinite(sol)) return msg('Indiquer la valeur de la solution étalon (mV).','ko');
+  const off=sol-(z-d.orp_v)*1000;
+  $('c_orpOff').value=Math.round(off);
+  msg(`Décalage proposé : ${Math.round(off)} mV. Vérifier puis Enregistrer.`,'');
+}
+
+function msg(t,cls){ const e=$('cfgMsg'); if(e){e.className='cmsg'+(cls?' '+cls:''); e.textContent=t;} }
+
+async function cfgSave(){
+  const o={}; for(const k of ['v7','v4','orpZero','orpOff']){ const v=nb($('c_'+k).value); if(v==null||!isFinite(v)) return msg(`Valeur invalide : ${k}.`,'ko'); o[k]=v; }
+  if(o.v7===o.v4) return msg('Les tensions pH 7 et pH 4 doivent être différentes.','ko');
+  if(o.v7<0.3||o.v7>4.7||o.v4<0.3||o.v4>4.7) return msg('Tensions pH hors de 0,3–4,7 V : sonde débranchée ?','ko');
+  try{ await db.ref('eau_config/'+SITE).set({...o,maj:Date.now()}); msg('Enregistré — appliqué sur tous les écrans.','ok'); }
+  catch(e){ msg('Écriture refusée par Firebase : '+(e.message||e),'ko'); }
+}
+async function cfgReset(){
+  if(!confirm('Revenir à la calibration par défaut ?')) return;
+  try{ await db.ref('eau_config/'+SITE).remove(); cfgForm(); msg('Calibration par défaut rétablie.','ok'); }
+  catch(e){ msg('Suppression refusée : '+(e.message||e),'ko'); }
+}
+
+// ============ DÉMARRAGE ============
+ecoute(); render(); loadHist();
+setInterval(()=>{ render(); },10000);          // rafraîchit « il y a X s » et l'état en ligne
+setInterval(()=>{ loadHist(); },10*60*1000);   // relit l'historique archivé
+</script>
+</body>
+</html>
