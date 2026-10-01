@@ -669,9 +669,9 @@ function openSaisie(type, key, date, editId){
        natures:JSON.parse(JSON.stringify(D.programmes[type].natures)),
        nbEchantillons:D.programmes[type].natures.reduce((s,n)=>s+ +n.q,0), code:"", commentaire:""};
   }
-  const nat=NATURES[p.type];
+  const nat=NATURES[p.type], man=p.type==="MANUEL";
   document.getElementById("saisieBody").innerHTML=`
-   <h2 style="margin:0 0 12px">Enregistrer un prélèvement — ${TYPES[p.type].nom}</h2>
+   <h2 style="margin:0 0 12px">Enregistrer un prélèvement — ${man?"Hors programme":TYPES[p.type].nom}</h2>
    <div class="grid3">
      <div class="f"><label>Date de prélèvement</label>
        <input type="date" id="s_date" value="${p.date}" onchange="majNumBord('s','${p.id}')"></div>
@@ -700,6 +700,17 @@ function openSaisie(type, key, date, editId){
      <div class="f"><label>Commentaire</label><input id="s_com" value="${p.commentaire||""}"></div>
      ${p.type==="SERO_IA"?`<div class="f"><label>Nombre d'animaux</label><input type="number" min="0" id="s_eff" value="${p.effectif||""}"></div>`:""}
    </div>
+   ${man?`<div class="grid2" style="margin-top:10px">
+     <div class="f"><label>Laboratoire</label><select id="s_labo">
+       <option value="FILIAVET" ${p.labo!=="LABOVET"?"selected":""}>FILIAVET — salmonelles, autopsie, bactériologie</option>
+       <option value="LABOVET" ${p.labo==="LABOVET"?"selected":""}>LABOVET CONSEIL — influenza aviaire</option></select></div>
+     <div class="f"><label>Motif de la demande</label><input id="s_motif" value="${p.motif||""}"></div>
+   </div>
+   <h3>Examens demandés</h3>
+   <div class="chips" id="s_ex">${EXAMENS_MANUEL.map(e=>
+      `<span class="chip ${(p.examens||[]).includes(e)?"on":""}" data-e="${e}" onclick="this.classList.toggle('on')">${e}</span>`).join("")}</div>
+   <label style="font-size:13px;display:flex;align-items:center;gap:6px;margin-top:10px">
+     <input type="checkbox" id="s_desinf" ${p.desinfectant?"checked":""}> Désinfectant dans les prélèvements</label>`:""}
    <div class="row" style="margin-top:14px">
      <button class="btn" onclick="saveSaisie('${p.id}',${editId?"true":"false"})">Enregistrer</button>
      <button class="btn sec" onclick="closeModal('mSaisie')">Annuler</button>
@@ -716,11 +727,18 @@ function saveSaisie(id, edit){
   p.typeControle=document.getElementById("s_ctrl").value;
   p.commentaire=document.getElementById("s_com").value;
   if(document.getElementById("s_eff")) p.effectif=document.getElementById("s_eff").value;
+  if(p.type==="MANUEL"){
+    p.labo=document.getElementById("s_labo").value;
+    p.motif=document.getElementById("s_motif").value;
+    p.examens=[...document.querySelectorAll("#s_ex .chip.on")].map(c=>c.dataset.e);
+    p.desinfectant=document.getElementById("s_desinf").checked;
+  }
   p.batiments=[...document.querySelectorAll("#s_bats .chip.on")].map(c=>c.dataset.id);
   p.natures=[...document.querySelectorAll("#s_nat input[type=checkbox]:checked")].map(cb=>({
     n:cb.dataset.n, q:+document.querySelector(`#s_nat input[data-q="${cb.dataset.n}"]`).value||0}));
   p.nbEchantillons=p.natures.reduce((s,n)=>s+n.q,0);
   if(!p.batiments.length){ alert("Sélectionnez au moins un bâtiment."); return; }
+  if(p.type==="MANUEL") p.nomCible=p.batiments.join(" + ");
   if(edit){ const i=D.prelevements.findIndex(x=>x.id===id); D.prelevements[i]=p; }
   else D.prelevements.push(p);
   save(); closeModal("mSaisie"); render();
@@ -1154,6 +1172,7 @@ function renderManuel(){
       <td>${p.motif||""}</td><td class="mini">${p.natures.map(n=>n.n+" ×"+n.q).join("<br>")}</td>
       <td>${p.bordereau||""}</td>
       <td class="right"><button class="btn sm sec" onclick="voirBordereau('${p.id}')">Bordereau</button>
+      <button class="btn sm sec" onclick="openSaisie(null,null,null,'${p.id}')">Modifier</button>
       <button class="btn sm dgr" onclick="supPrel('${p.id}')">Suppr.</button></td></tr>`;
   });
   document.getElementById("tblManuel").innerHTML=h;
