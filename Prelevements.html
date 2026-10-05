@@ -138,6 +138,161 @@ button{font:inherit;cursor:pointer}
   nav{margin-left:0;width:100%;overflow:auto}
 }
 
+
+/* ======================================================================
+   DESIGN AFR 2026 — interface écran uniquement
+   ====================================================================== */
+@media screen{
+  :root{
+    --marine:#17396b; --marine-fonce:#0c2850; --marine-clair:#386dac;
+    --bg:#f3f6fa; --surface:#fff; --surface-2:#f4f7fb;
+    --ink:#152238; --ink-2:#5d6c82; --ink-3:#91a0b4;
+    --line:#e3e9f1; --line-2:#d0d9e6;
+    --violet:#7550a8; --violet-bg:#f2edfa;
+    --bleu:#2464ad; --bleu-bg:#eaf2fb;
+    --vert-ok:#168256; --vert-ok-bg:#e8f7ef;
+    --ambre:#b66a05; --ambre-bg:#fff4df;
+    --rouge:#c23b3b; --rouge-bg:#fff0f0;
+    --r:20px; --r-sm:12px;
+    --sh:0 1px 2px rgba(23,57,107,.04),0 14px 38px -24px rgba(23,57,107,.35);
+  }
+  body{background:linear-gradient(180deg,#eef4fb 0,#f5f7fa 240px,var(--bg) 520px);min-height:100vh}
+  header{
+    padding:12px max(18px,calc((100vw - 1500px)/2 + 18px));
+    min-height:74px;gap:18px;flex-wrap:nowrap;
+    background:linear-gradient(120deg,#0b2851 0%,#17396b 58%,#285b97 100%);
+    border-bottom:1px solid rgba(255,255,255,.1);
+    box-shadow:0 12px 32px -25px #06172f;
+  }
+  .brand{display:flex;align-items:center;gap:12px;min-width:260px}
+  .brand-mark{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;
+    background:#fff;color:var(--marine);font-weight:900;font-size:20px;letter-spacing:-2px;
+    box-shadow:0 8px 20px -12px rgba(0,0,0,.55)}
+  .brand-copy{display:flex;flex-direction:column;line-height:1.12}
+  header h1{font-size:17px;font-weight:750;letter-spacing:-.02em}
+  header h1 span{display:block!important;margin-top:4px;font-size:11.5px!important;opacity:.7!important;font-weight:500!important;letter-spacing:.01em}
+  header .sub{display:none}
+  .sync-pill{display:flex;align-items:center;gap:7px;margin-left:auto;color:#d8e7f8;font-size:12px;
+    background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);padding:7px 10px;border-radius:999px;white-space:nowrap}
+  .sync-pill:before{content:"";width:8px;height:8px;border-radius:50%;background:#52d38a;box-shadow:0 0 0 4px rgba(82,211,138,.12)}
+  nav{margin-left:0;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.08);padding:4px}
+  nav button{padding:8px 13px;font-size:13px;color:#cfdbec;font-weight:600}
+  nav button.on{box-shadow:0 6px 18px -12px rgba(0,0,0,.55)}
+  main{max-width:1500px;padding:28px 22px 64px}
+
+  .week-brief{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:2px 0 16px;
+    padding:20px 22px;border-radius:22px;color:#fff;overflow:hidden;position:relative;
+    background:linear-gradient(120deg,#17396b,#285f9e);box-shadow:0 20px 45px -30px #17396b}
+  .week-brief:after{content:"";position:absolute;width:220px;height:220px;border-radius:50%;right:-70px;top:-105px;background:rgba(255,255,255,.08)}
+  .week-brief .wb-title{font-size:12px;text-transform:uppercase;letter-spacing:.11em;opacity:.72;font-weight:750}
+  .week-brief .wb-main{font-size:22px;font-weight:800;letter-spacing:-.025em;margin-top:3px}
+  .week-brief .wb-meta{font-size:13px;opacity:.78;margin-top:4px}
+  .week-brief .wb-status{z-index:1;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.14);
+    border-radius:16px;padding:11px 14px;text-align:right;min-width:170px}
+  .week-brief .wb-status b{display:block;font-size:20px}
+  .week-brief.danger{background:linear-gradient(120deg,#832f39,#bd4651)}
+  .week-brief.warning{background:linear-gradient(120deg,#8c5b11,#c47a0c)}
+
+  .cards{grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-bottom:18px}
+  .card{position:relative;min-height:116px;padding:17px 18px;border-radius:18px;border-color:#e5ebf3;overflow:hidden;box-shadow:var(--sh)}
+  .card:after{content:"";position:absolute;right:-24px;bottom:-32px;width:92px;height:92px;border-radius:50%;background:rgba(23,57,107,.045)}
+  .card .n{font-size:34px;font-weight:820;letter-spacing:-.045em}
+  .card .l{font-size:12px;font-weight:650;margin-top:6px;text-transform:uppercase;letter-spacing:.045em}
+  .card .card-note{font-size:11.5px;color:var(--ink-3);margin-top:5px}
+  .card.priority{grid-column:span 2;min-height:132px;padding:20px 21px}
+  .card.priority .n{font-size:46px}
+  .card.priority.alerte{border-color:#f0caca;background:linear-gradient(145deg,#fff,#fff4f4)}
+  .card.priority.proche{border-color:#f1d6a8;background:linear-gradient(145deg,#fff,#fff8ec)}
+  .card.type-sal{border-top:4px solid #7550a8}.card.type-ia{border-top:4px solid #2464ad}.card.type-sero{border-top:4px solid #168d89}
+
+  .panel{padding:20px 20px 18px;border-radius:20px;border-color:#e3e9f1;box-shadow:var(--sh);margin-bottom:18px}
+  .panel h2{font-size:17px;font-weight:780;letter-spacing:-.02em;color:#152238}
+  .panel h3{font-size:12px;text-transform:uppercase;letter-spacing:.055em;font-weight:760;margin-top:20px}
+  .hint{line-height:1.5}
+  .section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:15px;margin-bottom:14px}
+
+  .filterbar{align-items:center!important;background:#f6f8fb;border:1px solid var(--line);border-radius:15px;padding:9px!important;margin:14px 0 16px!important}
+  .filterbar .f{flex-direction:row;align-items:center;gap:7px}
+  .filterbar .f label{font-size:11px;text-transform:uppercase;letter-spacing:.05em;font-weight:750;white-space:nowrap}
+  .filterbar select{min-width:155px;width:auto;background:#fff;border-color:#d9e1ec;padding:8px 34px 8px 10px;font-weight:600}
+  .filterbar .btn{margin-left:auto}
+
+  .tw{border-radius:15px;border-color:#e2e8f1;background:#fff}
+  table{font-size:13.5px}
+  th{background:#f6f8fb;color:#64748a;font-size:10.8px;text-transform:uppercase;letter-spacing:.055em;padding:10px 12px}
+  td{padding:11px 12px}
+  tbody tr{transition:background .14s,transform .14s}
+  tbody tr:hover td{background:#f8fbff}
+  .planning-table .due-row td:first-child{box-shadow:inset 4px 0 0 transparent}
+  /* Séparation visuelle entre deux dates différentes */
+  .planning-table .date-group-start td{border-top:3px solid #cbd6e5;padding-top:15px}
+  .planning-table .date-group-start td:first-child{position:relative}
+  .planning-table .row-retard td{background:#fff8f8}.planning-table .row-retard td:first-child{box-shadow:inset 4px 0 0 #c23b3b}
+  .planning-table .row-soon td{background:#fffaf1}.planning-table .row-soon td:first-child{box-shadow:inset 4px 0 0 #d28a1c}
+  .planning-table .row-today td{background:#fff5e5}.planning-table .row-today td:first-child{box-shadow:inset 4px 0 0 #ed9b18}
+  .date-block{display:flex;align-items:center;gap:9px;min-width:110px}
+  .date-day{font-size:23px;line-height:1;font-weight:850;color:var(--marine);letter-spacing:-.04em}
+  .date-rest{line-height:1.15}.date-rest b{display:block;font-size:11px;text-transform:uppercase;color:var(--ink-2)}
+  .date-rest span{font-size:11px;color:var(--ink-3)}
+  .target-main{font-weight:800;color:#182b48;font-size:14px}.target-sub{font-size:11.5px;color:var(--ink-3);margin-top:2px}
+  .nature-list{line-height:1.45;color:#55667d}.nature-list b{color:#273850}
+  .btn.sm{border-radius:10px;padding:6px 11px;font-weight:700}
+  .planning-table .btn.sm{box-shadow:0 5px 12px -10px #17396b}
+
+  .timeline-table{border-collapse:separate;border-spacing:0}
+  .timeline-table th,.timeline-table td{text-align:center;min-width:78px}
+  .timeline-table th:first-child,.timeline-table td:first-child{text-align:left;min-width:175px;position:sticky;left:0;z-index:3;background:#fff}
+  .timeline-table th:first-child{background:#f6f8fb;z-index:4}
+  .timeline-table .week-now{background:#edf4fd!important;color:#17396b!important;box-shadow:inset 0 3px 0 #2d67a9}
+  .timeline-chip{display:inline-flex;align-items:center;justify-content:center;min-width:42px;padding:4px 8px;border-radius:9px;font-size:10px;font-weight:850;letter-spacing:.03em}
+  .timeline-name{font-weight:750;color:#20334f}.timeline-type{display:block;font-size:10.5px;color:#8a98aa;margin-top:2px}
+
+  .tag{padding:4px 9px;font-size:10.7px;font-weight:800;letter-spacing:.015em}
+  input,select,textarea{border-radius:11px;padding:9px 10px;border-color:#d6dfeb;background:#fff}
+  input:focus,select:focus,textarea:focus{box-shadow:0 0 0 4px rgba(44,90,160,.11)}
+  .btn{border-radius:11px;padding:9px 14px;font-weight:700;box-shadow:0 7px 15px -13px rgba(23,57,107,.9)}
+  .btn.sec{box-shadow:none}
+
+  .subtabs{border-radius:16px;padding:5px;gap:5px;width:100%;overflow-x:auto;flex-wrap:nowrap;box-shadow:none;background:#f6f8fb}
+  .subtabs button{white-space:nowrap;border-radius:11px;padding:9px 13px;font-weight:650}
+  .subtabs button.on{background:#17396b;color:#fff;box-shadow:0 7px 15px -12px #17396b}
+
+  .modal{background:rgba(7,22,45,.58);backdrop-filter:blur(7px);padding:34px 18px}
+  .modal .box{border-radius:22px;padding:24px;max-width:840px;border:1px solid rgba(255,255,255,.65);box-shadow:0 35px 90px -38px #06152d}
+  .modal .box.wide{max-width:1120px}
+  #saisieBody>h2{font-size:21px!important;font-weight:800!important;padding-bottom:14px;border-bottom:1px solid var(--line);margin-bottom:18px!important}
+  #saisieBody>h3{background:#f5f8fc;border-radius:10px;padding:8px 10px;margin:18px 0 10px;color:#314760}
+  #saisieBody>.row:last-child{position:sticky;bottom:-24px;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);padding:14px 0 2px;border-top:1px solid var(--line);z-index:4}
+  .chip{padding:7px 12px;border-radius:11px;font-weight:600}.chip.on{box-shadow:0 6px 14px -11px var(--marine)}
+
+  @media(max-width:1050px){
+    .cards{grid-template-columns:repeat(3,1fr)}
+    .card.priority{grid-column:span 1}
+    .sync-pill{display:none}
+    header{flex-wrap:wrap}.brand{min-width:auto}nav{margin-left:auto}
+  }
+  @media(max-width:760px){
+    header{padding:10px 12px;gap:10px;position:sticky}
+    .brand-mark{width:38px;height:38px;border-radius:12px;font-size:18px}
+    .brand-copy h1{font-size:15px}.brand-copy h1 span{display:none!important}
+    nav{order:3;width:100%;overflow-x:auto;justify-content:stretch;margin:0}
+    nav button{flex:1;white-space:nowrap;padding:8px 10px;font-size:12px}
+    main{padding:16px 10px 44px}
+    .week-brief{padding:17px;border-radius:17px}.week-brief .wb-main{font-size:18px}.week-brief .wb-status{min-width:120px;padding:9px}
+    .cards{grid-template-columns:repeat(2,1fr);gap:9px}.card{min-height:100px;padding:14px}.card.priority{grid-column:span 1;min-height:112px}.card.priority .n{font-size:38px}.card .n{font-size:28px}
+    .panel{padding:14px;border-radius:16px}.panel h2{font-size:16px}
+    .filterbar{display:grid!important;grid-template-columns:1fr 1fr;gap:8px!important}.filterbar .f{display:block}.filterbar .f label{display:block;margin-bottom:4px}.filterbar select{width:100%;min-width:0}.filterbar .btn{grid-column:1/-1;width:100%;margin:0}
+    .planning-table th:nth-child(4),.planning-table td:nth-child(4),.planning-table th:nth-child(5),.planning-table td:nth-child(5),.planning-table th:nth-child(7),.planning-table td:nth-child(7){display:none}
+    .planning-table td{padding:10px 8px}.planning-table th{padding:8px 7px}.planning-table .date-block{min-width:78px;gap:5px}.planning-table .date-day{font-size:19px}
+    .timeline-table th,.timeline-table td{min-width:66px}.timeline-table th:first-child,.timeline-table td:first-child{min-width:130px}
+    .modal{padding:12px 8px}.modal .box{padding:16px;border-radius:16px}.grid3,.grid2{grid-template-columns:1fr}
+  }
+  @media(max-width:480px){
+    .week-brief{display:block}.week-brief .wb-status{text-align:left;margin-top:12px;width:max-content}.cards{grid-template-columns:1fr 1fr}.card.type-sero{grid-column:1/-1}
+    .planning-table th:nth-child(6),.planning-table td:nth-child(6){display:none}
+  }
+}
+
 /* ---------- Bordereaux (impression fidèle) ---------- */
 #bordArea{display:none}
 .sheet{background:#fff;width:210mm;min-height:296mm;padding:9mm 8mm;margin:0 auto;
@@ -176,35 +331,42 @@ button{font:inherit;cursor:pointer}
 <body>
 
 <header>
-  <h1>Prélèvements <span style="opacity:.55;font-weight:400">— Salmonelle &amp; Influenza aviaire</span></h1>
-  <span class="sub" id="hdrInfo"></span>
+  <div class="brand">
+    <div class="brand-mark">afR</div>
+    <div class="brand-copy">
+      <h1>Prélèvements sanitaires <span>Salmonelle · Influenza aviaire · Sérologies</span></h1>
+      <span class="sub" id="hdrInfo"></span>
+    </div>
+  </div>
   <nav>
-    <button data-v="planning" class="on">📅 Planning</button>
-    <button data-v="manuel">📝 Bordereau manuel</button>
-    <button data-v="historique">📋 Historique</button>
-    <button data-v="params">⚙ Paramètres</button>
+    <button data-v="planning" class="on">Planning</button>
+    <button data-v="manuel">Bordereau manuel</button>
+    <button data-v="historique">Historique</button>
+    <button data-v="params">Paramètres</button>
   </nav>
+  <div class="sync-pill" id="syncPill">Synchronisation</div>
 </header>
 
 <main>
   <!-- ================= PLANNING ================= -->
   <section id="v-planning">
+    <div id="weekBrief" class="week-brief"></div>
     <div class="cards" id="kpi"></div>
     <div class="panel">
-      <h2>🧪 Prélèvements à réaliser</h2>
-      <div class="row" style="margin:12px 0 14px">
+      <div class="section-head"><div><h2>Prélèvements à réaliser</h2><p class="hint" style="margin:3px 0 0">Échéances classées par priorité et date de réalisation.</p></div></div>
+      <div class="row filterbar" style="margin:12px 0 14px">
         <div class="f"><label>Analyse</label>
           <select id="fType"><option value="">Toutes</option><option value="SALMO">Salmonelle</option><option value="IA">Influenza</option><option value="PULLO">Sérologie Pullorum</option><option value="SERO_IA">Sérologie Influenza</option></select></div>
         <div class="f"><label>Horizon</label>
           <select id="fHorizon"><option value="14">14 jours</option><option value="30" selected>30 jours</option><option value="60">60 jours</option><option value="9999">Tout</option></select></div>
         <button class="btn sec" onclick="render()">↻ Actualiser</button>
       </div>
-      <div class="tw"><table id="tblPlanning"></table></div>
+      <div class="tw"><table id="tblPlanning" class="planning-table"></table></div>
     </div>
     <div class="panel">
-      <h2>📅 Calendrier prévisionnel</h2>
-      <p class="hint">Projection sur 10 semaines à partir du programme de chaque cible.</p>
-      <div class="tw"><table id="tblCal"></table></div>
+      <div class="section-head"><div><h2>Calendrier prévisionnel</h2>
+      <p class="hint">Projection sur 10 semaines à partir du programme de chaque cible.</p></div></div>
+      <div class="tw"><table id="tblCal" class="timeline-table"></table></div>
     </div>
   </section>
 
@@ -331,6 +493,12 @@ const NATURES = {
 };
 const EXAMENS_MANUEL = ["Présence ou absence de salmonelle","Typage complet","Autopsie",
                         "Sans antibiogramme","Avec antibiogramme","P.C.R. Influenza virus type A"];
+const EXAMENS_SALMO = ["Présence ou absence","Typage restreint","Typage complet","Antibiogramme"];
+// Examens Salmonelle d'un prélèvement (liste) — repli sur l'ancien champ unique puis sur le défaut des Paramètres
+function exSalmo(p){
+  if(Array.isArray(p.examensSalmo)) return p.examensSalmo;
+  return [p.examenSalmo||D.contacts.examenSalmo].filter(Boolean);
+}
 // Types d'analyses programmées (libellé court, libellé long, pastille)
 const TYPES = {
   SALMO:  {lib:"Salmonelle",           nom:"Salmonelle",                          tag:"t-sal"},
@@ -569,6 +737,8 @@ function render(){
     D.lots.filter(l=>l.actif).length+" bâtiments · "+D.prelevements.length+" prélèvements enregistrés";
   renderPlanning(); renderCal(); renderHisto(); renderManuel(); renderParams();
   document.getElementById("modeSync").textContent = sync;
+  const sp=document.getElementById("syncPill");
+  if(sp) sp.textContent = sync.startsWith("Firebase") ? "Synchronisé · Firebase" : "Mode local";
 }
 
 function ligneEcheances(){
@@ -591,28 +761,53 @@ function renderPlanning(){
   const L=ligneEcheances();
   const ret=L.filter(x=>x.date<today()).length;
   const sem=L.filter(x=>{const d=Math.round((x.date-today())/J); return d>=0&&d<=7;}).length;
+  const auj=L.filter(x=>Math.round((x.date-today())/J)===0).length;
+  const sal=cibles("SALMO").length, ia=cibles("IA").length;
+  const sero=L.filter(x=>x.type==="PULLO"||x.type==="SERO_IA").length;
+
+  const wb=document.getElementById("weekBrief");
+  if(wb){
+    wb.className="week-brief"+(ret?" danger":sem?" warning":"");
+    const phrase=ret ? `${ret} échéance${ret>1?"s":""} en retard` : sem ? `${sem} prélèvement${sem>1?"s":""} à réaliser sous 7 jours` : "Aucune échéance urgente";
+    const statutTxt=ret?"Priorité":sem?"Cette semaine":"Situation";
+    const statutVal=ret?"À traiter":sem?`${sem} à faire`:"À jour";
+    wb.innerHTML=`<div><div class="wb-title">Pilotage sanitaire</div><div class="wb-main">${phrase}</div>
+      <div class="wb-meta">${auj?auj+" prévu"+(auj>1?"s":"")+" aujourd’hui · ":""}${D.lots.filter(l=>l.actif).length} bâtiments actifs · horizon ${document.getElementById("fHorizon").selectedOptions[0].text}</div></div>
+      <div class="wb-status"><span>${statutTxt}</span><b>${statutVal}</b></div>`;
+  }
+
   document.getElementById("kpi").innerHTML=`
-   <div class="card${ret?" alerte":""}"><div class="n">${ret}</div><div class="l">En retard</div></div>
-   <div class="card${sem?" proche":""}"><div class="n">${sem}</div><div class="l">À faire sous 7 jours</div></div>
-   <div class="card"><div class="n">${cibles("SALMO").length}</div><div class="l">Cibles Salmonelle</div></div>
-   <div class="card"><div class="n">${cibles("IA").length}</div><div class="l">Cibles Influenza</div></div>
-   <div class="card"><div class="n">${L.filter(x=>x.type==="PULLO"||x.type==="SERO_IA").length}</div><div class="l">Sérologies à venir</div></div>`;
-  let h=`<tr><th>Échéance</th><th>Analyse</th><th>Cible</th><th>Bâtiments</th><th>Âge (sem.)</th>
-         <th>Nature / quantités</th><th>Dernier</th><th>Statut</th><th class="right">Action</th></tr>`;
+   <div class="card priority${ret?" alerte":""}"><div class="n">${ret}</div><div class="l">En retard</div><div class="card-note">Échéances dépassées à régulariser</div></div>
+   <div class="card priority${sem?" proche":""}"><div class="n">${sem}</div><div class="l">À faire sous 7 jours</div><div class="card-note">Dont ${auj} prévu${auj>1?"s":""} aujourd’hui</div></div>
+   <div class="card type-sal"><div class="n">${sal}</div><div class="l">Salmonelle</div><div class="card-note">cibles actives</div></div>
+   <div class="card type-ia"><div class="n">${ia}</div><div class="l">Influenza</div><div class="card-note">cibles actives</div></div>
+   <div class="card type-sero"><div class="n">${sero}</div><div class="l">Sérologies à venir</div><div class="card-note">dans l’horizon choisi</div></div>`;
+
+  let h=`<tr><th>Échéance</th><th>Analyse</th><th>Cible</th><th>Bâtiments</th><th>Âge</th>
+         <th>Prélèvement</th><th>Dernier</th><th>Statut</th><th class="right">Action</th></tr>`;
   if(!L.length) h+=`<tr><td colspan="9" class="vide">Aucune échéance sur cette période.</td></tr>`;
+  let datePrecedente="";
   L.forEach(x=>{
     const st=statut(x.date), P=D.programmes[x.type];
+    const dateKey=d2s(x.date);
+    const dateGroupClass=datePrecedente && dateKey!==datePrecedente ? " date-group-start" : "";
+    datePrecedente=dateKey;
+    const diff=Math.round((x.date-today())/J);
+    const rowClass=diff<0?"row-retard":diff===0?"row-today":diff<=7?"row-soon":"row-ok";
     const ages=x.cible.membres.map(id=>{const a=ageSem(lot(id).naissance,x.date); return a===null?"?":a;}).join(" / ");
-    h+=`<tr>
-      <td><b>${fr(d2s(x.date))}</b><br><span class="mini">${JOURS[x.date.getDay()]}</span></td>
+    const dd=String(x.date.getDate()).padStart(2,"0");
+    const mm=x.date.toLocaleDateString("fr-FR",{month:"short"}).replace(".","");
+    const yy=String(x.date.getFullYear()).slice(-2);
+    h+=`<tr class="due-row ${rowClass}${dateGroupClass}">
+      <td><div class="date-block"><div class="date-day">${dd}</div><div class="date-rest"><b>${mm} ${yy}</b><span>${JOURS[x.date.getDay()]}</span></div></div></td>
       <td><span class="tag ${TYPES[x.type].tag}">${TYPES[x.type].lib}</span></td>
-      <td><b>${x.cible.nom}</b>${x.cible.groupe?'<br><span class="mini">regroupement</span>':""}</td>
-      <td>${x.cible.membres.map(id=>`${id} <span class="mini">${lot(id).bat||""} · ${lot(id).lot||""}</span>`).join("<br>")}</td>
-      <td class="center">${ages}</td>
-      <td class="mini">${P.natures.map(n=>n.n+" ×"+n.q).join("<br>")}</td>
-      <td>${x.dernier?fr(x.dernier.date):"<span class='mini'>—</span>"}</td>
+      <td><div class="target-main">${x.cible.nom}</div>${x.cible.groupe?'<div class="target-sub">Regroupement</div>':""}</td>
+      <td>${x.cible.membres.map(id=>`<b>${id}</b> <span class="mini">${lot(id).bat||""} · ${lot(id).lot||""}</span>`).join("<br>")}</td>
+      <td class="center"><b>${ages}</b><div class="mini">sem.</div></td>
+      <td class="nature-list">${P.natures.map(n=>`<b>${n.q}×</b> ${n.n}`).join("<br>")}</td>
+      <td>${x.dernier?`<b>${fr(x.dernier.date)}</b>`:"<span class='mini'>Aucun</span>"}</td>
       <td><span class="tag ${st.c}">${st.l}</span></td>
-      <td class="right"><button class="btn sm" onclick="openSaisie('${x.type}','${x.cible.key}','${d2s(x.date)}')">Saisir</button></td>
+      <td class="right"><button class="btn sm" onclick="openSaisie('${x.type}','${x.cible.key}','${d2s(x.date)}')">Saisir →</button></td>
     </tr>`;
   });
   document.getElementById("tblPlanning").innerHTML=h;
@@ -621,19 +816,21 @@ function renderPlanning(){
 function renderCal(){
   const semaines=[]; let d=caleJour(today(),1); if(d>today()) d=addJ(d,-7);
   for(let i=0;i<10;i++) semaines.push(addJ(d,i*7));
-  let h="<tr><th>Cible</th>"+semaines.map(s=>{const n=numSemaine(s);return `<th class="center">S${n.sem}<br><span class="mini">${frCourt(d2s(s))}</span></th>`}).join("")+"</tr>";
+  const now=today();
+  let h="<tr><th>Cible</th>"+semaines.map(s=>{const n=numSemaine(s),fin=addJ(s,7),cur=now>=s&&now<fin;return `<th class=\"center ${cur?"week-now":""}\">S${n.sem}<br><span class=\"mini\">${frCourt(d2s(s))}</span></th>`}).join("")+"</tr>";
   TYPES_PROG.forEach(type=>{
     const P=D.programmes[type]; if(!P.actif) return;
     cibles(type).forEach(c=>{
       const p=prochaine(type,c); if(!p) return;
       let cells="";
       semaines.forEach(s=>{
-        const fin=addJ(s,7);
+        const fin=addJ(s,7), cur=now>=s&&now<fin;
         let occ=false, dd=new Date(p.date);
         for(let k=0;k<40 && dd<fin;k++){ if(dd>=s&&dd<fin){occ=true;break;} if(!(P.freq>0)) break; dd=addJ(dd,P.freq*7); }
-        cells+=`<td class="center">${occ?`<span class="tag ${TYPES[type].tag}">×</span>`:""}</td>`;
+        const short=type==="SALMO"?"SAL":type==="IA"?"IA":type==="PULLO"?"PUL":"S-IA";
+        cells+=`<td class="center ${cur?"week-now":""}">${occ?`<span class="timeline-chip tag ${TYPES[type].tag}">${short}</span>`:""}</td>`;
       });
-      h+=`<tr><td>${c.nom} <span class="mini">${TYPES[type].lib}</span></td>${cells}</tr>`;
+      h+=`<tr><td><span class="timeline-name">${c.nom}</span><span class="timeline-type">${TYPES[type].lib}</span></td>${cells}</tr>`;
     });
   });
   document.getElementById("tblCal").innerHTML=h;
@@ -711,6 +908,11 @@ function openSaisie(type, key, date, editId){
       `<span class="chip ${(p.examens||[]).includes(e)?"on":""}" data-e="${e}" onclick="this.classList.toggle('on')">${e}</span>`).join("")}</div>
    <label style="font-size:13px;display:flex;align-items:center;gap:6px;margin-top:10px">
      <input type="checkbox" id="s_desinf" ${p.desinfectant?"checked":""}> Désinfectant dans les prélèvements</label>`:""}
+   ${p.type==="SALMO"?(()=>{const ex=exSalmo(p);return `<h3>Examens demandés</h3>
+   <div class="chips" id="s_exSal">${EXAMENS_SALMO.map(e=>
+      `<span class="chip ${ex.includes(e)?"on":""}" data-e="${e}" onclick="this.classList.toggle('on')">${e}</span>`).join("")}</div>
+   <label style="font-size:13px;display:flex;align-items:center;gap:6px;margin-top:10px">
+     <input type="checkbox" id="s_desinf" ${p.desinfectant?"checked":""}> Désinfectant dans les prélèvements</label>`})():""}
    <div class="row" style="margin-top:14px">
      <button class="btn" onclick="saveSaisie('${p.id}',${editId?"true":"false"})">Enregistrer</button>
      <button class="btn sec" onclick="closeModal('mSaisie')">Annuler</button>
@@ -731,6 +933,11 @@ function saveSaisie(id, edit){
     p.labo=document.getElementById("s_labo").value;
     p.motif=document.getElementById("s_motif").value;
     p.examens=[...document.querySelectorAll("#s_ex .chip.on")].map(c=>c.dataset.e);
+    p.desinfectant=document.getElementById("s_desinf").checked;
+  }
+  if(p.type==="SALMO"){
+    p.examensSalmo=[...document.querySelectorAll("#s_exSal .chip.on")].map(c=>c.dataset.e);
+    delete p.examenSalmo;
     p.desinfectant=document.getElementById("s_desinf").checked;
   }
   p.batiments=[...document.querySelectorAll("#s_bats .chip.on")].map(c=>c.dataset.id);
@@ -828,8 +1035,8 @@ function bordSalmo(p){
   <table class="nb" style="margin-top:5px"><tr><td style="width:49%;vertical-align:top;padding:0">
     <table class="box"><colgroup><col style="width:13%"><col style="width:87%"></colgroup>
       <tr><td class="sec" colspan="2">Examens Demandés</td></tr>
-      ${["Présence ou absence","Typage restreint","Typage complet","Antibiogramme"].map(e=>
-        `<tr>${cx(C.examenSalmo===e)}<td class="${C.examenSalmo===e?"rouge":""}">${e}</td></tr>`).join("")}
+      ${(ex=>EXAMENS_SALMO.map(e=>
+        `<tr>${cx(ex.includes(e))}<td class="${ex.includes(e)?"rouge":""}">${e}</td></tr>`).join(""))(exSalmo(p))}
     </table>
     <table class="box" style="margin-top:6px">
       <colgroup><col style="width:10%"><col style="width:52%"><col style="width:38%"></colgroup>
@@ -1344,6 +1551,8 @@ function renderContacts(){
     const v=D.contacts[k]||"";
     const multi=v.includes("\n")||k==="mailsEleveur"||k==="transEleveur"||k==="labSalAdr";
     return `<div class="f"><label>${LIB_CONTACTS[k]}</label>${
+      k==="examenSalmo"?`<select onchange="majContact('${k}',this.value)">${EXAMENS_SALMO.map(e=>
+        `<option ${v===e?"selected":""}>${e}</option>`).join("")}</select>`:
       multi?`<textarea rows="2" onchange="majContact('${k}',this.value)">${v}</textarea>`
            :`<input value="${v.replace(/"/g,"&quot;")}" onchange="majContact('${k}',this.value)">`}</div>`;
   }).join("");
