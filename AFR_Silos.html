@@ -589,6 +589,22 @@ function calcSilo(distCm, geo){
            fill:Math.max(0,Math.min(1,zs/(geo.hCone+geo.hCyl))) };
 }
 
+// ---- mesure hors portée ----
+// Un LiDAR qui ne reçoit plus d'écho (silo haut vide : TF-Luna au-delà de ~5,8 m sur
+// granulés) renvoie une valeur bidon très courte — VS-D bloqué à 25 cm depuis le 24/08,
+// affiché « 100 % » alors que le silo est vide. Mesure rejetée si :
+//  - distance < geo.dMin (cm) — par défaut 50 cm pour l'aliment : jamais de produit si
+//    près du capteur (une livraison laisse toujours bien plus d'un mètre) ;
+//  - force du signal envoyée par l'ESP32 < 100 ou saturée (65535), seuils Benewake.
+const D_MIN = { aliment:50, paille:0 };
+function horsPortee(dist, d, s){
+  if (DEMO || dist==null) return false;
+  const g = geoDe(s), dMin = g.dMin!==undefined ? g.dMin : (D_MIN[s.type]||0);
+  if (dist < dMin) return true;
+  const f = d && d.force;
+  return typeof f==='number' && (f<100 || f===65535);
+}
+
 function statut(t, type){
   const s = SEUILS[type] || SEUILS.paille;
   if (t<=s.crit) return {cls:'crit',label:'À commander',col:'var(--crit)'};
@@ -728,9 +744,9 @@ function pousseJour(id){
 }
 
 function consoJour(s){
-  const pts = JOUR[s.id];
-  if(!pts || pts.length<2) return null;
-  const g = geoDe(s);
+  const g = geoDe(s), dMin = g.dMin!==undefined ? g.dMin : (D_MIN[s.type]||0);
+  const pts = (JOUR[s.id]||[]).filter(e=>e.d>=dMin);   // ignore les lectures hors portée
+  if(pts.length<2) return null;
   const tt = pts.map(e=>calcSilo(e.d,g).tonnes);
   let conso = 0;
   for(let i=1;i<tt.length;i++){
@@ -945,6 +961,20 @@ function carte(s){
       </div></div>`;
   }
 
+  if (horsPortee(dist, d, s)){
+    return `<div class="card empty">
+      <span class="accent" style="background:${s.couleur}"></span>
+      ${siloSVG(s.id,0,s.couleur,false)}
+      <div class="info">
+        <div class="row1"><span class="silo-name">${s.nom}</span>
+          <span class="badge" style="background:${s.couleur}22;color:${s.couleur}">${s.site}</span>${calBadge}${cfgBadge}
+          ${connChip}</div>
+        <div class="status"><span class="dot" style="background:var(--warn)"></span>⚠ Capteur hors portée — niveau inconnu</div>
+        <div class="empty-txt">Lecture de ${dist} cm rejetée (pas d’écho exploitable). Le silo peut être vide : vérifier sur place.</div>
+        <div class="meta"><span>Mis à jour ${depuis(d && d.ts)}</span></div>
+      </div></div>`;
+  }
+
   const c = calcSilo(dist, geoDe(s));
   const st = statut(c.tonnes, s.type);
   const maj = DEMO ? 'démo' : depuis(d && d.ts);
@@ -1017,6 +1047,7 @@ function render(){
     const d=DATA[s.id];
     const dist = DEMO ? DEMO_VALS[s.id] : (d && typeof d.distance_cm==='number'? d.distance_cm:null);
     if(dist==null) return;
+    if(horsPortee(dist,d,s)){ nWarn++; return; }   // niveau inconnu : hors total, à surveiller
     const c=calcSilo(dist,geoDe(s)), st=statut(c.tonnes,s.type);
     totT+=c.tonnes; nData++;
     if(st.cls==='crit') nCrit++; else if(st.cls==='warn') nWarn++;
