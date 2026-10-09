@@ -323,18 +323,36 @@ function lireExcel(file) {
         // NT/NV/ST/VS : % Ponte=idx28, % Déclassés=idx32, % Sol=idx33
         // SG          : % Ponte=idx32, % Déclassés=idx36, % Sol=idx37
         const ferme = extractFerme(file.name);
-        const rangee = ferme === 'SG3' ? extractRangeeSG3(file.name) : null;
+        // Fichier mâles (programme ♂ Orvia : feuilles Production/Effectifs, pas de Ponte)
+        // → SG3 historiquement, NT2 depuis le lot P05.
+        const isMale = ferme === 'SG3' || (!wb.Sheets['Ponte'] && !!wb.Sheets['Production']);
+        const rangee = isMale ? extractRangeeSG3(file.name) : null;
         const isSG = ferme.startsWith('SG');
-        const idxPonte    = isSG ? 32 : 28;
-        const idxDeclasse = isSG ? 36 : 32;
-        const idxSol      = isSG ? 37 : 33;
+
+        // Recherche d'une colonne par son libellé d'en-tête (robuste aux décalages de colonnes)
+        function findHeaderCol(data, rows, label, minCol = 0) {
+          for (const r of rows) {
+            const row = data[r] || [];
+            for (let c = minCol; c < row.length; c++) {
+              if (typeof row[c] === 'string' && row[c].trim().toUpperCase() === label) return c;
+            }
+          }
+          return -1;
+        }
 
         const wsPonte = wb.Sheets['Ponte'];
         let ponte = null, declasse = null, sol = null, datePonte = null, datePonteObj = null;
-        // SG3 = bâtiment mâles : aucune métrique femelle (ponte / au sol / déclassés).
-        // Sur le fichier mâle ces colonnes contiennent autre chose → on les ignore.
-        if (ferme !== 'SG3' && wsPonte) {
+        // Bâtiment mâles : aucune métrique femelle (ponte / au sol / déclassés).
+        if (!isMale && wsPonte) {
           const data = XLSX.utils.sheet_to_json(wsPonte, { header: 1, defval: null });
+          // Colonnes détectées via les en-têtes (lignes 9-11) : % PONTE, % TRI, % SOL
+          // Repli lots P05 : NT/NV = AD/AH/AI (29/33/34) | SG = 32/36/37
+          let idxPonte = findHeaderCol(data, [8, 9, 10], 'PONTE', 20);
+          let idxDeclasse = findHeaderCol(data, [8, 9, 10], 'TRI', 20);
+          let idxSol = idxPonte >= 0 ? findHeaderCol(data, [8, 9, 10], 'SOL', idxPonte + 1) : -1;
+          if (idxPonte < 0) idxPonte = isSG ? 32 : 29;
+          if (idxDeclasse < 0) idxDeclasse = isSG ? 36 : 33;
+          if (idxSol < 0) idxSol = isSG ? 37 : 34;
           for (let i = data.length - 1; i >= 11; i--) {
             const row = data[i];
             const valPonte = row[idxPonte];
@@ -391,8 +409,8 @@ function lireExcel(file) {
         // Feuille NB ♀ → mortalité J = R+S+T+U de la ligne dont la date = datePonteObj
         // Si pas de ligne ce jour → 0
         const wsNB = wb.Sheets['NB ♀'];
-        let mortalite = (ferme === 'SG3') ? '–' : 0;
-        if (ferme !== 'SG3' && wsNB && datePonteObj) {
+        let mortalite = isMale ? '–' : 0;
+        if (!isMale && wsNB && datePonteObj) {
           const data = XLSX.utils.sheet_to_json(wsNB, { header: 1, defval: null });
           for (let i = data.length - 1; i >= 11; i--) {
             const row = data[i];
@@ -410,7 +428,7 @@ function lireExcel(file) {
         const wsIA = wb.Sheets['IA'];
         const idxDureeIA = isSG ? 44 : 43;
         let dureeIA = null;
-        if (ferme !== 'SG3' && wsIA && datePonteObj) {
+        if (!isMale && wsIA && datePonteObj) {
           const data = XLSX.utils.sheet_to_json(wsIA, { header: 1, defval: null });
           let totalMinIA = 0;
           for (let i = 10; i < data.length; i++) {
@@ -446,12 +464,19 @@ function lireExcel(file) {
         if (wsReleves) {
           const dataRel = XLSX.utils.sheet_to_json(wsReleves, { header: 1, defval: null });
 
+          // Dernière valeur NON NULLE (les lignes futures du classeur contiennent des 0 de formule)
           function lastValueInColumn(colIndex) {
+            if (colIndex < 0) return null;
             for (let i = dataRel.length - 1; i >= 10; i--) {
               const n = cleanNumber(dataRel[i]?.[colIndex]);
-              if (n !== null) return n;
+              if (n !== null && n !== 0) return n;
             }
             return null;
+          }
+          // Compteurs eau Sol/Nid : 1er « SOL » de la ligne 11 (col. Q depuis les lots P05, avant P/O)
+          function eauSolCol(defaut) {
+            const c = findHeaderCol(dataRel, [10], 'SOL', 10);
+            return c >= 0 ? c : defaut;
           }
           function setEauKey(key, colIndex) {
             const n = lastValueInColumn(colIndex);
@@ -480,16 +505,8 @@ function lireExcel(file) {
             // Compatibilité avec les noms actuels de l'app contrôle soir : les noms sans parc = premier parc
             if (eau11h['Compteur eau Sol P50'] !== undefined) eau11h['Compteur eau Sol'] = eau11h['Compteur eau Sol P50'];
             if (eau11h['Compteur eau Nid P50'] !== undefined) eau11h['Compteur eau Nid'] = eau11h['Compteur eau Nid P50'];
-          } else if (ferme === 'NT1') {
-            // NT1 : colonnes P,Q = compteur eau Sol/Nid pour tout le bâtiment
-            setEauKey('Compteur eau Sol', 15); // P
-            setEauKey('Compteur eau Nid', 16); // Q
-          } else if (['NV1','NV2'].includes(ferme)) {
-            // NV1 / NV2 : colonnes O,P = compteur eau Sol/Nid pour tout le bâtiment
-            setEauKey('Compteur eau Sol', 14); // O
-            setEauKey('Compteur eau Nid', 15); // P
-          } else if (ferme === 'SG3') {
-            // SG3 (bâtiment mâles) : colonne P = compteur EAU.
+          } else if (isMale) {
+            // Bâtiment mâles (SG3, NT2) : colonne P = compteur EAU.
             // Deux fichiers Orvia (lot 1A rangées A-F, lot 1B rangées G-L),
             // chacun écrit sa propre clé pour ControlesSG.
             if (rangee === 'A-F') {
@@ -500,10 +517,16 @@ function lireExcel(file) {
               // Rangée non reconnue dans le nom de fichier : repli sur l'ancienne clé unique
               setEauKey("Compteur d'eau", 15); // P
             }
+          } else if (['NT1','NV1','NV2'].includes(ferme)) {
+            // NT1 / NV1 / NV2 : compteurs eau Sol/Nid bâtiment — col. Q,R depuis les lots P05
+            const cSol = eauSolCol(ferme === 'NT1' ? 15 : 14);
+            setEauKey('Compteur eau Sol', cSol);
+            setEauKey('Compteur eau Nid', cSol + 1);
           } else {
-            // Sécurité pour les autres fichiers ayant la même structure P/Q
-            setEauKey('Compteur eau Sol', 15); // P
-            setEauKey('Compteur eau Nid', 16); // Q
+            // Sécurité pour les autres fichiers ayant la même structure
+            const cSol = eauSolCol(15);
+            setEauKey('Compteur eau Sol', cSol);
+            setEauKey('Compteur eau Nid', cSol + 1);
             if (eau11h['Compteur eau Sol'] !== undefined) eau11h["Compteur d'eau"] = eau11h['Compteur eau Sol'];
           }
 
@@ -516,10 +539,8 @@ function lireExcel(file) {
             setAlimentKey('Compteur aliment P50', 4); // E
             setAlimentKey('Compteur aliment P51', 8); // I
             if (aliment11h['Compteur aliment P50'] !== undefined) aliment11h['Compteur aliment'] = aliment11h['Compteur aliment P50'];
-          } else if (ferme === 'NT1' || ferme === 'NT2' || ferme === 'NV1' || ferme === 'NV2') {
-            setAlimentKey('Compteur aliment', 4); // E
-          } else if (ferme === 'SG3') {
-            // SG3 mâles : compteur aliment ♂ en colonne G (feuille Relevés), par rangée.
+          } else if (isMale) {
+            // Mâles (SG3, NT2) : compteur aliment ♂ en colonne G (feuille Relevés), par rangée.
             if (rangee === 'A-F') {
               setAlimentKey("Compteur aliment A-F", 6); // G
             } else if (rangee === 'G-L') {
@@ -528,7 +549,7 @@ function lireExcel(file) {
               setAlimentKey("Compteur aliment", 6); // G (repli)
             }
           } else {
-            // Sécurité pour les autres fichiers ayant la même structure
+            // NT1 / NV1 / NV2 et autres fichiers femelles : colonne E
             setAlimentKey('Compteur aliment', 4); // E
           }
         }
@@ -598,7 +619,7 @@ function formatEau11h(eau, ferme) {
     return `P50 Sol ${formatNombreFr(p50s)} / Nid ${formatNombreFr(p50n)}<br>P51 Sol ${formatNombreFr(p51s)} / Nid ${formatNombreFr(p51n)}`;
   }
 
-  if (ferme === 'SG3') {
+  if (ferme === 'SG3' || eau["Compteur d'eau A-F"] !== undefined || eau["Compteur d'eau G-L"] !== undefined) {
     const af = eau["Compteur d'eau A-F"] ?? eau["Compteur d’eau A-F"];
     const gl = eau["Compteur d'eau G-L"] ?? eau["Compteur d’eau G-L"];
     if (af !== undefined || gl !== undefined) {
@@ -635,7 +656,7 @@ function formatAliment11h(aliment, ferme) {
     return `P50 ${formatNombreFr(p50)}<br>P51 ${formatNombreFr(p51)}`;
   }
 
-  if (ferme === 'SG3') {
+  if (ferme === 'SG3' || aliment["Compteur aliment A-F"] !== undefined || aliment["Compteur aliment G-L"] !== undefined) {
     const af = aliment["Compteur aliment A-F"];
     const gl = aliment["Compteur aliment G-L"];
     if (af !== undefined || gl !== undefined) {
