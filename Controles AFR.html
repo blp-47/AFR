@@ -1101,7 +1101,8 @@ const CONTROLES_PONTE_BASE = [
 
 // ── Liste spécifique NT2 ──────────────────────────────────────────
 const CONTROLES_NT2 = [
-  { name: "Compteur eau",        etat: "Relevé — compteur 18h",            type: "value",  placeholder: "Ex : 1234 m³" },
+  { name: "Compteur d'eau A-F",  etat: "Relevé 18h — rangées A à F",       type: "value",  placeholder: "Ex : 1234 m³", groupWith: "next" },
+  { name: "Compteur d'eau G-L",  etat: "Relevé 18h — rangées G à L",       type: "value",  placeholder: "Ex : 1234 m³", groupWith: "prev" },
   { name: "Lumière",          etat: "Signaler problème",               type: "report" },
   { name: "Morts",            etat: "Aucun — sinon noter nombre + parc", type: "morts" },
   { name: "Aliment présent",  etat: "Vérification présence aliment",   type: "toggle" },
@@ -1173,6 +1174,12 @@ function getEauTypeFromControlName(name) {
   return 'Sol';
 }
 
+function getEauRangeeFromControlName(name) {
+  if (/\bA\s*-\s*F\b/i.test(name || '')) return 'A-F';
+  if (/\bG\s*-\s*L\b/i.test(name || '')) return 'G-L';
+  return '';
+}
+
 function getEauParcFromControlName(name) {
   const m = String(name || '').match(/\bP\s*(\d{2})\b/i);
   return m ? ('P' + m[1]) : '';
@@ -1180,6 +1187,14 @@ function getEauParcFromControlName(name) {
 
 function getEau11hBase(ctrlName, bat, eauMap) {
   if (!eauMap) return null;
+  // NT2 : compteurs par rangée (clés Suivi Quotidien « Compteur d'eau A-F / G-L »)
+  const rangee = getEauRangeeFromControlName(ctrlName);
+  if (rangee) {
+    for (const k of [`Compteur d'eau ${rangee}`, `Compteur d’eau ${rangee}`, `Compteur eau ${rangee}`]) {
+      if (eauMap[k] !== undefined && eauMap[k] !== null && parseEauNumber(eauMap[k]) !== null) return eauMap[k];
+    }
+    return null;
+  }
   const type = getEauTypeFromControlName(ctrlName); // Sol ou Nid
   const parc = getEauParcFromControlName(ctrlName);
   const candidates = [];
@@ -1551,7 +1566,7 @@ function buildForm() {
     half.id = "ctrl-" + idx;
     half.className = "ctrl-half";
 
-    var shortName = ctrl.name.replace(/^Morts\s+/i, '').replace(/^Compteur\s+eau\s+/i, 'Eau ');
+    var shortName = ctrl.name.replace(/^Morts\s+/i, '').replace(/^Compteur\s+(d['’]\s*)?eau\s+/i, 'Eau ');
 
     var info = document.createElement("div");
     info.className = "ctrl-info";
@@ -1998,6 +2013,8 @@ function sendByMail() {
   // CRLF (\r\n) obligatoire : Outlook / Hotmail / Live / Orange écrasent les \n isolés.
   const NL = '\r\n';
   const eauLabel = (name) => {
+    const r = getEauRangeeFromControlName(name);
+    if (r) return `Rangées ${r}`;
     const t = getEauTypeFromControlName(name);
     const p = getEauParcFromControlName(name);
     return p ? `${t} ${p}` : t;
@@ -2466,6 +2483,8 @@ function exportPDF() {
     // Compteurs eau (priorite : "nid"/"sol" avant "compteur eau" simple)
     { pat: /\b(compteur\s*)?eau\s*(du\s*)?nid\b/i,                 match: /compteur eau nid/i },
     { pat: /\b(compteur\s*)?eau\s*(du\s*)?sol\b/i,                 match: /compteur eau sol/i },
+    { pat: /\b(compteur\s*)?(d['e]\s*)?eau\s*(rang[ée]es?\s*)?a\s*(-|à|a)?\s*f\b/i, match: /eau a-f/i },
+    { pat: /\b(compteur\s*)?(d['e]\s*)?eau\s*(rang[ée]es?\s*)?g\s*(-|à|a)?\s*l\b/i, match: /eau g-l/i },
     { pat: /\bcompteur\s*(d['e]\s*)?eau\b/i,                       match: /^compteur eau$/i },
 
     // Pipettes
