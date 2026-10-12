@@ -95,6 +95,7 @@ button{font:inherit;cursor:pointer}
 .btn.dgr{background:#fff;color:var(--rouge);border-color:#eccccc}
 .btn.dgr:hover{background:var(--rouge-bg);filter:none}
 .btn.sm{padding:4px 10px;font-size:12.5px}
+.sel-dec{width:auto;padding:4px 6px;font-size:12px;margin-right:4px}
 
 /* ---------- Pastilles ---------- */
 .tag{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:600;white-space:nowrap}
@@ -611,7 +612,7 @@ function migre(st){
   if(!st) return {};
   if((st.version||1) >= DATA_VERSION) return st;
   return {version:DATA_VERSION, prelevements:st.prelevements||[],
-          contacts:st.contacts, programmes:st.programmes, supprimes:st.supprimes};
+          contacts:st.contacts, programmes:st.programmes, supprimes:st.supprimes, decalages:st.decalages};
 }
 function boot(){
   D = merge(DEFAUT, migre(lsGet()));
@@ -720,9 +721,28 @@ function prochaine(type, cible){
     if(d<today()) d=today();
   }
   d=caleJour(d,P.jour);
+  // Décalage manuel (±1/±2 sem.) : ne s'applique qu'à l'échéance en cours ; dès qu'un
+  // prélèvement est saisi, le cycle normal reprend à partir de sa date (dernier + fréquence).
+  const dec=decal(type,cible.key,der);
+  if(dec) d=addJ(d,dec*7);
   const sorties=cible.membres.map(id=>s2d(lot(id).sortie)).filter(Boolean);
   if(sorties.length===cible.membres.length && d>new Date(Math.max(...sorties))) return null;
-  return {date:d, dernier:der, ageMax:ageMax};
+  return {date:d, dernier:der, ageMax:ageMax, decal:dec};
+}
+function decal(type, key, der){
+  const x=(D.decalages||{})[type+"|"+key];
+  return (x && x.sem && x.ref===(der?der.id:"")) ? x.sem : 0;
+}
+function setDecal(type, key, v){
+  D.decalages=D.decalages||{};
+  const der=dernier(type,key), k=type+"|"+key;
+  if(+v) D.decalages[k]={sem:+v, ref:der?der.id:""}; else delete D.decalages[k];
+  save(); render();
+}
+function selDecal(x){
+  const v=x.decal||0;
+  return `<select class="sel-dec" title="Décaler cette échéance (le cycle normal reprend après la saisie)" onchange="setDecal('${x.type}','${x.cible.key}',this.value)">`+
+    [-2,-1,0,1,2].map(n=>`<option value="${n}"${n===v?" selected":""}>${n===0?"± 0 sem.":(n>0?"+":"−")+Math.abs(n)+" sem."}</option>`).join("")+`</select>`;
 }
 function statut(d){
   const diff=Math.round((d-today())/J);
@@ -806,8 +826,8 @@ function renderPlanning(){
       <td class="center"><b>${ages}</b><div class="mini">sem.</div></td>
       <td class="nature-list">${P.natures.map(n=>`<b>${n.q}×</b> ${n.n}`).join("<br>")}</td>
       <td>${x.dernier?`<b>${fr(x.dernier.date)}</b>`:"<span class='mini'>Aucun</span>"}</td>
-      <td><span class="tag ${st.c}">${st.l}</span></td>
-      <td class="right"><button class="btn sm" onclick="openSaisie('${x.type}','${x.cible.key}','${d2s(x.date)}')">Saisir →</button></td>
+      <td><span class="tag ${st.c}">${st.l}</span>${x.decal?`<div class="mini">Décalé ${x.decal>0?"+":"−"}${Math.abs(x.decal)} sem.</div>`:""}</td>
+      <td class="right">${selDecal(x)} <button class="btn sm" onclick="openSaisie('${x.type}','${x.cible.key}','${d2s(x.date)}')">Saisir →</button></td>
     </tr>`;
   });
   document.getElementById("tblPlanning").innerHTML=h;
