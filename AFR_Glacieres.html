@@ -99,7 +99,10 @@
   .rbtn:hover{border-color:var(--border-strong);color:var(--text)}
   .rbtn.on{background:rgba(59,130,246,.12);border-color:var(--accent);color:var(--accent)}
   .rbtn.xl{color:var(--ok);border-color:rgba(34,197,94,.4)}
-  .hist-cv{position:relative;height:230px}
+  .hist-nav{display:flex;align-items:center;gap:6px;margin:-2px 0 8px}
+  .hist-nav .win{flex:1;text-align:center;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .rbtn:disabled{opacity:.35;cursor:default}
+  .hist-cv{position:relative;height:230px;touch-action:pan-y}
   .hist-msg{color:var(--muted);font-size:12.5px;padding:6px 0}
   .hstats{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
   .hs{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:7px 11px;display:flex;flex-direction:column;gap:1px}
@@ -223,7 +226,9 @@ let DEMO = false;
 let live = {};          // glacieres/{ID}
 let cfg  = {};          // glacieres_config/{ID}
 let spark = {};         // ID -> [{t,v}] dernières SPARK_H heures
-let openId = null, openRange = 24, histData = [], chart = null;
+let openId = null, openRange = 8, openEnd = null, histData = [], chart = null;   // openEnd = null → fenêtre jusqu'à maintenant
+const winEnd = () => openEnd ?? Date.now();
+const winStart = () => winEnd() - openRange*3600e3;
 let UNLOCKED = false;
 const $ = id => document.getElementById(id);
 
@@ -353,11 +358,17 @@ function drawSpark(id){
 
 // ================== Historique ==================
 function histHtml(id){
-  const R=[[24,'24 h'],[168,'7 j'],[720,'30 j']];
+  const R=[[8,'8 h'],[24,'24 h'],[168,'7 j'],[720,'30 j']];
   return `<div class="hist">
     <div class="hist-head"><span class="ht">Historique ${id}</span>
       ${R.map(([h,l])=>`<button class="rbtn ${openRange===h?'on':''}" onclick="setRange(${h})">${l}</button>`).join('')}
       <button class="rbtn xl" onclick="exportXlsx()">⬇ Excel</button>
+    </div>
+    <div class="hist-nav">
+      <button class="rbtn" onclick="shiftWin(-1)" title="Plus ancien">◀ Avant</button>
+      <span class="win" id="histWin">${winLabel()}</span>
+      <button class="rbtn" onclick="shiftWin(1)" ${openEnd===null?'disabled':''} title="Plus récent">Après ▶</button>
+      <button class="rbtn" onclick="shiftWin(0)" ${openEnd===null?'disabled':''}>Maintenant</button>
     </div>
     <div class="hist-cv"><canvas id="histCv"></canvas></div>
     <div class="hist-msg" id="histMsg">Chargement…</div>
@@ -366,30 +377,52 @@ function histHtml(id){
 }
 function toggleHist(id){
   if(chart){ chart.destroy(); chart=null; }
-  openId = openId===id ? null : id; histData=[];
+  openId = openId===id ? null : id; histData=[]; openEnd=null;
   render();
   if(openId){ loadHist(); setTimeout(()=>$('card_'+openId)?.scrollIntoView({behavior:'smooth',block:'start'}),50); }
 }
-function setRange(h){ openRange=h; if(chart){chart.destroy();chart=null;} render(); loadHist(); }
+function setRange(h){ openRange=h; if(openEnd!==null && openEnd-h*3600e3<0) openEnd=null; if(chart){chart.destroy();chart=null;} render(); loadHist(); }
+// Déroule la fenêtre : -1 = avant, +1 = après (pas d'une demi-fenêtre), 0 = revenir à maintenant
+function shiftWin(dir){
+  if(dir===0) openEnd=null;
+  else { const e=winEnd()+dir*openRange*3600e3/2; openEnd = e>=Date.now()-60e3 ? null : e; }
+  if(chart){chart.destroy();chart=null;} histData=[]; render(); loadHist();
+}
+function winLabel(){
+  const a=winStart(), b=winEnd(), f=t=>`${jjmm(t)} ${hhmm(t)}`;
+  return openEnd===null ? `${f(a)} → maintenant` : `${f(a)} → ${f(b)}`;
+}
+// Glisser le doigt / la souris sur la courbe pour dérouler
+let dragX=null;
+function bindDrag(cv){
+  if(cv._drag) return; cv._drag=true;
+  cv.addEventListener('pointerdown',e=>{ dragX=e.clientX; });
+}
+window.addEventListener('pointerup',e=>{
+  if(dragX===null) return; const dx=e.clientX-dragX; dragX=null;
+  if(Math.abs(dx)>60) shiftWin(dx>0?-1:1);
+});
 
-async function fetchHist(id, hours){
-  const start = Date.now()-hours*3600e3;
-  if(DEMO) return demoSeries(id, start, Date.now());
-  const snap = await db.ref('glacieres_history/'+id).orderByKey().startAt(String(Math.floor(start))).once('value');
+async function fetchHist(id, hours, end=Date.now()){
+  const start = end-hours*3600e3;
+  if(DEMO) return demoSeries(id, start, end);
+  const snap = await db.ref('glacieres_history/'+id).orderByKey().startAt(String(Math.floor(start))).endAt(String(Math.floor(end))).once('value');
   const out=[]; snap.forEach(ch=>{ const e=ch.val(); if(e && num(e.v)) out.push({t:e.t||+ch.key, v:e.v}); });
   return out.sort((a,b)=>a.t-b.t);
 }
 async function loadHist(){
   const id=openId; if(!id) return;
   try{
-    const data = await fetchHist(id, openRange);
-    if(id!==openId) return;
+    const end = winEnd();
+    const data = await fetchHist(id, openRange, end);
+    if(id!==openId || end!==winEnd() && openEnd!==null) return;
     histData = data; drawChart();
   }catch(e){ const m=$('histMsg'); if(m) m.textContent='Erreur de lecture : '+e.message; }
 }
 
 function drawChart(){
   const cv=$('histCv'), msg=$('histMsg'); if(!cv) return;
+  bindDrag(cv); const wl=$('histWin'); if(wl) wl.textContent=winLabel();
   const id=openId, c=cfg[id]||{};
   if(!histData.length){ msg.textContent='Aucune mesure sur cette période.'; $('hstats').innerHTML=''; if(chart){chart.destroy();chart=null;} return; }
   // Réduction pour l'affichage (≤ 1500 points, moyenne par paquet)
@@ -412,7 +445,9 @@ function drawChart(){
       title:it=>new Date(it[0].parsed.x).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}),
       label:it=>`${it.dataset.label} : ${f1(it.parsed.y)} °C`}}},
     scales:{
-      x:{type:'linear', min:Date.now()-openRange*3600e3, max:Date.now(), grid:{color:'#262b36'},
+      x:{type:'linear', min:winStart(), max:winEnd(), grid:{color:'#262b36'},
+         afterBuildTicks: ax=>{ if(openRange>24) return; const st=(openRange<=8?1:3)*3600e3, off=new Date().getTimezoneOffset()*60e3;
+           const t=[]; for(let v=Math.ceil((ax.min-off)/st)*st+off; v<=ax.max; v+=st) t.push({value:v}); ax.ticks=t; },
          ticks:{color:'#8b93a3', maxTicksLimit:8, callback:v=> openRange<=24 ? hhmm(v) : jjmm(v)}},
       y:{grid:{color:'#262b36'}, ticks:{color:'#8b93a3', callback:v=>f1(v)+'°'}}
     }}});
@@ -439,7 +474,7 @@ function exportXlsx(){
     rows.push([id, d.toLocaleDateString('fr-FR'), d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}), Math.round(p.v*100)/100, hp]); });
   const ws=XLSX.utils.aoa_to_sheet(rows); ws['!cols']=[{wch:10},{wch:12},{wch:8},{wch:16},{wch:11}];
   const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, id);
-  const lbl=openRange===24?'24h':openRange===168?'7j':'30j';
+  const lbl=(openRange===8?'8h':openRange===24?'24h':openRange===168?'7j':'30j')+(openEnd===null?'':'_jusqu-au_'+new Date(openEnd).toISOString().slice(0,13).replace('T','_')+'h');
   XLSX.writeFile(wb, `Glaciere_${id}_${lbl}_${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 
@@ -454,7 +489,7 @@ function startLive(){
       if(d && num(d.temp) && d.ts && (!p || p.ts!==d.ts)){
         const a=spark[id]||(spark[id]=[]); if(!a.length || a[a.length-1].t<d.ts) a.push({t:d.ts,v:d.temp});
         const cut=Date.now()-SPARK_H*3600e3; while(a.length && a[0].t<cut) a.shift();
-        if(openId===id && histData.length && histData[histData.length-1].t<d.ts) histData.push({t:d.ts,v:d.temp});
+        if(openId===id && openEnd===null && histData.length && histData[histData.length-1].t<d.ts) histData.push({t:d.ts,v:d.temp});
       }});
     render();
   });
@@ -467,7 +502,7 @@ async function loadSparks(){
   render();
 }
 // Rafraîchit les « il y a x min » et les états en ligne
-setInterval(()=>{ if(!document.querySelector('.fld input:focus')) { if(chart && openId){ chart.options.scales.x.min=Date.now()-openRange*3600e3; chart.options.scales.x.max=Date.now(); } render(); } }, 30000);
+setInterval(()=>{ if(!document.querySelector('.fld input:focus')) { if(chart && openId && openEnd===null){ chart.options.scales.x.min=winStart(); chart.options.scales.x.max=winEnd(); } render(); } }, 30000);
 
 // ================== Mode démo ==================
 function demoSeries(id, t0, t1){
