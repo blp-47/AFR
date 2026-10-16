@@ -593,14 +593,14 @@ function calcSilo(distCm, geo){
 // Un LiDAR qui ne reçoit plus d'écho (silo haut vide : TF-Luna au-delà de ~5,8 m sur
 // granulés) renvoie une valeur bidon très courte — VS-D bloqué à 25 cm depuis le 24/08,
 // affiché « 100 % » alors que le silo est vide. Mesure rejetée si :
-//  - distance < geo.dMin (cm) — par défaut 50 cm pour l'aliment : jamais de produit si
-//    près du capteur (une livraison laisse toujours bien plus d'un mètre) ;
+//  - distance <= geo.dMin (cm) — par défaut 25 cm (paille et aliment) : zone morte du
+//    TF-Luna et valeur bidon type VS-D ;
 //  - force du signal envoyée par l'ESP32 < 100 ou saturée (65535), seuils Benewake.
-const D_MIN = { aliment:50, paille:0 };
+const D_MIN = { aliment:25, paille:25 };
 function horsPortee(dist, d, s){
   if (DEMO || dist==null) return false;
   const g = geoDe(s), dMin = g.dMin!==undefined ? g.dMin : (D_MIN[s.type]||0);
-  if (dist < dMin) return true;
+  if (dist <= dMin) return true;
   const f = d && d.force;
   return typeof f==='number' && (f<100 || f===65535);
 }
@@ -745,7 +745,7 @@ function pousseJour(id){
 
 function consoJour(s){
   const g = geoDe(s), dMin = g.dMin!==undefined ? g.dMin : (D_MIN[s.type]||0);
-  const pts = (JOUR[s.id]||[]).filter(e=>e.d>=dMin);   // ignore les lectures hors portée
+  const pts = (JOUR[s.id]||[]).filter(e=>e.d>dMin);   // ignore les lectures hors portée
   if(pts.length<2) return null;
   const tt = pts.map(e=>calcSilo(e.d,g).tonnes);
   let conso = 0;
