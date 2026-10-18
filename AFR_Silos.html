@@ -595,14 +595,12 @@ function calcSilo(distCm, geo){
 // affiché « 100 % » alors que le silo est vide. Mesure rejetée si :
 //  - distance <= geo.dMin (cm) — par défaut 25 cm (paille et aliment) : zone morte du
 //    TF-Luna et valeur bidon type VS-D ;
-//  - force du signal envoyée par l'ESP32 < 100 ou saturée (65535), seuils Benewake.
+//  (plus de rejet sur la force du signal : on affiche la dernière distance connue).
 const D_MIN = { aliment:25, paille:25 };
 function horsPortee(dist, d, s){
   if (DEMO || dist==null) return false;
   const g = geoDe(s), dMin = g.dMin!==undefined ? g.dMin : (D_MIN[s.type]||0);
-  if (dist <= dMin) return true;
-  const f = d && d.force;
-  return typeof f==='number' && (f<100 || f===65535);
+  return dist <= dMin;   // seul cas rejeté : le Luna renvoie 25 cm quand il ne mesure plus
 }
 
 function statut(t, type){
