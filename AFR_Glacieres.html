@@ -9,11 +9,11 @@
 
   Chaque boîtier ESP32-C6 (firmware glaciere_c6.ino) écrit toutes les minutes :
     glacieres/{ID}               = { temp, min, max, batt, vbatt, rssi, ts, err, fw }
-    glacieres_history/{ID}/{ts}  = { t: ts, v: temp }        (ts en ms)
+    glacieres_history/{ID}/{ts}  = { t: ts, v: temp, b: % batt }  (ts en ms ; b absent si secteur)
   Réglages (seuils d'alerte, libellé) écrits par cette page :
     glacieres_config/{ID}        = { libelle, smin, smax, maj }
 
-  IDs suivis : SG1 SG2 SG3 · NT1 NT2 · NV1 NV2
+  IDs suivis : SG1 SG2 SG3A SG3B · NT1 NT2A NT2B · NV · Transport
   Les seuils servent dès maintenant à colorer les cartes ; ils serviront aussi
   de base aux alarmes (notifications) prévues plus tard.
 -->
@@ -207,9 +207,10 @@ const db = firebase.database();
 
 // ================== Paramètres ==================
 const SITES = [
-  { code:'SG', nom:'Sanguinet', ids:['SG1','SG2','SG3'] },
-  { code:'NT', nom:'NT',        ids:['NT1','NT2'] },
-  { code:'NV', nom:'NV',        ids:['NV1','NV2'] },
+  { code:'SG', nom:'Sanguinet', ids:['SG1','SG2','SG3A','SG3B'] },
+  { code:'NT', nom:'NT',        ids:['NT1','NT2A','NT2B'] },
+  { code:'NV', nom:'NV',        ids:['NV'] },
+  { code:'Transport', nom:'Transport', ids:['Transport'] },
 ];
 const ALL_IDS = SITES.flatMap(s=>s.ids);
 const ON_MS   = 5*60*1000;     // < 5 min : en ligne
@@ -407,7 +408,7 @@ async function fetchHist(id, hours, end=Date.now()){
   const start = end-hours*3600e3;
   if(DEMO) return demoSeries(id, start, end);
   const snap = await db.ref('glacieres_history/'+id).orderByKey().startAt(String(Math.floor(start))).endAt(String(Math.floor(end))).once('value');
-  const out=[]; snap.forEach(ch=>{ const e=ch.val(); if(e && num(e.v)) out.push({t:e.t||+ch.key, v:e.v}); });
+  const out=[]; snap.forEach(ch=>{ const e=ch.val(); if(e && num(e.v)) out.push({t:e.t||+ch.key, v:e.v, b:num(e.b)?e.b:null}); });
   return out.sort((a,b)=>a.t-b.t);
 }
 async function loadHist(){
@@ -428,12 +429,15 @@ function drawChart(){
   // Réduction pour l'affichage (≤ 1500 points, moyenne par paquet)
   let pts=histData;
   if(pts.length>1500){ const k=Math.ceil(pts.length/1500), r=[];
-    for(let i=0;i<pts.length;i+=k){ const s=pts.slice(i,i+k); r.push({t:s[Math.floor(s.length/2)].t, v:s.reduce((a,p)=>a+p.v,0)/s.length}); }
+    for(let i=0;i<pts.length;i+=k){ const s=pts.slice(i,i+k); const sb=s.filter(p=>num(p.b)); r.push({t:s[Math.floor(s.length/2)].t, v:s.reduce((a,p)=>a+p.v,0)/s.length, b:sb.length?sb.reduce((a,p)=>a+p.b,0)/sb.length:null}); }
     pts=r; }
   // coupures > 5 min = trou dans la courbe
   const gap=Math.max(5*60e3, (histData.length>1500 ? 3*(pts[pts.length-1].t-pts[0].t)/pts.length : 0));
   const data=[]; pts.forEach((p,i)=>{ if(i && p.t-pts[i-1].t>gap) data.push({x:p.t-1,y:null}); data.push({x:p.t,y:p.v}); });
   const ds=[{label:'Température', data, borderColor:'#38bdf8', backgroundColor:'rgba(56,189,248,.12)', fill:true, borderWidth:1.6, pointRadius:0, tension:.25, spanGaps:false}];
+  const hasB=pts.some(p=>num(p.b));
+  if(hasB){ const bd=[]; pts.forEach((p,i)=>{ if(i && p.t-pts[i-1].t>gap) bd.push({x:p.t-1,y:null}); bd.push({x:p.t,y:num(p.b)?Math.round(p.b):null}); });
+    ds.push({label:'Batterie', data:bd, yAxisID:'yb', borderColor:'rgba(34,197,94,.8)', borderWidth:1.3, pointRadius:0, tension:.2, fill:false, spanGaps:false}); }
   const t0=pts[0].t, t1=pts[pts.length-1].t;
   if(num(c.smax)) ds.push({label:'Seuil haut', data:[{x:t0,y:c.smax},{x:t1,y:c.smax}], borderColor:'rgba(239,68,68,.7)', borderDash:[5,4], borderWidth:1.2, pointRadius:0, fill:false});
   if(num(c.smin)) ds.push({label:'Seuil bas',  data:[{x:t0,y:c.smin},{x:t1,y:c.smin}], borderColor:'rgba(239,68,68,.7)', borderDash:[5,4], borderWidth:1.2, pointRadius:0, fill:false});
@@ -443,13 +447,14 @@ function drawChart(){
     interaction:{mode:'nearest',axis:'x',intersect:false},
     plugins:{legend:{display:false}, tooltip:{callbacks:{
       title:it=>new Date(it[0].parsed.x).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}),
-      label:it=>`${it.dataset.label} : ${f1(it.parsed.y)} °C`}}},
+      label:it=>it.dataset.yAxisID==='yb' ? `Batterie : ${Math.round(it.parsed.y)} %` : `${it.dataset.label} : ${f1(it.parsed.y)} °C`}}},
     scales:{
       x:{type:'linear', min:winStart(), max:winEnd(), grid:{color:'#262b36'},
          afterBuildTicks: ax=>{ if(openRange>24) return; const st=(openRange<=8?1:3)*3600e3, off=new Date().getTimezoneOffset()*60e3;
            const t=[]; for(let v=Math.ceil((ax.min-off)/st)*st+off; v<=ax.max; v+=st) t.push({value:v}); ax.ticks=t; },
          ticks:{color:'#8b93a3', maxTicksLimit:8, callback:v=> openRange<=24 ? hhmm(v) : jjmm(v)}},
-      y:{grid:{color:'#262b36'}, ticks:{color:'#8b93a3', callback:v=>f1(v)+'°'}}
+      y:{grid:{color:'#262b36'}, ticks:{color:'#8b93a3', callback:v=>f1(v)+'°'}},
+      yb:{display:hasB, position:'right', min:0, max:100, grid:{display:false}, ticks:{color:'rgba(34,197,94,.8)', stepSize:25, callback:v=>v+'%'}}
     }}});
   // Statistiques (sur les données brutes)
   const vs=histData.map(p=>p.v), mn=Math.min(...vs), mx=Math.max(...vs), moy=vs.reduce((a,b)=>a+b,0)/vs.length;
@@ -460,19 +465,26 @@ function drawChart(){
     <div class="hs"><span class="v" style="color:#f87171">${f1(mx)} °C</span><span class="l">Max · ${jjmm(tMax)} ${hhmm(tMax)}</span></div>
     <div class="hs"><span class="v">${f1(moy)} °C</span><span class="l">Moyenne</span></div>
     <div class="hs"><span class="v" style="color:${hors?'var(--crit)':'var(--ok)'}">${(num(c.smin)||num(c.smax))?fmtDuree(hors):'—'}</span><span class="l">Hors plage</span></div>
+    ${battStats()}
     <div class="hs"><span class="v">${histData.length.toLocaleString('fr-FR')}</span><span class="l">Mesures</span></div>`;
   msg.textContent = '';
+}
+function battStats(){
+  const b=histData.filter(p=>num(p.b)); if(!b.length) return '';
+  const col=p=>p<=20?'var(--crit)':p<=50?'var(--warn)':'var(--ok)', mn=Math.min(...b.map(p=>p.b)), der=b[b.length-1].b;
+  return `<div class="hs"><span class="v" style="color:${col(der)}">${b[0].b} → ${der} %</span><span class="l">Batterie début → fin</span></div>
+    <div class="hs"><span class="v" style="color:${col(mn)}">${mn} %</span><span class="l">Batterie mini</span></div>`;
 }
 function fmtDuree(min){ if(!min) return '0 min'; const h=Math.floor(min/60), m=min%60; return h?`${h} h ${String(m).padStart(2,'0')}`:`${m} min`; }
 
 function exportXlsx(){
   if(!histData.length){ alert('Aucune donnée à exporter.'); return; }
   const id=openId, c=cfg[id]||{};
-  const rows=[['Glacière','Date','Heure','Température (°C)','Hors plage']];
+  const rows=[['Glacière','Date','Heure','Température (°C)','Hors plage','Batterie (%)']];
   histData.forEach(p=>{ const d=new Date(p.t);
     const hp=(num(c.smin)&&p.v<c.smin)?'BAS':(num(c.smax)&&p.v>c.smax)?'HAUT':'';
-    rows.push([id, d.toLocaleDateString('fr-FR'), d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}), Math.round(p.v*100)/100, hp]); });
-  const ws=XLSX.utils.aoa_to_sheet(rows); ws['!cols']=[{wch:10},{wch:12},{wch:8},{wch:16},{wch:11}];
+    rows.push([id, d.toLocaleDateString('fr-FR'), d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}), Math.round(p.v*100)/100, hp, num(p.b)?Math.round(p.b):'']); });
+  const ws=XLSX.utils.aoa_to_sheet(rows); ws['!cols']=[{wch:10},{wch:12},{wch:8},{wch:16},{wch:11},{wch:12}];
   const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, id);
   const lbl=(openRange===8?'8h':openRange===24?'24h':openRange===168?'7j':'30j')+(openEnd===null?'':'_jusqu-au_'+new Date(openEnd).toISOString().slice(0,13).replace('T','_')+'h');
   XLSX.writeFile(wb, `Glaciere_${id}_${lbl}_${new Date().toISOString().slice(0,10)}.xlsx`);
@@ -489,7 +501,7 @@ function startLive(){
       if(d && num(d.temp) && d.ts && (!p || p.ts!==d.ts)){
         const a=spark[id]||(spark[id]=[]); if(!a.length || a[a.length-1].t<d.ts) a.push({t:d.ts,v:d.temp});
         const cut=Date.now()-SPARK_H*3600e3; while(a.length && a[0].t<cut) a.shift();
-        if(openId===id && openEnd===null && histData.length && histData[histData.length-1].t<d.ts) histData.push({t:d.ts,v:d.temp});
+        if(openId===id && openEnd===null && histData.length && histData[histData.length-1].t<d.ts) histData.push({t:d.ts,v:d.temp,b:num(d.batt)?d.batt:null});
       }});
     render();
   });
@@ -506,11 +518,11 @@ setInterval(()=>{ if(!document.querySelector('.fld input:focus')) { if(chart && 
 
 // ================== Mode démo ==================
 function demoSeries(id, t0, t1){
-  const seed=id.charCodeAt(0)+id.charCodeAt(2)*7, base=3+(seed%4), out=[];
+  const seed=id.charCodeAt(0)+(id.charCodeAt(2)||0)*7, base=3+(seed%4), out=[];
   for(let t=Math.ceil(t0/60e3)*60e3; t<=t1; t+=60e3){
     const k=t/60e3; let v=base+0.9*Math.sin(k/37+seed)+0.35*Math.sin(k/7.3+seed*2)+((k*9301+seed*49297)%233280)/233280*0.2;
-    if(id==='NT2' && (k%1440)>600 && (k%1440)<640) v+=4.5;     // une ouverture de porte prolongée
-    out.push({t, v:Math.round(v*100)/100});
+    if(id==='NT2A' && (k%1440)>600 && (k%1440)<640) v+=4.5;     // une ouverture de porte prolongée
+    out.push({t, v:Math.round(v*100)/100, b:seed%3===0?null:Math.max(5,Math.round(98-((t-t0)/3600e3)*0.9-(seed%5)*4))});
   }
   return out;
 }
@@ -521,7 +533,7 @@ function toggleDemo(){
     live={}; cfg={}; const now=Date.now();
     ALL_IDS.forEach((id,i)=>{ const s=demoSeries(id, now-24*3600e3, now); const vs=s.map(p=>p.v);
       live[id]={temp:s[s.length-1].v, min:Math.min(...vs), max:Math.max(...vs), batt:i%3===0?null:95-i*11, rssi:-55-i*4,
-        ts: id==='NV2'? now-40*60e3 : now-30e3*(i%3), err: id==='SG3'?null:null};
+        ts: id==='NV'? now-40*60e3 : now-30e3*(i%3), err: id==='SG3'?null:null};
       cfg[id]={libelle:'Glacière semence', smin:2, smax:8};
       spark[id]=s.filter(p=>p.t>now-SPARK_H*3600e3); });
     render();
