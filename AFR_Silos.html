@@ -323,17 +323,20 @@ const geoSilo = (diam, vNom, dTop=0.30) => {
 // (l'app ne sait modéliser qu'un cône axial). L'erreur ne porte que sur la forme de la
 // courbe en fond de silo, pas sur le tonnage plein.
 //
-// GT 15 T (SG1-G, SG2-G, SG2-D, NT1-G, NT1-D) : 15 t / 0,68 = 22 m3.
+// GT 15 T (SG1-G, SG2-G, SG2-D) : 15 t / 0,68 = 22 m3.
 //   >>> 22 m3 dépasse le Ø2325 de la gamme GT (12 m3 maxi) : c'est un Ø2700 (GTN).
 //   Résultat : hCone 2.338 m, hCyl 3.063 m, vTot 22,0 m3 = 14,96 t plein,
 //   distance silo vide théorique ≈ 570 cm.
 //   Si la plaque annonce 15 m3 (et non 15 t), remplacer 22 par 15 ci-dessous.
 const GEO_GT15 = geoSilo(2.70, 22);
 
-// GT 8 T (SG3-G, SG3-D, NT2-G, NT2-D) : 8 t / 0,68 = 11,8 m3 -> le 12 m3, plus grand GT Ø2325.
-//   hCone 2.014 m, hCyl 2.155 m, vTot 12,0 m3 = 8,16 t plein,
-//   distance silo vide théorique ≈ 447 cm.
-const GEO_GT8  = geoSilo(2.325, 12);
+// GT 8 T (SG3-G, SG3-D, NT1-G, NT1-D, NT2-G, NT2-D) : 8 t / 0,68 = 11,8 m3 -> le 12 m3, plus grand GT Ø2325.
+//   hCone 2.014 m, hCyl 2.155 m, vTot 12,0 m3 = 8,16 t plein.
+//   CALIBRÉ le 28/10/2026 : SG3-D vide = 468 cm -> dTop = 4,68 - 2,014 - 2,155 = 0,51 m
+//   (boîtiers posés pareil sur les 6 silos GT 8 T).
+//   >>> Écoulement en cheminée : le capteur (au centre) voit le fond du cratère. Constaté
+//       sur NT2 le 28/10 : l'app sous-estime de ~1,5 à 2,5 t quand le silo se vide.
+const GEO_GT8  = geoSilo(2.325, 12, 0.51);
 
 // ============ EQUIPEL 26 m3 (facture FA24A093 du 12/06/24, site Sanguinet) ============
 // « SILO 26m3 Ø2.10m env 15.60T », cône axial, remplaçant un 20 m3 endommagé, avec
@@ -415,12 +418,12 @@ const SILOS = [
   //       Livraison : « Recaler la densité ».
   { id:'ST1-D', nom:'ST1-D', site:'AFR 33 · ST',    couleur:'#14b8a6', type:'aliment', aModifier:true,
     geo:{ ...GEO_STD, densite:DENSITE.aliment } },
-  // NT1-G, NT1-D : mêmes silos que SG2-G / SG2-D -> Rousseau 15 T (GEO_GT15).
+  // NT1-G, NT1-D : vérifié sur site le 28/10/2026 -> Rousseau GT 8 T (GEO_GT8), pas des 15 T.
   // NT2-G, NT2-D : mêmes silos que SG3-G / SG3-D -> Rousseau GT 8 T (GEO_GT8).
   { id:'NT1-G', nom:'NT1-G', site:'AFR 33 · NT',    couleur:'#3b82f6', type:'aliment', aModifier:true,
-    geo:{ ...GEO_GT15 } },
+    geo:{ ...GEO_GT8 } },
   { id:'NT1-D', nom:'NT1-D', site:'AFR 33 · NT',    couleur:'#3b82f6', type:'aliment', aModifier:true,
-    geo:{ ...GEO_GT15 } },
+    geo:{ ...GEO_GT8 } },
   { id:'NT2-G', nom:'NT2-G', site:'AFR 33 · NT',    couleur:'#3b82f6', type:'aliment', aModifier:true,
     geo:{ ...GEO_GT8 } },
   { id:'NT2-D', nom:'NT2-D', site:'AFR 33 · NT',    couleur:'#3b82f6', type:'aliment', aModifier:true,
