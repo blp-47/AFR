@@ -574,6 +574,8 @@ const DEFAUT = {
     labSalMail:"filiavet.bressuire@reseaucristal.fr", labSalTel:"05 49 82 07 40",
     labIaNom:"LABOVET CONSEIL", labIaAdr:"22 rue Olivier de Serres\n85500 LES HERBIERS",
     labIaMail:"secretariatlabo.lesherbiers@labovet.fr", labIaTel:"02.51.91.29.05",
+    labLdaNom:"LDA 22 — Laboratoire de Développement et d'Analyses des Côtes d'Armor",
+    labLdaAdr:"Zoopôle — 3 rue du Sabot\n22440 PLOUFRAGAN", labLdaMail:"", labLdaTel:"02 96 01 37 22",
     proprio:"ORVIA Couvoir Sèvre-Maine", proprioAdr:"17 rue Petite Roche - Le Peux", proprioCp:"79140 LE PIN",
     techOrvia:"Éric BOUDAUD", mailOrvia:"eric.boudaud@orvia.fr",
     techAfr:"Mostafa Rhouass", preleveur:"Mostafa RHOUASS",
@@ -904,7 +906,11 @@ function openSaisie(type, key, date, editId){
    </div>
    <h3>Bâtiments concernés — ${p.nomCible}</h3>
    <div class="chips" id="s_bats">${D.lots.filter(l=>l.actif).map(l=>
-      `<span class="chip ${p.batiments.includes(l.id)?"on":""}" data-id="${l.id}" onclick="this.classList.toggle('on')">${l.id}</span>`).join("")}</div>
+      `<span class="chip ${p.batiments.includes(l.id)?"on":""}" data-id="${l.id}" onclick="this.classList.toggle('on')">${l.id}</span>`).join("")}${(()=>{
+      const autres=p.batiments.filter(id=>!D.lots.some(l=>l.actif&&l.id===id));
+      return `<span class="chip ${autres.length?"on":""}" id="s_autreChip" onclick="toggleAutre('s',this)">Autre…</span></div>
+   <div class="f" id="s_autreBox" style="${autres.length?"":"display:none;"}margin-top:8px;max-width:420px"><label>Autre bâtiment <span class="mini">(plusieurs : séparer par une virgule)</span></label>
+      <input id="s_autre" value="${autres.join(", ").replace(/"/g,"&quot;")}" placeholder="Nom du bâtiment"></div>`})()}
    <h3>Nature et quantités</h3>
    <div id="s_nat">${nat.map((n,i)=>{
       const ex=p.natures.find(x=>x.n===n);
@@ -919,8 +925,9 @@ function openSaisie(type, key, date, editId){
    </div>
    ${man?`<div class="grid2" style="margin-top:10px">
      <div class="f"><label>Laboratoire</label><select id="s_labo">
-       <option value="FILIAVET" ${p.labo!=="LABOVET"?"selected":""}>FILIAVET — salmonelles, autopsie, bactériologie</option>
-       <option value="LABOVET" ${p.labo==="LABOVET"?"selected":""}>LABOVET CONSEIL — influenza aviaire</option></select></div>
+       <option value="FILIAVET" ${p.labo!=="LABOVET"&&p.labo!=="LDA22"?"selected":""}>FILIAVET — salmonelles, autopsie, bactériologie</option>
+       <option value="LABOVET" ${p.labo==="LABOVET"?"selected":""}>LABOVET CONSEIL — influenza aviaire</option>
+       <option value="LDA22" ${p.labo==="LDA22"?"selected":""}>LDA 22 — Ploufragan (Côtes d'Armor)</option></select></div>
      <div class="f"><label>Motif de la demande</label><input id="s_motif" value="${p.motif||""}"></div>
    </div>
    <h3>Examens demandés</h3>
@@ -960,7 +967,8 @@ function saveSaisie(id, edit){
     delete p.examenSalmo;
     p.desinfectant=document.getElementById("s_desinf").checked;
   }
-  p.batiments=[...document.querySelectorAll("#s_bats .chip.on")].map(c=>c.dataset.id);
+  p.batiments=[...document.querySelectorAll("#s_bats .chip.on[data-id]")].map(c=>c.dataset.id);
+  batsAutres("s").forEach(b=>{ if(!p.batiments.includes(b)) p.batiments.push(b); });
   p.natures=[...document.querySelectorAll("#s_nat input[type=checkbox]:checked")].map(cb=>({
     n:cb.dataset.n, q:+document.querySelector(`#s_nat input[data-q="${cb.dataset.n}"]`).value||0}));
   p.nbEchantillons=p.natures.reduce((s,n)=>s+n.q,0);
@@ -1097,7 +1105,7 @@ function bordSalmo(p){
 
 /* ---------- Influenza aviaire — LABOVET ---------- */
 function bordIA(p){
-  const C=D.contacts, cs=cols(p,3), s=site(lot(p.batiments[0]).site);
+  const C=D.contacts, cs=cols(p,3), s=site(lot0(p).site);
   const ch=n=>p.natures.some(v=>v.n===n)?"☒":"☐";
   const q=n=>{const x=p.natures.find(v=>v.n===n); return x?x.q:0;};
   const pul=p.type==="PULLO";
@@ -1254,7 +1262,7 @@ function bordSeroIA(p){
 
 /* ---------- Bordereau manuel (commémoratif FILIAVET) ---------- */
 function bordManuel(p){
-  const C=D.contacts, l=lot(p.batiments[0]), s=site(l.site);
+  const C=D.contacts, l=lot0(p), s=site(l.site), LB=labInfo(p.labo);
   const ex=e=>p.examens&&p.examens.includes(e);
   const nat=["Chiffonnettes","Pédi-chiffonnettes","Fonds de boîte","Sujets","Prises de sang"];
   return `<div class="sheet">
@@ -1262,8 +1270,8 @@ function bordManuel(p){
     <td class="b" style="text-align:right">Bordereau N° <span class="rouge">${p.bordereau||""}</span></td></tr></table>
   <table class="box" style="margin-top:4px">
     <colgroup><col style="width:22%"><col style="width:78%"></colgroup>
-    <tr><td class="c b">Laboratoire</td><td class="b">${C.labSalNom} — ${nl(C.labSalAdr).replace("<br>"," — ")}<br>
-      ${C.labSalMail} &nbsp;&nbsp; Tél. : ${C.labSalTel}</td></tr>
+    <tr><td class="c b">Laboratoire</td><td class="b">${LB.nom} — ${nl(LB.adr).replace(/<br>/g," — ")}<br>
+      ${LB.mail||""} &nbsp;&nbsp; Tél. : ${LB.tel||""}</td></tr>
   </table>
   <table class="box" style="margin-top:5px">
     <colgroup><col style="width:14%"><col style="width:36%"><col style="width:16%"><col style="width:34%"></colgroup>
@@ -1358,7 +1366,8 @@ function renderManuel(){
       <div class="f"><label>Date de prélèvement</label><input type="date" id="m_date" value="${d}" onchange="majNumBord('m')"></div>
       <div class="f"><label>Laboratoire</label><select id="m_labo">
         <option value="FILIAVET">FILIAVET — salmonelles, autopsie, bactériologie</option>
-        <option value="LABOVET">LABOVET CONSEIL — influenza aviaire</option></select></div>
+        <option value="LABOVET">LABOVET CONSEIL — influenza aviaire</option>
+        <option value="LDA22">LDA 22 — Ploufragan (Côtes d'Armor)</option></select></div>
       <div class="f"><label>Bordereau n° <span class="mini">(auto)</span></label>
         <div class="row" style="gap:6px;flex-wrap:nowrap">
           <input id="m_bord" value="${numBordereau(d)}" oninput="this.dataset.manuel='1'">
@@ -1370,7 +1379,10 @@ function renderManuel(){
     </div>
     <h3>Bâtiments concernés</h3>
     <div class="chips" id="m_bats">${D.lots.filter(l=>l.actif).map(l=>
-      `<span class="chip" data-id="${l.id}" onclick="this.classList.toggle('on')">${l.id} <span class="mini">${l.bat||""}</span></span>`).join("")}</div>
+      `<span class="chip" data-id="${l.id}" onclick="this.classList.toggle('on')">${l.id} <span class="mini">${l.bat||""}</span></span>`).join("")}
+      <span class="chip" id="m_autreChip" onclick="toggleAutre('m',this)">Autre…</span></div>
+    <div class="f" id="m_autreBox" style="display:none;margin-top:8px;max-width:420px"><label>Autre bâtiment <span class="mini">(plusieurs : séparer par une virgule)</span></label>
+      <input id="m_autre" placeholder="Nom du bâtiment"></div>
     <h3>Nature et quantités</h3>
     <div class="grid3" id="m_nat">${NATURES.MANUEL.map(n=>
       `<div class="row" style="gap:8px;align-items:center">
@@ -1407,8 +1419,30 @@ function renderManuel(){
 function resetManuel(){
   const f=document.getElementById("formManuel"); f.dataset.pret=""; renderManuel();
 }
+/* Bâtiment « Autre » saisi à la main (formulaire manuel 'm' ou modale 's') */
+function toggleAutre(pfx, chip){
+  chip.classList.toggle("on");
+  const on=chip.classList.contains("on");
+  document.getElementById(pfx+"_autreBox").style.display=on?"":"none";
+  if(on) document.getElementById(pfx+"_autre").focus();
+}
+function batsAutres(pfx){
+  const chip=document.getElementById(pfx+"_autreChip");
+  if(!chip || !chip.classList.contains("on")) return [];
+  return document.getElementById(pfx+"_autre").value.split(",").map(s=>s.trim()).filter(Boolean);
+}
+/* 1er bâtiment connu (pour site / lot) — les bâtiments « Autre » n'ont pas de fiche */
+function lot0(p){ return lot(p.batiments.find(id=>D.lots.some(x=>x.id===id))||p.batiments[0]); }
+function labInfo(code){
+  const C=D.contacts;
+  return code==="LDA22" ? {nom:C.labLdaNom, adr:C.labLdaAdr, mail:C.labLdaMail, tel:C.labLdaTel}
+                        : {nom:C.labSalNom, adr:C.labSalAdr, mail:C.labSalMail, tel:C.labSalTel};
+}
 function creerManuel(){
-  const bats=[...document.querySelectorAll("#m_bats .chip.on")].map(c=>c.dataset.id);
+  const bats=[...document.querySelectorAll("#m_bats .chip.on[data-id]")].map(c=>c.dataset.id);
+  batsAutres("m").forEach(b=>{ if(!bats.includes(b)) bats.push(b); });
+  if(document.getElementById("m_autreChip").classList.contains("on") && !batsAutres("m").length){
+    alert("Saisissez le nom du bâtiment « Autre »."); return; }
   if(!bats.length){ alert("Sélectionnez au moins un bâtiment."); return; }
   const natures=[...document.querySelectorAll("#m_nat input[type=checkbox]:checked")].map(cb=>({
     n:cb.dataset.n, q:+document.querySelector(`#m_nat input[data-q="${cb.dataset.n}"]`).value||0}));
@@ -1552,6 +1586,7 @@ const LIB_CONTACTS={
   labSalNom:"Laboratoire Salmonelle", labSalAdr:"Adresse laboratoire Salmonelle", labSalMail:"E-mail laboratoire", labSalTel:"Tél. laboratoire",
   labIaNom:"Laboratoire Influenza", labIaAdr:"Adresse laboratoire Influenza",
   labIaMail:"E-mail laboratoire Influenza", labIaTel:"Tél. laboratoire Influenza",
+  labLdaNom:"Laboratoire LDA 22", labLdaAdr:"Adresse LDA 22", labLdaMail:"E-mail LDA 22", labLdaTel:"Tél. LDA 22",
   proprio:"Propriétaire des oiseaux", proprioAdr:"Adresse propriétaire", proprioCp:"CP / ville propriétaire",
   techOrvia:"Technicien ORVIA", mailOrvia:"E-mail technicien ORVIA",
   techAfr:"Technicien AFR", preleveur:"Préleveur par défaut",
@@ -1569,7 +1604,7 @@ const LIB_CONTACTS={
 function renderContacts(){
   const h=Object.keys(LIB_CONTACTS).map(k=>{
     const v=D.contacts[k]||"";
-    const multi=v.includes("\n")||k==="mailsEleveur"||k==="transEleveur"||k==="labSalAdr";
+    const multi=v.includes("\n")||k==="mailsEleveur"||k==="transEleveur"||k==="labSalAdr"||k==="labLdaAdr";
     return `<div class="f"><label>${LIB_CONTACTS[k]}</label>${
       k==="examenSalmo"?`<select onchange="majContact('${k}',this.value)">${EXAMENS_SALMO.map(e=>
         `<option ${v===e?"selected":""}>${e}</option>`).join("")}</select>`:
