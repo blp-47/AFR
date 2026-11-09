@@ -1137,6 +1137,8 @@ function bordIA(p){
         ${cs.map(c=>`<td class="c b">${c?c+"<br>("+(lot(c).bat||"")+")":""}</td>`).join("")}<td></td></tr>
     <tr><td>DATE MEP</td><td colspan="2"></td>${cs.map(c=>`<td class="c">${c?fr(lot(c).mep):""}</td>`).join("")}<td></td></tr>
     <tr><td>NUMÉRO DE LOT</td><td colspan="2"></td>${cs.map(c=>`<td class="c">${c?lot(c).lot||"":""}</td>`).join("")}<td></td></tr>
+    <tr><td>ÂGE (SEMAINES)</td><td colspan="2" class="cy"></td>${cs.map(c=>{const g=c?ageSem(lot(c).naissance,s2d(p.date)):null;
+        return `<td class="c b cy">${g===null?"":g}</td>`;}).join("")}<td class="cy"></td></tr>
     <tr><td>TECHNICIEN</td><td colspan="6">ORVIA &nbsp;&nbsp; ${C.techOrvia}<br>AFR &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${p.technicien||C.techAfr}
         &nbsp;&nbsp;&nbsp;&nbsp; Préleveur : ${p.preleveur||""}</td></tr>
     <tr><td>FACTURATION</td><td colspan="6">${C.factIa}</td></tr>
