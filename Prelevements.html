@@ -583,7 +583,7 @@ const DEFAUT = {
     mailsEleveur:"benoit.le.pottier@afr33.fr\njerome.le.pottier@afr33.fr",
     mailDdpp:"julie.grabot@gironde.gouv.fr",
     factSalmo:"ORVIA Couvoir Sèvre Maine", factIa:"Couvoir ORVIA Sèvre Maine SAS",
-    groupement:"ORVIA Sèvre Maine", transGrpt:"Sophie BODIN, René PLENEL",
+    groupement:"ORVIA Sèvre Maine", transGrpt:"Sophie BODIN, René PLENEL", mailsGrpt:"",
     transEleveur:"Benoît LE POTTIER\nJérôme LE POTTIER",
     typeControle:"Autocontrôle", typeElevage:"Selection- Multiplication",
     examenSalmo:"Typage complet", production:"Reproducteur",
@@ -1003,6 +1003,14 @@ function voirBordereau(id){
 }
 function cols(p,n){ const c=p.batiments.slice(0,n); while(c.length<n) c.push(null); return c; }
 function nl(s){ return (s||"").replace(/\n/g,"<br>"); }
+// Associe chaque nom à son e-mail (même rang), séparateurs : retour ligne, virgule ou point-virgule
+function avecMail(noms, mails){
+  const sp=x=>(x||"").split(/[\n,;]+/).map(t=>t.trim()).filter(Boolean);
+  const n=sp(noms), m=sp(mails), out=[];
+  for(let i=0;i<Math.max(n.length,m.length);i++)
+    out.push((n[i]||"")+(m[i]?` <span class="bleu">(${m[i]})</span>`:""));
+  return out.join(", ");
+}
 function ageBord(p){
   const ages=p.batiments.map(id=>ageSem(lot(id).naissance,s2d(p.date))).filter(a=>a!==null);
   return ages.length?Math.max(...ages):"";
@@ -1133,9 +1141,10 @@ function bordIA(p){
         &nbsp;&nbsp;&nbsp;&nbsp; Préleveur : ${p.preleveur||""}</td></tr>
     <tr><td>FACTURATION</td><td colspan="6">${C.factIa}</td></tr>
     <tr><td>GROUPEMENT</td><td colspan="6">${C.groupement}</td></tr>
-    <tr><td>TRANSMISSION</td><td colspan="6">Technicien &nbsp;&nbsp; ${C.techOrvia} &nbsp;&nbsp;&nbsp;&nbsp; ${nl(C.transEleveur)}<br>
-        Grpt &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${C.transGrpt}<br>
-        Véto &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${C.veto}</td></tr>
+    <tr><td>TRANSMISSION</td><td colspan="6">Technicien &nbsp;&nbsp; ${avecMail(C.techOrvia,C.mailOrvia)}<br>
+        Éleveur &nbsp;&nbsp;&nbsp;&nbsp; ${avecMail(C.transEleveur,C.mailsEleveur)}<br>
+        Grpt &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${avecMail(C.transGrpt,C.mailsGrpt)}<br>
+        Véto &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${avecMail(C.veto,C.mailVeto)}</td></tr>
     <tr><td>DATE DE PRÉLÈVEMENT</td><td colspan="6" class="b cy">${fr(p.date)}</td></tr>
   </table>
   <table class="nb" style="margin-top:5px"><tr>
@@ -1593,7 +1602,7 @@ const LIB_CONTACTS={
   veto:"Vétérinaire sanitaire", mailVeto:"E-mail vétérinaire",
   mailsEleveur:"E-mails éleveur (1 par ligne)", mailDdpp:"E-mail DDPP",
   factSalmo:"Facturation Salmonelle", factIa:"Facturation Influenza",
-  groupement:"Groupement", transGrpt:"Transmission groupement", transEleveur:"Transmission éleveur (1 par ligne)",
+  groupement:"Groupement", transGrpt:"Transmission groupement", mailsGrpt:"E-mails groupement (même ordre que les noms, 1 par ligne)", transEleveur:"Transmission éleveur (1 par ligne)",
   typeControle:"Type de contrôle", typeElevage:"Type d'élevage", examenSalmo:"Examen demandé (Salmonelle)", production:"Production",
   examenPullo:"Examen demandé (sérologie Pullorum — LABOVET)",
   seroLabo:"Sérologie IA — laboratoire d'envoi", seroGroupement:"Sérologie IA — groupement (préleveur)",
@@ -1604,7 +1613,7 @@ const LIB_CONTACTS={
 function renderContacts(){
   const h=Object.keys(LIB_CONTACTS).map(k=>{
     const v=D.contacts[k]||"";
-    const multi=v.includes("\n")||k==="mailsEleveur"||k==="transEleveur"||k==="labSalAdr"||k==="labLdaAdr";
+    const multi=v.includes("\n")||k==="mailsEleveur"||k==="transEleveur"||k==="mailsGrpt"||k==="labSalAdr"||k==="labLdaAdr";
     return `<div class="f"><label>${LIB_CONTACTS[k]}</label>${
       k==="examenSalmo"?`<select onchange="majContact('${k}',this.value)">${EXAMENS_SALMO.map(e=>
         `<option ${v===e?"selected":""}>${e}</option>`).join("")}</select>`:
