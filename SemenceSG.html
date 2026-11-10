@@ -563,17 +563,17 @@ try {
 // -------- Constantes --------
 const ALLEES   = ['A','B','C','D','E','F','G','H','I','J','K','L'];
 // Rangées contenant les mâles actuellement en service (prélevés le matin).
-// G à L sont EN SERVICE : incluses dans les calculs globaux, les bilans,
-// les exports et les priorités du matin.
-// A est un LOT DE MUE : les cages contiennent des mâles, mais ils ne sont pas
-// prélevés pour l'instant. L'allée reste consultable et saisissable, mais elle
-// est exclue des calculs globaux, des bilans, des exports et des priorités.
-// B à F sont déclarées sans mâles (hors calcul).
-// Pour remettre A en service : la déplacer de ALLEES_EN_MUE vers
+// A à E et G à L sont EN SERVICE : incluses dans les calculs globaux, les
+// bilans, les exports et les priorités du matin.
+// F est un LOT DE MUE (déplacé de A vers F le 10/11/2026) : les cages
+// contiennent des mâles, mais ils ne sont pas prélevés pour l'instant.
+// L'allée reste consultable et saisissable, mais elle est exclue des calculs
+// globaux, des bilans, des exports et des priorités.
+// Pour remettre F en service : la déplacer de ALLEES_EN_MUE vers
 // ALLEES_AVEC_MALES (le reste du code suit automatiquement).
-const ALLEES_AVEC_MALES = ['G','H','I','J','K','L'];
-const ALLEES_EN_MUE     = ['A'];
-const ALLEES_SANS_MALES = ['B','C','D','E','F'];
+const ALLEES_AVEC_MALES = ['A','B','C','D','E','G','H','I','J','K','L'];
+const ALLEES_EN_MUE     = ['F'];
+const ALLEES_SANS_MALES = [];
 const ALLEES_CALCUL_GLOBAL = ALLEES_AVEC_MALES;
 const ALLEES_ACTIVES = ALLEES_AVEC_MALES;
 function compteGlobal(allee) { return ALLEES_CALCUL_GLOBAL.includes(allee); }
