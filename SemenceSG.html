@@ -563,21 +563,27 @@ try {
 // -------- Constantes --------
 const ALLEES   = ['A','B','C','D','E','F','G','H','I','J','K','L'];
 // Rangées contenant les mâles actuellement en service (prélevés le matin).
-// A à E et G à L sont EN SERVICE : incluses dans les calculs globaux, les
-// bilans, les exports et les priorités du matin.
+// G à L sont EN SERVICE : incluses dans les calculs globaux, les bilans,
+// les exports et les priorités du matin.
+// A à E : mâles arrivés le 10/11/2026 mais PAS ENCORE PRÉLEVÉS. Allées
+// consultables et saisissables, exclues des calculs et des priorités.
+// Pour les mettre en service : les déplacer de ALLEES_NON_PRELEVEES vers
+// ALLEES_AVEC_MALES.
 // F est un LOT DE MUE (déplacé de A vers F le 10/11/2026) : les cages
 // contiennent des mâles, mais ils ne sont pas prélevés pour l'instant.
 // L'allée reste consultable et saisissable, mais elle est exclue des calculs
 // globaux, des bilans, des exports et des priorités.
 // Pour remettre F en service : la déplacer de ALLEES_EN_MUE vers
 // ALLEES_AVEC_MALES (le reste du code suit automatiquement).
-const ALLEES_AVEC_MALES = ['A','B','C','D','E','G','H','I','J','K','L'];
+const ALLEES_AVEC_MALES = ['G','H','I','J','K','L'];
+const ALLEES_NON_PRELEVEES = ['A','B','C','D','E'];
 const ALLEES_EN_MUE     = ['F'];
 const ALLEES_SANS_MALES = [];
 const ALLEES_CALCUL_GLOBAL = ALLEES_AVEC_MALES;
 const ALLEES_ACTIVES = ALLEES_AVEC_MALES;
 function compteGlobal(allee) { return ALLEES_CALCUL_GLOBAL.includes(allee); }
 function estEnMue(allee) { return ALLEES_EN_MUE.includes(allee); }
+function estNonPrelevee(allee) { return ALLEES_NON_PRELEVEES.includes(allee); }
 const NB_CAGES = 72;
 const FEMELLES = new Set([1, 20, 39, 58]);
 const NB_MALES = NB_CAGES - FEMELLES.size;
@@ -784,7 +790,7 @@ function getPrioClass(rank, isActive, allee) {
 }
 
 function getPrioLabel(allee, isActive) {
-  if (!isActive) return estEnMue(allee) ? 'MUE' : 'HORS';
+  if (!isActive) return estEnMue(allee) ? 'MUE' : (estNonPrelevee(allee) ? 'NON PRÉL.' : 'HORS');
   const s = priorityScores[allee];
   if (!s) return '?';
   if (s.daysWithData === 0) return 'PRIO';
@@ -1246,6 +1252,10 @@ function renderMain() {
     <div class="prio-banner" style="background:#1f1830;border-color:#5a3a8a">
       <span class="prio-banner-title" style="color:#c084fc">🪶 Lot de mue — en attente</span>
       <span class="prio-banner-info" style="color:#b9a0d8">L'allée ${currentAllee} contient des mâles, mais ils ne sont pas prélevés pendant la mue. La saisie reste possible ; l'allée est exclue du taux d'utilisation global, des bilans, des exports et des priorités du matin.</span>
+    </div>` : estNonPrelevee(currentAllee) ? `
+    <div class="prio-banner" style="background:#1a1a2e;border-color:#3a3a5a">
+      <span class="prio-banner-title" style="color:#a0a0c0">⏸️ Pas encore prélevée</span>
+      <span class="prio-banner-info" style="color:#a0a0c0">L'allée ${currentAllee} contient des mâles qui ne sont pas encore prélevés. La saisie reste possible ; l'allée est exclue du taux d'utilisation global, des bilans, des exports et des priorités du matin.</span>
     </div>` : `
     <div class="prio-banner" style="background:#1a1a2e;border-color:#3a3a5a">
       <span class="prio-banner-title" style="color:#a0a0c0">ℹ️ Hors calcul</span>
