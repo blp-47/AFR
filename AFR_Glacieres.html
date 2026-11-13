@@ -14,6 +14,7 @@
     glacieres_config/{ID}        = { libelle, smin, smax, maj }
 
   IDs suivis : SG1 SG2 SG3A SG3B · NT1 NT2A NT2B · NV · Transport
+  Congélateurs (même firmware, ID à flasher) : CONG_SG · CONG_NT · CONG_NV
   Les seuils servent dès maintenant à colorer les cartes ; ils serviront aussi
   de base aux alarmes (notifications) prévues plus tard.
 -->
@@ -60,6 +61,10 @@
   .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;
     position:relative;overflow:hidden;display:flex;flex-direction:column;gap:10px}
   .card.open{grid-column:1/-1}
+  /* Congélateurs : carte violette, bordure pointillée, flocon */
+  .card.cong{background:linear-gradient(160deg,rgba(139,92,246,.16),var(--surface) 55%);
+    border:1.5px dashed rgba(167,139,250,.65)}
+  .card.cong .g-name{color:#c4b5fd}
   .card .accent{position:absolute;left:0;top:0;bottom:0;width:3px}
   .row1{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
   .g-name{font-family:'Syne',sans-serif;font-weight:700;font-size:19px}
@@ -207,12 +212,14 @@ const db = firebase.database();
 
 // ================== Paramètres ==================
 const SITES = [
-  { code:'SG', nom:'Sanguinet', ids:['SG1','SG2','SG3A','SG3B'] },
-  { code:'NT', nom:'NT',        ids:['NT1','NT2A','NT2B'] },
-  { code:'NV', nom:'NV',        ids:['NV'] },
+  { code:'SG', nom:'Sanguinet', ids:['SG1','SG2','SG3A','SG3B','CONG_SG'] },
+  { code:'NT', nom:'NT',        ids:['NT1','NT2A','NT2B','CONG_NT'] },
+  { code:'NV', nom:'NV',        ids:['NV','CONG_NV'] },
   { code:'Transport', nom:'Transport', ids:['Transport'] },
 ];
 const ALL_IDS = SITES.flatMap(s=>s.ids);
+const isCong = id => id.startsWith('CONG_');
+const nomG  = id => isCong(id) ? 'Congélateur '+id.slice(5) : id;   // CONG_NV → « Congélateur NV »
 const ON_MS   = 5*60*1000;     // < 5 min : en ligne
 const LATE_MS = 15*60*1000;    // 5-15 min : en retard ; au-delà : hors ligne
 const SPARK_H = 6;             // heures affichées dans la mini-courbe
@@ -284,10 +291,10 @@ function render(){
         : hp==='bas'  ? `<div class="alert-txt" style="color:var(--crit)">▼ Trop froid</div>` : '';
       const open = openId===id;
       return `
-      <div class="card ${open?'open':''}" id="card_${id}">
+      <div class="card ${open?'open':''} ${isCong(id)?'cong':''}" id="card_${id}">
         <span class="accent" style="background:${accent}"></span>
         <div class="row1">
-          <span class="g-name">${id}</span>
+          <span class="g-name">${isCong(id)?'❄ ':''}${nomG(id)}</span>
           ${c.libelle?`<span class="g-lib">${esc(c.libelle)}</span>`:''}
           <span class="conn ${cs.cls}"><span class="cdot"></span>${cs.txt}</span>
         </div>
@@ -361,7 +368,7 @@ function drawSpark(id){
 function histHtml(id){
   const R=[[8,'8 h'],[24,'24 h'],[168,'7 j'],[720,'30 j']];
   return `<div class="hist">
-    <div class="hist-head"><span class="ht">Historique ${id}</span>
+    <div class="hist-head"><span class="ht">Historique ${nomG(id)}</span>
       ${R.map(([h,l])=>`<button class="rbtn ${openRange===h?'on':''}" onclick="setRange(${h})">${l}</button>`).join('')}
       <button class="rbtn xl" onclick="exportXlsx()">⬇ Excel</button>
     </div>
@@ -483,11 +490,11 @@ function exportXlsx(){
   const rows=[['Glacière','Date','Heure','Température (°C)','Hors plage','Batterie (%)']];
   histData.forEach(p=>{ const d=new Date(p.t);
     const hp=(num(c.smin)&&p.v<c.smin)?'BAS':(num(c.smax)&&p.v>c.smax)?'HAUT':'';
-    rows.push([id, d.toLocaleDateString('fr-FR'), d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}), Math.round(p.v*100)/100, hp, num(p.b)?Math.round(p.b):'']); });
+    rows.push([nomG(id), d.toLocaleDateString('fr-FR'), d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}), Math.round(p.v*100)/100, hp, num(p.b)?Math.round(p.b):'']); });
   const ws=XLSX.utils.aoa_to_sheet(rows); ws['!cols']=[{wch:10},{wch:12},{wch:8},{wch:16},{wch:11},{wch:12}];
-  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, id);
+  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, nomG(id));
   const lbl=(openRange===8?'8h':openRange===24?'24h':openRange===168?'7j':'30j')+(openEnd===null?'':'_jusqu-au_'+new Date(openEnd).toISOString().slice(0,13).replace('T','_')+'h');
-  XLSX.writeFile(wb, `Glaciere_${id}_${lbl}_${new Date().toISOString().slice(0,10)}.xlsx`);
+  XLSX.writeFile(wb, `${isCong(id)?'Congelateur_'+id.slice(5):'Glaciere_'+id}_${lbl}_${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 
 // ================== Firebase : temps réel ==================
@@ -518,7 +525,7 @@ setInterval(()=>{ if(!document.querySelector('.fld input:focus')) { if(chart && 
 
 // ================== Mode démo ==================
 function demoSeries(id, t0, t1){
-  const seed=id.charCodeAt(0)+(id.charCodeAt(2)||0)*7, base=3+(seed%4), out=[];
+  const seed=id.charCodeAt(0)+(id.charCodeAt(2)||0)*7+(id.charCodeAt(5)||0), base=isCong(id)?-19-(seed%3):3+(seed%4), out=[];
   for(let t=Math.ceil(t0/60e3)*60e3; t<=t1; t+=60e3){
     const k=t/60e3; let v=base+0.9*Math.sin(k/37+seed)+0.35*Math.sin(k/7.3+seed*2)+((k*9301+seed*49297)%233280)/233280*0.2;
     if(id==='NT2A' && (k%1440)>600 && (k%1440)<640) v+=4.5;     // une ouverture de porte prolongée
@@ -534,7 +541,7 @@ function toggleDemo(){
     ALL_IDS.forEach((id,i)=>{ const s=demoSeries(id, now-24*3600e3, now); const vs=s.map(p=>p.v);
       live[id]={temp:s[s.length-1].v, min:Math.min(...vs), max:Math.max(...vs), batt:i%3===0?null:95-i*11, rssi:-55-i*4,
         ts: id==='NV'? now-40*60e3 : now-30e3*(i%3), err: id==='SG3'?null:null};
-      cfg[id]={libelle:'Glacière semence', smin:2, smax:8};
+      cfg[id]=isCong(id)?{libelle:'Congélateur', smin:-25, smax:-15}:{libelle:'Glacière semence', smin:2, smax:8};
       spark[id]=s.filter(p=>p.t>now-SPARK_H*3600e3); });
     render();
   } else { live={}; cfg={}; spark={}; unsub.forEach(f=>f()); startLive(); }
@@ -562,7 +569,7 @@ function cfgForm(keepMsgs){
   if(keepMsgs && document.activeElement && document.activeElement.closest && document.activeElement.closest('#cfgBody')) return;
   const rows = ALL_IDS.map(id=>{ const c=cfg[id]||{}, d=live[id];
     return `<div class="cfg-row">
-      <div class="cfg-top"><span class="cfg-name">${id}</span><span class="cfg-cur">actuel ${f1(d&&d.temp)} °C · ${depuis(d&&d.ts)}</span></div>
+      <div class="cfg-top"><span class="cfg-name">${isCong(id)?'❄ ':''}${nomG(id)}</span><span class="cfg-cur">actuel ${f1(d&&d.temp)} °C · ${depuis(d&&d.ts)}</span></div>
       <div class="cfg-grid">
         <div class="fld"><label>Libellé</label><input id="lib_${id}" value="${esc(c.libelle||'')}" placeholder="ex. Glacière semence"></div>
         <div class="fld"><label>Seuil bas °C</label><input id="smin_${id}" inputmode="decimal" value="${num(c.smin)?String(c.smin).replace('.',','):''}" placeholder="—"></div>
@@ -580,7 +587,7 @@ function cfgForm(keepMsgs){
       <button class="btn danger" onclick="purge()">Supprimer les mesures plus anciennes</button>
     </div>
     <div class="purge" style="margin-top:10px">
-      <div class="fld"><label>Glacière</label><select id="purgeId"><option value="">Toutes</option>${ALL_IDS.map(i=>`<option>${i}</option>`).join('')}</select></div>
+      <div class="fld"><label>Glacière</label><select id="purgeId"><option value="">Toutes</option>${ALL_IDS.map(i=>`<option value="${i}">${nomG(i)}</option>`).join('')}</select></div>
       <div class="fld" style="width:200px"><label>Supprimer avant le</label><input id="purgeAvant" type="datetime-local"></div>
       <button class="btn danger" onclick="purgeAvant()">Supprimer avant cette date</button>
     </div>
@@ -619,7 +626,7 @@ async function purgeAvant(){
   const cut=new Date(v).getTime()-1;   // heure locale ; la mesure pile à l'heure choisie est conservée
   if(!(cut<Date.now())){ m.className='cfg-msg ko'; m.textContent='La date doit être dans le passé.'; return; }
   const ids=id?[id]:ALL_IDS, quand=new Date(cut+1).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
-  if(!confirm(`Supprimer définitivement toutes les mesures d'avant le ${quand} pour ${id?id:'les '+ALL_IDS.length+' glacières'} ?`)) return;
+  if(!confirm(`Supprimer définitivement toutes les mesures d'avant le ${quand} pour ${id?nomG(id):'les '+ALL_IDS.length+' boîtiers'} ?`)) return;
   m.className='cfg-msg'; m.textContent='Suppression en cours…';
   try{ const total=await purgeJusqua(ids, cut, m);
     m.className='cfg-msg ok'; m.textContent=`${total.toLocaleString('fr-FR')} mesures supprimées ✓`;
