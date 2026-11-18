@@ -575,8 +575,9 @@ const ALLEES   = ['A','B','C','D','E','F','G','H','I','J','K','L'];
 // globaux, des bilans, des exports et des priorités.
 // Pour remettre F en service : la déplacer de ALLEES_EN_MUE vers
 // ALLEES_AVEC_MALES (le reste du code suit automatiquement).
-const ALLEES_AVEC_MALES = ['G','H','I','J','K','L'];
-const ALLEES_NON_PRELEVEES = ['A','B','C','D','E'];
+// 18/11/2026 : A à E mises en service (prélevées comme G à L).
+const ALLEES_AVEC_MALES = ['A','B','C','D','E','G','H','I','J','K','L'];
+const ALLEES_NON_PRELEVEES = [];
 const ALLEES_EN_MUE     = ['F'];
 const ALLEES_SANS_MALES = [];
 const ALLEES_CALCUL_GLOBAL = ALLEES_AVEC_MALES;
@@ -1419,26 +1420,24 @@ function markAllVide() {
 async function openBilan() {
   // Charger uniquement les allées encore utilisées pour les calculs
   await loadAllCagesVides();
-  await Promise.all(ALLEES_CALCUL_GLOBAL.map(al => loadAllee(currentDate, al)));
-  await Promise.all(ALLEES_CALCUL_GLOBAL.map(al => loadTubes(currentDate, al)));
-  await Promise.all(ALLEES_CALCUL_GLOBAL.map(al => loadOperateurs(currentDate, al)));
+  await Promise.all(ALLEES.map(al => loadAllee(currentDate, al)));
+  await Promise.all(ALLEES.map(al => loadTubes(currentDate, al)));
+  await Promise.all(ALLEES.map(al => loadOperateurs(currentDate, al)));
   document.getElementById('modalTitle').textContent = `Bilan du ${currentDate}`;
   let totD=0, totND=0, totNE=0, totV=0, totT=0, totActifs=0, rows='';
   const opTotals = {}; // { opName: count }
 
   ALLEES.forEach(al => {
-    if (!compteGlobal(al)) {
-      rows += `<tr style="opacity:0.55">
-        <td>${al}</td>
-        <td colspan="7" style="color:#6a6a8a;text-align:left">Hors calcul — rangée sans mâles</td>
-      </tr>`;
-      return;
-    }
+    // Toutes les allées sont affichées ; seules celles en service comptent dans le TOTAL.
+    const dansTotal = compteGlobal(al);
+    const alLabel = dansTotal ? al : `${al} <span style="font-size:9px;font-weight:400;color:#c084fc">${estEnMue(al) ? '🪶 mue' : 'hors total'}</span>`;
 
     const s = getStats(al);
     const t = tubesData[al] !== undefined && tubesData[al] !== '' ? tubesData[al] : '—';
-    totD+=s.donne; totND+=s.nonDonne; totNE+=s.nonEnr; totV+=s.vide; totActifs+=s.malesActifs;
-    if (typeof t === 'number') totT += t;
+    if (dansTotal) {
+      totD+=s.donne; totND+=s.nonDonne; totNE+=s.nonEnr; totV+=s.vide; totActifs+=s.malesActifs;
+      if (typeof t === 'number') totT += t;
+    }
     const taux = s.malesActifs > 0 ? Math.round(s.evalues / s.malesActifs * 100) : 0;
 
     // Compter opérateurs pour cette allée
@@ -1449,7 +1448,7 @@ async function openBilan() {
       const v = cageData[cage] || 0;
       if ((v === 1 || v === 2) && op) {
         opCounts[op] = (opCounts[op] || 0) + 1;
-        opTotals[op] = (opTotals[op] || 0) + 1;
+        if (dansTotal) opTotals[op] = (opTotals[op] || 0) + 1;
       }
     }
     const opStr = Object.entries(opCounts).map(([n,c]) => {
@@ -1458,7 +1457,7 @@ async function openBilan() {
     }).join(' ') || '—';
 
     rows += `<tr>
-      <td>${al}</td>
+      <td>${alLabel}</td>
       <td style="color:#4ade80">${s.donne} <span>(${s.pctD}%)</span></td>
       <td style="color:#f87171">${s.nonDonne} <span>(${s.pctND}%)</span></td>
       <td style="color:#4a6a8a">${s.nonEnr}</td>
