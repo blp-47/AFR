@@ -576,9 +576,11 @@ const ALLEES   = ['A','B','C','D','E','F','G','H','I','J','K','L'];
 // Pour remettre F en service : la déplacer de ALLEES_EN_MUE vers
 // ALLEES_AVEC_MALES (le reste du code suit automatiquement).
 // 18/11/2026 : A à E mises en service (prélevées comme G à L).
-const ALLEES_AVEC_MALES = ['A','B','C','D','E','G','H','I','J','K','L'];
+// 20/11/2026 : F comptabilisée comme les autres rangées (retirée de ALLEES_EN_MUE) :
+// elle entre dans le taux d'utilisation global, les bilans, les exports et les priorités.
+const ALLEES_AVEC_MALES = ['A','B','C','D','E','F','G','H','I','J','K','L'];
 const ALLEES_NON_PRELEVEES = [];
-const ALLEES_EN_MUE     = ['F'];
+const ALLEES_EN_MUE     = [];
 const ALLEES_SANS_MALES = [];
 const ALLEES_CALCUL_GLOBAL = ALLEES_AVEC_MALES;
 const ALLEES_ACTIVES = ALLEES_AVEC_MALES;
