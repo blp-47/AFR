@@ -716,9 +716,8 @@ function extractConsoFromControle(batData, bat, suivi) {
 // ════════════════════════════════════════════════════
 //  SEMENCE NT2
 // ════════════════════════════════════════════════════
-// Rangées avec mâles uniquement pour les calculs du tableau de bord
-// NT/Gironde : F, G, H, I, J, K et L sont vides / hors calcul
-const ALLEES_NT2 = ['A','B','C','D','E'];
+// Toutes les rangées A à L sont prises en compte (dons, taux d'utilisation, tubes) — 20/11/2026
+const ALLEES_NT2 = ['A','B','C','D','E','F','G','H','I','J','K','L'];
 const NB_CAGES_NT2 = 81;
 const FEMELLES_NT2 = new Set([1,22,39,56,73]);
 
@@ -816,7 +815,8 @@ async function loadSemenceNT2(date) {
       }
     }
 
-    if (typeof tb === 'number' && !isNaN(tb)) { tubes += tb; tubesCount++; }
+    const tbNum = parseConsoNumberFR(tb);   // accepte aussi les tubes saisis en texte (« 1,5 »)
+    if (tbNum !== null) { tubes += tbNum; tubesCount++; }
 
     // Préleveur principal
     const opCounts = {};
@@ -838,9 +838,8 @@ async function loadSemenceNT2(date) {
 // ════════════════════════════════════════════════════
 //  SEMENCE SG
 // ════════════════════════════════════════════════════
-// Rangées avec mâles uniquement pour les calculs du tableau de bord
-// SG/Landes : H, I, J, K et L sont vides / hors calcul
-const ALLEES_SG = ['G','H','I','J','K','L'];
+// Toutes les rangées A à L sont prises en compte (dons, taux d'utilisation, tubes) — 20/11/2026
+const ALLEES_SG = ['A','B','C','D','E','F','G','H','I','J','K','L'];
 const NB_CAGES_SG = 72;
 const FEMELLES_SG = new Set([1,20,39,58]);
 
@@ -879,7 +878,8 @@ async function loadSemenceSG(date) {
       }
     }
 
-    if (typeof tb === 'number' && !isNaN(tb)) { tubes += tb; tubesCount++; }
+    const tbNum = parseConsoNumberFR(tb);   // accepte aussi les tubes saisis en texte (« 1,5 »)
+    if (tbNum !== null) { tubes += tbNum; tubesCount++; }
 
     const opCounts = {};
     if (opData) Object.values(opData).forEach(op => { if (op) opCounts[op] = (opCounts[op]||0) + 1; });
