@@ -6,11 +6,12 @@
 <title>Analyse d'eau — AFR</title>
 <!--
   Lecture Firebase RTDB (projet afr-nt2)
-    Mesure en direct  : eau/{SITE}              = { ph_v, orp_v, rssi, up, ts }   (écrit par l'ESP32 toutes les 15 s)
-    Historique        : eau_history/{SITE}/{id} = { t, pv, ov }                   (écrit par l'ESP32 toutes les 10 min)
-    Calibration       : eau_config/{SITE}       = { v7, v4, orpZero, orpOff, maj } (page Réglages)
+    Mesure en direct  : eau/{SITE}              = { ph_v, orp_v, litres, debit, jour, imp, lpi, rssi, up, ts }  (ESP32, toutes les 15 s)
+    Historique        : eau_history/{SITE}/{id} = { t, pv, ov, l }                 (ESP32, toutes les 10 min — l = cumul en litres)
+    Calibration       : eau_config/{SITE}       = { v7, v4, orpZero, orpOff, lpi, maj } (page Réglages)
+    Recalage compteur : eau_cmd/{SITE}          = { litres }  (lu puis effacé par l'ESP32, 5 min max)
 
-  L'ESP32 envoie les TENSIONS brutes (après correction du pont diviseur ×1,5).
+  L'ESP32 envoie les TENSIONS de sortie des cartes (pont diviseur déjà corrigé dans le firmware).
   Le pH et le redox sont calculés ICI avec la calibration Firebase : on recalibre
   depuis le téléphone, sans reflasher la carte.
     pH  = 7 + (V - v7) × 3 / (v7 - v4)        (droite passant par les tampons 7 et 4)
@@ -23,7 +24,7 @@
   :root{
     --bg:#0f1117; --surface:#171a21; --surface2:#1c2029; --border:#262b36;
     --border-strong:#39414f; --text:#e6e9ef; --muted:#8b93a3; --accent:#3b82f6;
-    --ok:#22c55e; --warn:#f59e0b; --crit:#ef4444; --ph:#06b6d4; --orp:#a855f7;
+    --ok:#22c55e; --warn:#f59e0b; --crit:#ef4444; --ph:#06b6d4; --orp:#a855f7; --eau:#38bdf8;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   body{background:var(--bg);color:var(--text);font-family:'Barlow',system-ui,sans-serif;
@@ -116,6 +117,14 @@
   .cmsg{font-size:12.5px;color:var(--muted);margin-top:8px;min-height:16px;line-height:1.5}
   .cmsg.ok{color:var(--ok)} .cmsg.ko{color:var(--crit)}
 
+  .eau-top{display:flex;gap:18px;align-items:flex-end;flex-wrap:wrap}
+  .eau-top .big{color:var(--text)}
+  .eau-kpi{display:flex;gap:18px;flex-wrap:wrap;margin-left:auto;font-family:'DM Sans';font-variant-numeric:tabular-nums}
+  .eau-kpi div{text-align:right} .eau-kpi b{font-size:20px;display:block} .eau-kpi span{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+  .daynav{display:flex;gap:6px;align-items:center;margin:16px 0 8px}
+  .daynav .lbl{margin-right:auto}
+  .daynav .dlab{font-family:'DM Sans';font-size:13px;min-width:120px;text-align:center}
+  .cv2{position:relative;height:200px}
   @media(max-width:700px){ .grid{grid-template-columns:1fr} .stats{grid-template-columns:1fr 1fr} .big{font-size:42px} }
 </style>
 </head>
@@ -123,7 +132,7 @@
 <div class="wrap">
   <header>
     <div class="title"><a class="home" href="https://afrelevage.fr/index.html" title="Retour au portail AFR" aria-label="Retour au portail AFR"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/></svg></a><h1>Analyse d'eau</h1><span id="conn"></span></div>
-    <div class="sub" id="sub">pH & redox en direct</div>
+    <div class="sub" id="sub">pH, redox & consommation d'eau en direct</div>
     <div class="bar">
       <div class="tabs" id="tabs"></div>
       <div class="spacer"></div>
@@ -135,6 +144,22 @@
     <div class="card full" id="verdict"></div>
     <div class="card" id="cardPh"></div>
     <div class="card" id="cardOrp"></div>
+    <div class="card full" id="cardEau">
+      <span class="accent" style="background:var(--eau)"></span>
+      <div class="lbl">Consommation d'eau</div>
+      <div id="eauTop"></div>
+      <div id="eauBloc">
+        <div class="daynav">
+          <span class="lbl">Par demi-heure · 6 h – 23 h</span>
+          <button class="rbtn" onclick="jourNav(-1)">‹</button>
+          <span class="dlab" id="dlab"></span>
+          <button class="rbtn" id="dnext" onclick="jourNav(1)">›</button>
+        </div>
+        <div class="msg" id="eauMsg" style="display:none"></div>
+        <div class="cv2" id="cvEauBox"><canvas id="cvEau"></canvas></div>
+        <div class="stats" id="eauStats"></div>
+      </div>
+    </div>
     <div class="card full">
       <div class="hist-head">
         <span class="lbl">Historique</span>
@@ -150,8 +175,8 @@
   </div>
 
   <footer>
-    Temps réel Firebase · <code>eau/{SITE}</code> · historique <code>eau_history/{SITE}</code> · calibration <code>eau_config/{SITE}</code><br>
-    Repères : chloration efficace pour un redox ≥ 650 mV avec un pH entre 6 et 7. Au-dessus de pH 7,5 le chlore perd l'essentiel de son efficacité.
+    Temps réel Firebase · <code>eau/{SITE}</code> · historique <code>eau_history/{SITE}</code> · calibration <code>eau_config/{SITE}</code> · recalage <code>eau_cmd/{SITE}</code><br>
+    Repères : pH cible entre 5 et 5,5 · chloration efficace pour un redox ≥ 650 mV. Au-dessus de pH 7,5 le chlore perd l'essentiel de son efficacité.
   </footer>
 </div>
 
@@ -206,7 +231,7 @@ const DEF_CAL = { v7:2.50, v4:3.03, orpZero:2.00, orpOff:0 };
 
 // ============ ZONES (eau de boisson, chloration) — à ajuster ============
 const ZONES = {
-  ph : { min:4,   max:10,   bands:[[4,5.5,'crit'],[5.5,6,'warn'],[6,7,'ok'],[7,7.5,'warn'],[7.5,10,'crit']] },
+  ph : { min:4,   max:10,   bands:[[4,4.5,'crit'],[4.5,5,'warn'],[5,5.5,'ok'],[5.5,6.5,'warn'],[6.5,10,'crit']] },
   orp: { min:200, max:1000, bands:[[200,550,'crit'],[550,650,'warn'],[650,850,'ok'],[850,1000,'warn']] }
 };
 const COL = { ok:'var(--ok)', warn:'var(--warn)', crit:'var(--crit)' };
@@ -271,9 +296,9 @@ function verdict(ph, orp){
   if(ph==null) return ['◐','rgba(245,158,11,.15)','Sonde pH absente',`Redox ${Math.round(orp)} mV — le verdict complet nécessite aussi le pH.`];
   if(orp==null) return ['◐','rgba(245,158,11,.15)','Sonde redox absente',`pH ${ph.toFixed(2)} — le verdict complet nécessite aussi le redox.`];
   const zp=zone('ph',ph), zo=zone('orp',orp);
-  if(ph>7.5) return ['⚠','rgba(239,68,68,.15)','pH trop élevé',`pH ${ph.toFixed(2)} : au-dessus de 7,5 le chlore devient peu actif, même si le redox semble correct. Acidifier l'eau.`];
+  if(zp==='crit' && ph>=5.5) return ['⚠','rgba(239,68,68,.15)','pH trop élevé',`pH ${ph.toFixed(2)} ≥ 6,5 pour une cible de 5 à 5,5 : vérifier le dosage d'acidifiant (pompe, bidon, point d'injection).${ph>7.5?' Au-dessus de 7,5 le chlore devient peu actif.':''}`];
   if(zo==='crit') return ['⚠','rgba(239,68,68,.15)','Désinfection insuffisante',`Redox ${Math.round(orp)} mV < 550 mV : vérifier la pompe doseuse, le bidon de chlore et le point d'injection.`];
-  if(zp==='crit') return ['⚠','rgba(239,68,68,.15)','pH trop acide',`pH ${ph.toFixed(2)} < 5,5 : vérifier le dosage d'acidifiant (corrosion, appétence de l'eau).`];
+  if(zp==='crit') return ['⚠','rgba(239,68,68,.15)','pH trop acide',`pH ${ph.toFixed(2)} < 4,5 : surdosage d'acidifiant à vérifier (corrosion, appétence de l'eau).`];
   if(zp==='warn' || zo==='warn') return ['◐','rgba(245,158,11,.15)','À surveiller',`pH ${ph.toFixed(2)} · redox ${Math.round(orp)} mV : valeurs en limite de plage.`];
   return ['✓','rgba(34,197,94,.15)','Eau conforme',`pH ${ph.toFixed(2)} · redox ${Math.round(orp)} mV : chloration efficace.`];
 }
@@ -281,7 +306,7 @@ function verdict(ph, orp){
 // ============ RENDU ============
 function render(){
   const s = SITES.find(x=>x.id===SITE), d = DATA[SITE];
-  $('sub').textContent = `${s.site} · pH & redox en direct`;
+  $('sub').textContent = `${s.site} · pH, redox & consommation d'eau en direct`;
   $('tabs').innerHTML = SITES.map(x=>`<button class="tab${x.id===SITE?' on':''}" onclick="setSite('${x.id}')">${x.nom}</button>`).join('');
 
   const ok = d && typeof d.ph_v==='number';
@@ -300,6 +325,7 @@ function render(){
   const [ic,bg,t,txt] = verdict(ph,orp);
   $('verdict').innerHTML = `<div class="verdict"><div class="vicon" style="background:${bg}">${ic}</div>
     <div><div class="vt">${t}</div><div class="vd">${txt}</div></div></div>`;
+  renderEau();
   if(UNLOCKED && cfgOuvert()) majLive();
 }
 
@@ -309,9 +335,9 @@ function thin(a,max){ if(a.length<=max) return a; const st=a.length/max,o=[]; fo
 function loadHist(){
   db.ref('eau_history/'+SITE).orderByKey().limitToLast(5000).once('value').then(snap=>{
     const v=snap.val()||{};
-    HIST=Object.values(v).filter(e=>e&&typeof e.t==='number'&&typeof e.pv==='number').sort((a,b)=>a.t-b.t);
-    drawChart();
-  }).catch(()=>{ HIST=[]; drawChart(); });
+    HIST=Object.values(v).filter(e=>e&&typeof e.t==='number').sort((a,b)=>a.t-b.t);
+    drawChart(); drawEau();
+  }).catch(()=>{ HIST=[]; drawChart(); drawEau(); });
 }
 
 function setRange(h){ RANGE=h; drawChart(); }
@@ -319,7 +345,7 @@ function setRange(h){ RANGE=h; drawChart(); }
 function drawChart(){
   document.querySelectorAll('.rbtn').forEach(b=>b.classList.toggle('on',+b.dataset.h===RANGE));
   const cut=Date.now()-RANGE*3600e3;
-  let pts=HIST.filter(e=>e.t>=cut);
+  let pts=HIST.filter(e=>e.t>=cut&&(typeof e.pv==='number'||typeof e.ov==='number'));
   // ajoute la mesure en direct pour que la courbe suive le temps réel
   const d=DATA[SITE];
   if(d && d.ts && typeof d.ph_v==='number' && (!pts.length || d.ts>pts.at(-1).t)) pts=[...pts,{t:d.ts,pv:d.ph_v,ov:d.orp_v}];
@@ -344,7 +370,7 @@ function drawChart(){
         tooltip:{backgroundColor:'#1c2029',borderColor:'#39414f',borderWidth:1,titleColor:'#e6e9ef',bodyColor:'#e6e9ef'}},
       scales:{
         x:{ticks:{...tick,maxTicksLimit:7},grid:{color:'rgba(57,65,79,.25)'}},
-        y:{suggestedMin:5,suggestedMax:8,ticks:tick,grid:{color:'rgba(57,65,79,.25)'},title:{display:true,text:'pH',color:'#06b6d4',font:{family:'Barlow',size:11}}},
+        y:{suggestedMin:4,suggestedMax:7,ticks:tick,grid:{color:'rgba(57,65,79,.25)'},title:{display:true,text:'pH',color:'#06b6d4',font:{family:'Barlow',size:11}}},
         y2:{position:'right',suggestedMin:400,suggestedMax:900,ticks:tick,grid:{display:false},title:{display:true,text:'mV',color:'#a855f7',font:{family:'Barlow',size:11}}}
       }}
   });
@@ -370,20 +396,20 @@ function ecoute(){
     DATA[SITE]=snap.val()||null;
     render();
     const ts=DATA[SITE]&&DATA[SITE].ts;
-    if(ts && ts!==lastTs){ lastTs=ts; drawChart(); }
+    if(ts && ts!==lastTs){ lastTs=ts; drawChart(); drawEau(); }
   });
 }
 db.ref('eau_config').on('value',snap=>{
   const raw=snap.val()||{}; CAL={};
   Object.entries(raw).forEach(([id,v])=>{
     if(!v||typeof v!=='object') return; const o={};
-    ['v7','v4','orpZero','orpOff'].forEach(k=>{ if(typeof v[k]==='number'&&isFinite(v[k])) o[k]=v[k]; });
+    ['v7','v4','orpZero','orpOff','lpi'].forEach(k=>{ if(typeof v[k]==='number'&&isFinite(v[k])) o[k]=v[k]; });
     CAL[id]=o;
   });
   render(); drawChart();
 });
 
-function setSite(id){ if(id===SITE) return; SITE=id; lastTs=null; HIST=[]; ecoute(); render(); loadHist(); }
+function setSite(id){ if(id===SITE) return; SITE=id; lastTs=null; HIST=[]; JOUR=0; ecoute(); render(); loadHist(); }
 
 // ============ CALIBRATION ============
 const cfgOuvert=()=>$('cfgModal').classList.contains('on');
@@ -432,6 +458,17 @@ function cfgForm(){
       <button class="btn ghost" onclick="calerOrp()">Caler sur la solution</button>
     </div>
   </div>
+  <div class="sec"><h3>Compteur d'eau</h3>
+    <div class="live" id="liveEau"></div>
+    <div class="row">
+      <div class="fld"><label>Litres par impulsion</label><input id="c_lpi" inputmode="decimal" value="${(CAL[SITE]&&CAL[SITE].lpi)||1}"></div>
+    </div>
+    <div class="row">
+      <div class="fld"><label>Recaler le cumul sur l'index (m³)</label><input id="c_index" inputmode="decimal" placeholder="ex. 1895,515"></div>
+      <button class="btn ghost" onclick="recalerIndex()">Envoyer au boîtier</button>
+    </div>
+    <div class="cmsg" id="eauCmdMsg">Le boîtier applique le recalage à sa prochaine lecture de configuration (5 min max).</div>
+  </div>
   <div class="row">
     <button class="btn" onclick="cfgSave()">Enregistrer</button>
     <button class="btn ghost" onclick="cfgReset()">Réinitialiser</button>
@@ -445,6 +482,7 @@ function majLive(){
   const d=DATA[SITE]; if(!$('livePh')) return;
   $('livePh').innerHTML = d&&typeof d.ph_v==='number' ? `Lecture actuelle : <b>${d.ph_v.toFixed(3)} V</b> → pH ${phDe(d.ph_v).toFixed(2)} · ${depuis(d.ts)}` : 'Aucune lecture du boîtier';
   $('liveOrp').innerHTML = d&&typeof d.orp_v==='number' ? `Lecture actuelle : <b>${d.orp_v.toFixed(3)} V</b> → ${Math.round(orpDe(d.orp_v))} mV` : 'Aucune lecture du boîtier';
+  if($('liveEau')) $('liveEau').innerHTML = d&&typeof d.litres==='number' ? `Cumul boîtier : <b>${fmtM3(d.litres)}</b> · ${d.imp??0} impulsions depuis le démarrage · ${d.lpi??1} L/imp` : 'Aucun compteur relié';
 }
 
 // Pente de la sonde : ~59 mV/pH théorique au niveau de l'électrode, amplifiée par le module.
@@ -478,13 +516,109 @@ async function cfgSave(){
   const o={}; for(const k of ['v7','v4','orpZero','orpOff']){ const v=nb($('c_'+k).value); if(v==null||!isFinite(v)) return msg(`Valeur invalide : ${k}.`,'ko'); o[k]=v; }
   if(o.v7===o.v4) return msg('Les tensions pH 7 et pH 4 doivent être différentes.','ko');
   if(o.v7<0.3||o.v7>4.7||o.v4<0.3||o.v4>4.7) return msg('Tensions pH hors de 0,3–4,7 V : sonde débranchée ?','ko');
-  try{ await db.ref('eau_config/'+SITE).set({...o,maj:Date.now()}); msg('Enregistré — appliqué sur tous les écrans.','ok'); }
+  const lpi=nb($('c_lpi').value); if(lpi==null||!isFinite(lpi)||lpi<=0) return msg('Litres par impulsion invalide.','ko'); o.lpi=lpi;
+  try{ await db.ref('eau_config/'+SITE).update({...o,maj:Date.now()}); msg('Enregistré — appliqué sur tous les écrans.','ok'); }
   catch(e){ msg('Écriture refusée par Firebase : '+(e.message||e),'ko'); }
 }
 async function cfgReset(){
   if(!confirm('Revenir à la calibration par défaut ?')) return;
-  try{ await db.ref('eau_config/'+SITE).remove(); cfgForm(); msg('Calibration par défaut rétablie.','ok'); }
+  try{ await db.ref('eau_config/'+SITE).update({v7:null,v4:null,orpZero:null,orpOff:null,maj:Date.now()}); cfgForm(); msg('Calibration des sondes par défaut rétablie (compteur conservé).','ok'); }
   catch(e){ msg('Suppression refusée : '+(e.message||e),'ko'); }
+}
+
+// ============ COMPTEUR D'EAU ============
+let JOUR=0, CHART_EAU=null;
+const fmtL  = l => l==null||!isFinite(l) ? '—' : l>=10000 ? (l/1000).toLocaleString('fr-FR',{maximumFractionDigits:2})+' m³' : Math.round(l).toLocaleString('fr-FR')+' L';
+const fmtM3 = l => (l/1000).toLocaleString('fr-FR',{minimumFractionDigits:3,maximumFractionDigits:3})+' m³';
+const debutJour = off => { const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()+off); return d.getTime(); };
+
+// Points du cumul (historique + mesure en direct), triés
+function ptsEau(){
+  const p=HIST.filter(e=>typeof e.l==='number').map(e=>({t:e.t,l:e.l}));
+  const d=DATA[SITE];
+  if(d&&d.ts&&typeof d.litres==='number'&&(!p.length||d.ts>p.at(-1).t)) p.push({t:d.ts,l:d.litres});
+  return p;
+}
+// Cumul interpolé à l'instant t (null hors des données)
+function cumA(t,p){
+  if(!p.length||t<p[0].t||t>p.at(-1).t) return null;
+  let i=p.findIndex(e=>e.t>=t); if(p[i].t===t||i===0) return p[i].l;
+  const a=p[i-1], b=p[i]; return a.l+(b.l-a.l)*(t-a.t)/(b.t-a.t);
+}
+// Conso entre t1 et t2 : borne aux données disponibles, jamais négative (recalage)
+function conso(t1,t2,p){
+  if(!p.length) return null;
+  const a=Math.max(t1,p[0].t), b=Math.min(t2,p.at(-1).t);
+  if(b<=a) return null;
+  return Math.max(0,cumA(b,p)-cumA(a,p));
+}
+
+function renderEau(){
+  const d=DATA[SITE], p=ptsEau();
+  const aCompteur = (d&&typeof d.litres==='number') || p.length>0;
+  $('eauBloc').style.display = aCompteur ? '' : 'none';
+  if(!aCompteur){ $('eauTop').innerHTML=`<div class="big" style="color:var(--muted)">—</div><div class="meta">Pas de compteur relié à ce boîtier.</div>`; return; }
+  const jour = d&&typeof d.jour==='number' ? d.jour : conso(debutJour(0),Date.now(),p);
+  const debit = d&&typeof d.debit==='number' ? d.debit : null;
+  $('eauTop').innerHTML=`<div class="eau-top">
+      <div><div class="big">${jour==null?'—':fmtL(jour).replace(/ (L|m³)$/,'<span class="u">$1</span>')}</div>
+      <div class="meta">Aujourd'hui depuis 0 h${d&&d.ts?' · mis à jour '+depuis(d.ts):''}</div></div>
+      <div class="eau-kpi">
+        <div><b>${debit==null?'—':debit.toLocaleString('fr-FR',{maximumFractionDigits:1})}</b><span>L/min</span></div>
+        <div><b>${d&&typeof d.litres==='number'?fmtM3(d.litres):'—'}</b><span>Cumul compteur</span></div>
+      </div></div>`;
+}
+
+function jourNav(k){ JOUR=Math.min(0,JOUR+k); drawEau(); }
+
+function drawEau(){
+  const p=ptsEau();
+  if(!p.length && !(DATA[SITE]&&typeof DATA[SITE].litres==='number')) return;
+  const j0=debutJour(JOUR);
+  $('dlab').textContent = JOUR===0 ? "Aujourd'hui" : JOUR===-1 ? 'Hier' : new Date(j0).toLocaleDateString('fr-FR',{weekday:'short',day:'2-digit',month:'2-digit'});
+  $('dnext').disabled = JOUR===0;
+  // créneaux de 30 min de 6 h à 23 h
+  const labels=[], vals=[];
+  for(let m=6*60;m<23*60;m+=30){
+    const t1=j0+m*60e3, t2=t1+30*60e3;
+    labels.push(String(Math.floor(m/60)).padStart(2,'0')+':'+(m%60?'30':'00'));
+    const c=conso(t1,t2,p); vals.push(c==null?null:Math.round(c));
+  }
+  const vide = vals.every(v=>v==null);
+  $('eauMsg').style.display = vide ? 'block' : 'none';
+  $('eauMsg').textContent = "Pas encore de données pour cette journée — le boîtier archive le cumul toutes les 10 min.";
+  $('cvEauBox').style.display = vide ? 'none' : 'block';
+  if(CHART_EAU){ CHART_EAU.destroy(); CHART_EAU=null; }
+  if(!vide){
+    const tick={color:'#8b93a3',font:{family:'Barlow',size:10}};
+    CHART_EAU=new Chart($('cvEau'),{type:'bar',
+      data:{labels,datasets:[{label:'Litres',data:vals,backgroundColor:'#38bdf8bb',borderRadius:3,maxBarThickness:22}]},
+      options:{animation:false,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{backgroundColor:'#1c2029',borderColor:'#39414f',borderWidth:1,titleColor:'#e6e9ef',bodyColor:'#e6e9ef',
+          callbacks:{title:it=>{const i=it[0].dataIndex;return labels[i]+' – '+(labels[i+1]||'23:00');},label:it=>' '+it.raw+' L'}}},
+        scales:{x:{ticks:{...tick,maxTicksLimit:9},grid:{display:false}},
+                y:{beginAtZero:true,ticks:tick,grid:{color:'rgba(57,65,79,.25)'},title:{display:true,text:'L / 30 min',color:'#38bdf8',font:{family:'Barlow',size:11}}}}}});
+  }
+  // repères journaliers
+  const total=conso(j0,j0+86400e3,p);
+  const hier=conso(debutJour(-1),debutJour(0),p);
+  const jours=[]; for(let k=-7;k<0;k++){ const c=conso(debutJour(k),debutJour(k+1),p); if(c!=null) jours.push(c); }
+  const pic=vals.reduce((m,v,i)=>v!=null&&(m==null||v>vals[m])?i:m,null);
+  $('eauStats').innerHTML=[
+    [JOUR===0?"Aujourd'hui":'Ce jour', fmtL(total)],
+    [JOUR===0?'Hier':'Créneau max', JOUR===0?fmtL(hier):(pic==null?'—':labels[pic]+' · '+vals[pic]+' L')],
+    ['Moyenne 7 j', jours.length?fmtL(jours.reduce((a,b)=>a+b,0)/jours.length):'—'],
+    ['6 h – 23 h', fmtL(vals.reduce((a,v)=>a+(v||0),0))]
+  ].map(([l,v])=>`<div class="st"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
+}
+
+async function recalerIndex(){
+  const m3=nb($('c_index').value), el=$('eauCmdMsg');
+  if(m3==null||!isFinite(m3)||m3<0){ el.className='cmsg ko'; el.textContent="Indiquer l'index du compteur en m³."; return; }
+  if(!confirm(`Recaler le cumul de ${SITE} sur ${m3.toLocaleString('fr-FR')} m³ ?`)) return;
+  try{ await db.ref('eau_cmd/'+SITE).set({litres:Math.round(m3*1000*10)/10,maj:Date.now()});
+       el.className='cmsg ok'; el.textContent='Commande envoyée — appliquée par le boîtier sous 5 min.'; }
+  catch(e){ el.className='cmsg ko'; el.textContent='Écriture refusée : '+(e.message||e); }
 }
 
 // ============ DÉMARRAGE ============
