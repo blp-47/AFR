@@ -537,13 +537,17 @@ function ptsEau(){
   const p=HIST.filter(e=>typeof e.l==='number').map(e=>({t:e.t,l:e.l}));
   const d=DATA[SITE];
   if(d&&d.ts&&typeof d.litres==='number'&&(!p.length||d.ts>p.at(-1).t)) p.push({t:d.ts,l:d.litres});
+  // c = cumul "consommation" : on ignore les sauts dus à un recalage de l'index
+  // (baisse, ou hausse impossible pour le compteur : plus de 6 m³/h)
+  let c=0;
+  p.forEach((e,i)=>{ if(i){ const dl=e.l-p[i-1].l, dh=(e.t-p[i-1].t)/3600e3; if(dl>0 && dl<=dh*6000+100) c+=dl; } e.c=c; });
   return p;
 }
-// Cumul interpolé à l'instant t (null hors des données)
-function cumA(t,p){
+// Cumul interpolé à l'instant t (null hors des données) — k='c' : consommation, k='l' : index du compteur
+function cumA(t,p,k='c'){
   if(!p.length||t<p[0].t||t>p.at(-1).t) return null;
-  let i=p.findIndex(e=>e.t>=t); if(p[i].t===t||i===0) return p[i].l;
-  const a=p[i-1], b=p[i]; return a.l+(b.l-a.l)*(t-a.t)/(b.t-a.t);
+  let i=p.findIndex(e=>e.t>=t); if(p[i].t===t||i===0) return p[i][k];
+  const a=p[i-1], b=p[i]; return a[k]+(b[k]-a[k])*(t-a.t)/(b.t-a.t);
 }
 // Conso entre t1 et t2 : borne aux données disponibles, jamais négative (recalage)
 function conso(t1,t2,p){
@@ -610,6 +614,9 @@ function drawEau(){
     ['Moyenne 7 j', jours.length?fmtL(jours.reduce((a,b)=>a+b,0)/jours.length):'—'],
     ['6 h – 23 h', fmtL(vals.reduce((a,v)=>a+(v||0),0))]
   ].map(([l,v])=>`<div class="st"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
+  // index du compteur relevé à 11 h le jour affiché
+  const i11=cumA(j0+11*3600e3,p,'l');
+  $('eauStats').innerHTML+=`<div class="st" style="grid-column:1/-1"><div class="v">${i11==null?'—':fmtM3(i11)}</div><div class="l">Index compteur à 11 h · ${$('dlab').textContent}</div></div>`;
 }
 
 async function recalerIndex(){
