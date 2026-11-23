@@ -2789,16 +2789,20 @@ async function exportCSV(mode) {
 
 </script>
 
-<!-- ═══ MODULE TUBES — Saisie des tubes par dessin (tubes pleins + tube incomplet) ═══ -->
+<!-- ═══ MODULE TUBES — Saisie des tubes par dessin (tube d'avant + tubes pleins + tube de fin de rangée) ═══ -->
 <script>
 /* MODULE TUBES AFR - Semence
-   Remplace la saisie directe du nombre de tubes par une fenêtre avec 2 tubes dessinés :
-     - tube 1 : nombre de tubes PLEINS (boutons − / +)
-     - tube 2 : tube INCOMPLET, on touche le tube à la hauteur du niveau atteint
-   Le diluant (en ml par tube de 12 ml) est dessiné au fond des deux tubes.
+   Remplace la saisie directe du nombre de tubes par une fenêtre avec 3 tubes dessinés :
+     - à gauche  : le tube INCOMPLET DE LA RANGÉE D'AVANT, que l'on finit de remplir.
+                   1er toucher = semence déjà dedans, 2e toucher = niveau après ajout.
+                   Seule la semence AJOUTÉE compte pour cette rangée.
+     - au milieu : nombre de tubes PLEINS remplis en entier dans cette rangée (boutons − / +)
+     - à droite  : tube INCOMPLET EN FIN DE RANGÉE, on touche le tube à la hauteur atteinte
+   Le diluant (en ml par tube de 12 ml) est dessiné au fond des tubes.
    Valeur enregistrée (inchangée, même chemin Firebase que avant) :
-       tubes = pleins + semence du tube incomplet ÷ semence nécessaire pour un tube plein
-   Le détail (pleins, niveau, ml de diluant) est gardé à part pour pouvoir rouvrir la saisie.
+       tubes = pleins + (semence ajoutée au tube d'avant + semence du tube de fin)
+                        ÷ semence nécessaire pour un tube plein
+   Le détail (niveaux, pleins, ml de diluant) est gardé à part pour pouvoir rouvrir la saisie.
    Se branche sur : currentAllee, currentDate, tubesData, saveTubes, renderMain,
                     fbPathTubes, lsKeyTubes, firebaseOK, db, fbGet */
 (function(){
@@ -2810,19 +2814,28 @@ async function exportCSV(mode) {
   const DIL_MAX = 11;                // ml (il faut au moins 1 ml de semence)
   const LS_DIL = 'semence_diluant_ml';
 
+  // Couleurs des liquides
+  const C_DIL = '#38bdf8';    // diluant
+  const C_OLD = '#fb923c';    // semence déjà présente (rangée d'avant)
+  const C_SEM = '#fde68a';    // semence de cette rangée
+
   // Géométrie du dessin (unités SVG)
   const VB_W = 150, VB_H = 390, X0 = 52, X1 = 112, Y_HAUT = 22, Y_12 = 40, Y_0 = 352;
   const PX_ML = (Y_0 - Y_12) / ML_MAX;
   const yDe = ml => Y_0 - ml * PX_ML;
 
-  let st = { pleins: 0, niveau: 0, dil: 6, allee: '', date: '' };   // dil = ml de diluant par tube
+  // dil = ml de diluant par tube ; av1 / av2 = niveaux du tube d'avant (déjà dedans / après ajout) ;
+  // niveau = niveau du tube de fin de rangée ; etape = niveau du tube d'avant en cours de saisie (1 ou 2)
+  let st = { pleins: 0, niveau: 0, av1: 0, av2: 0, etape: 1, dil: 6, allee: '', date: '' };
 
   const r1 = x => Math.round(x * 10) / 10;
   const fr = x => String(x).replace('.', ',');
-  const dilMl  = () => r1(st.dil);
-  const semMax = () => r1(ML_MAX - dilMl());
-  const semMl  = () => st.niveau > dilMl() ? r1(st.niveau - dilMl()) : 0;
-  const total  = () => Math.round((st.pleins + (semMax() > 0 ? semMl() / semMax() : 0)) * 100) / 100;
+  const dilMl    = () => r1(st.dil);
+  const semMax   = () => r1(ML_MAX - dilMl());
+  const semFin   = () => st.niveau > dilMl() ? r1(st.niveau - dilMl()) : 0;
+  const semAvant = () => st.av1 > dilMl() ? r1(st.av1 - dilMl()) : 0;                     // déjà dedans
+  const semAjout = () => (st.av1 > dilMl() && st.av2 > st.av1) ? r1(st.av2 - st.av1) : 0;  // ajouté dans cette rangée
+  const total    = () => Math.round((st.pleins + (semMax() > 0 ? (semAjout() + semFin()) / semMax() : 0)) * 100) / 100;
 
   const fbDet = (d, a) => fbPathTubes(d, a).replace(/^tubes/, 'tubesDetail');
   const lsDet = (d, a) => lsKeyTubes(d, a).replace(/^tubes/, 'tubesDetail');
@@ -2834,37 +2847,60 @@ async function exportCSV(mode) {
     css.id = 'tubesCss';
     css.textContent = `
       #tubesOverlay { z-index: 10000; }
-      #tubesOverlay .modal { min-width: 0 !important; width: min(96vw, 560px) !important; padding: 16px 14px !important; max-height: 96vh !important; }
-      #tubesOverlay .tb-titre { font-size: 15px; font-weight: 700; color: #e8f4ff; margin-bottom: 12px; }
-      #tubesOverlay .tb-etape { font-size: 10px; color: #4a8cb0; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 800; margin-bottom: 6px; }
+      #tubesOverlay .modal { min-width: 0 !important; width: min(98vw, 720px) !important; max-width: 98vw !important; padding: 14px 12px !important; max-height: 97vh !important; overflow-y: auto !important; }
+      #tubesOverlay .tb-titre { font-size: 15px; font-weight: 700; color: #e8f4ff; margin-bottom: 10px; }
+      #tubesOverlay .tb-etape { font-size: 10px; color: #4a8cb0; letter-spacing: 1px; text-transform: uppercase; font-weight: 800; margin-bottom: 6px; line-height: 1.35; min-height: 27px; }
       #tubesOverlay .tb-dil { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 4px; }
       #tubesOverlay .tb-dil button { background: #0d1a28; border: 1.5px solid #2a4a68; border-radius: 7px; color: #7a9ab0;
-        font-family: inherit; font-size: 13px; font-weight: 700; padding: 9px 11px; cursor: pointer; }
+        font-family: inherit; font-size: 13px; font-weight: 700; padding: 9px 10px; cursor: pointer; }
       #tubesOverlay .tb-dil button.on { background: #0c3a5a; border-color: #38bdf8; color: #e8f4ff; }
-      #tubesOverlay .tb-dil input { width: 64px; background: #1a2e42; border: 1.5px solid #2a4a68; border-radius: 7px; color: #e8f4ff;
-        font-family: inherit; font-size: 15px; font-weight: 700; padding: 8px 6px; text-align: center; }
-      #tubesOverlay .tb-info { font-size: 12px; color: #7ab8e0; margin: 6px 0 12px; line-height: 1.5; }
+      #tubesOverlay .tb-dil input { width: 60px; background: #1a2e42; border: 1.5px solid #2a4a68; border-radius: 7px; color: #e8f4ff;
+        font-family: inherit; font-size: 15px; font-weight: 700; padding: 8px 4px; text-align: center; }
+      #tubesOverlay .tb-info { font-size: 12px; color: #7ab8e0; margin: 6px 0 10px; line-height: 1.5; }
       #tubesOverlay .tb-info b { color: #e8f4ff; }
-      #tubesOverlay .tb-tubes { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 10px; }
-      #tubesOverlay .tb-col { background: #0a1520; border: 1px solid #1a3048; border-radius: 10px; padding: 10px 6px 12px; text-align: center; }
-      #tubesOverlay .tb-col svg { height: min(36vh, 390px); width: auto; max-width: 100%; display: block; margin: 0 auto; }
-      #tubesOverlay #tbSvg2 { cursor: pointer; touch-action: none; }
-      #tubesOverlay .tb-cpt { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 6px; }
-      #tubesOverlay .tb-cpt button { width: 52px; height: 52px; border-radius: 50%; border: 2px solid #3a8cc8; background: #1a3a5c;
-        color: #e8f4ff; font-size: 28px; font-weight: 700; cursor: pointer; font-family: inherit; line-height: 1; }
-      #tubesOverlay .tb-cpt span { font-size: 34px; font-weight: 800; color: #e8f4ff; min-width: 44px; }
-      #tubesOverlay .tb-sous { font-size: 12px; color: #7ab8e0; margin-top: 6px; min-height: 50px; line-height: 1.4; }
+      #tubesOverlay .tb-tubes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+      #tubesOverlay .tb-col { background: #0a1520; border: 1px solid #1a3048; border-radius: 10px; padding: 8px 3px 10px; text-align: center; }
+      #tubesOverlay .tb-col svg { height: min(33vh, 390px); width: auto; max-width: 100%; display: block; margin: 0 auto; }
+      #tubesOverlay #tbSvg0, #tubesOverlay #tbSvg2 { cursor: pointer; touch-action: none; }
+      #tubesOverlay .tb-cpt { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 4px; }
+      #tubesOverlay .tb-cpt button { width: 44px; height: 44px; border-radius: 50%; border: 2px solid #3a8cc8; background: #1a3a5c;
+        color: #e8f4ff; font-size: 26px; font-weight: 700; cursor: pointer; font-family: inherit; line-height: 1; padding: 0; }
+      #tubesOverlay .tb-nb { font-size: 32px; font-weight: 800; color: #e8f4ff; line-height: 1.1; margin-top: 4px; }
+      #tubesOverlay .tb-sous { font-size: 11.5px; color: #7ab8e0; margin-top: 6px; min-height: 48px; line-height: 1.4; }
       #tubesOverlay .tb-sous b { color: #fde68a; }
+      #tubesOverlay .tb-sous i { color: #fb923c; font-style: normal; font-weight: 700; }
+      #tubesOverlay .tb-chips { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+      #tubesOverlay .tb-chips button { background: #0d1a28; border: 1.5px solid #2a4a68; border-radius: 7px; color: #7a9ab0;
+        font-family: inherit; font-size: 11px; font-weight: 700; padding: 7px 3px; cursor: pointer; }
+      #tubesOverlay .tb-chips button.on1 { border-color: #fb923c; color: #fed7aa; background: #3a1f0a; }
+      #tubesOverlay .tb-chips button.on2 { border-color: #fde68a; color: #fef3c7; background: #3a300a; }
       #tubesOverlay .tb-raz { margin-top: 6px; background: transparent; border: 1px dashed #2a4a68; border-radius: 6px; color: #7a9ab0;
-        font-family: inherit; font-size: 11px; padding: 6px 8px; cursor: pointer; }
-      #tubesOverlay .tb-total { margin-top: 12px; background: #0d3d1f; border: 1px solid #16a34a; border-radius: 10px; padding: 10px 12px;
-        text-align: center; color: #bbf7d0; font-size: 13px; }
-      #tubesOverlay .tb-total b { display: block; font-size: 30px; color: #4ade80; line-height: 1.2; }
-      #tubesOverlay .tb-actions { display: flex; gap: 10px; margin-top: 12px; }
+        font-family: inherit; font-size: 10.5px; padding: 6px 4px; cursor: pointer; width: 100%; }
+      #tubesOverlay .tb-total { margin-top: 10px; background: #0d3d1f; border: 1px solid #16a34a; border-radius: 10px; padding: 8px 10px;
+        text-align: center; color: #bbf7d0; font-size: 12px; line-height: 1.5; }
+      #tubesOverlay .tb-total b { display: block; font-size: 28px; color: #4ade80; line-height: 1.2; }
+      #tubesOverlay .tb-actions { display: flex; gap: 10px; margin-top: 10px; }
       #tubesOverlay .tb-actions button { flex: 1; border-radius: 8px; padding: 13px; font-family: inherit; font-size: 13px; font-weight: 700;
         cursor: pointer; letter-spacing: 1px; text-transform: uppercase; }
       #tubesOverlay .tb-annuler { background: #1a2e42; border: 1px solid #2a4a68; color: #7ab8e0; }
       #tubesOverlay .tb-valider { background: #14532d; border: 1px solid #4ade80; color: #dcfce7; }
+      @media (max-width: 520px) {
+        #tubesOverlay .modal { padding: 10px 8px !important; }
+        #tubesOverlay .tb-titre { margin-bottom: 6px; }
+        #tubesOverlay .tb-dil { gap: 4px; }
+        #tubesOverlay .tb-dil button { padding: 8px 7px; font-size: 12px; }
+        #tubesOverlay .tb-dil input { width: 46px; padding: 7px 2px; }
+        #tubesOverlay .tb-info { margin: 4px 0 6px; font-size: 11px; line-height: 1.35; }
+        #tubesOverlay .tb-col svg { height: 27vh; }
+        #tubesOverlay .tb-etape { font-size: 9px; letter-spacing: .5px; }
+        #tubesOverlay .tb-sous { min-height: 0; font-size: 11px; }
+        #tubesOverlay .tb-nb { font-size: 26px; margin-top: 0; }
+        #tubesOverlay .tb-cpt button { width: 40px; height: 40px; }
+        #tubesOverlay .tb-total { margin-top: 6px; padding: 6px 8px; font-size: 11px; }
+        #tubesOverlay .tb-total b { font-size: 24px; }
+        #tubesOverlay .tb-actions { margin-top: 6px; position: sticky; bottom: -10px; background: inherit; padding: 4px 0 10px; }
+        #tubesOverlay .tb-actions button { padding: 11px; }
+      }
       .tubes-box.tb-click { cursor: pointer; }
       .tubes-box.tb-click:hover { border-color: #3a8cc8; }
       .tubes-box .tb-valeur { background: #1a2e42; border: 1px solid #3a8cc8; border-radius: 5px; color: #e8f4ff; padding: 4px 10px;
@@ -2884,22 +2920,32 @@ async function exportCSV(mode) {
     ov.innerHTML = `
       <div class="modal" onclick="event.stopPropagation()">
         <div class="tb-titre" id="tbTitre"></div>
-        <div class="tb-etape">1 · Diluant mis dans chaque tube (en ml)</div>
+        <div class="tb-etape" style="min-height:0">1 · Diluant mis dans chaque tube (en ml)</div>
         <div class="tb-dil" id="tbDil"></div>
         <div class="tb-info" id="tbInfo"></div>
         <div class="tb-tubes">
           <div class="tb-col">
-            <div class="tb-etape">2 · Tubes pleins</div>
-            <svg id="tbSvg1" viewBox="0 0 ${VB_W} ${VB_H}"></svg>
-            <div class="tb-cpt">
-              <button type="button" id="tbMoins" aria-label="Un tube plein de moins">−</button>
-              <span id="tbPleins">0</span>
-              <button type="button" id="tbPlus" aria-label="Un tube plein de plus">+</button>
+            <div class="tb-etape">2 · Tube commencé à la rangée d'avant</div>
+            <svg id="tbSvg0" viewBox="0 0 ${VB_W} ${VB_H}"></svg>
+            <div class="tb-chips">
+              <button type="button" id="tbChip1">① Déjà dedans</button>
+              <button type="button" id="tbChip2">② Après ajout</button>
             </div>
-            <div class="tb-sous">tube(s) rempli(s)<br>jusqu'à 12 ml</div>
+            <div class="tb-sous" id="tbSous0"></div>
+            <button type="button" class="tb-raz" id="tbRaz0">Pas de tube d'avant</button>
           </div>
           <div class="tb-col">
-            <div class="tb-etape">3 · Tube incomplet</div>
+            <div class="tb-etape">3 · Tubes pleins de cette rangée</div>
+            <svg id="tbSvg1" viewBox="0 0 ${VB_W} ${VB_H}"></svg>
+            <div class="tb-nb" id="tbPleins">0</div>
+            <div class="tb-cpt">
+              <button type="button" id="tbMoins" aria-label="Un tube plein de moins">−</button>
+              <button type="button" id="tbPlus" aria-label="Un tube plein de plus">+</button>
+            </div>
+            <div class="tb-sous">remplis en entier<br>dans cette rangée</div>
+          </div>
+          <div class="tb-col">
+            <div class="tb-etape">4 · Tube incomplet en fin de rangée</div>
             <svg id="tbSvg2" viewBox="0 0 ${VB_W} ${VB_H}"></svg>
             <div class="tb-sous" id="tbSous2"></div>
             <button type="button" class="tb-raz" id="tbRaz">Pas de tube incomplet</button>
@@ -2917,89 +2963,137 @@ async function exportCSV(mode) {
     document.getElementById('tbMoins').onclick   = () => { st.pleins = Math.max(0, st.pleins - 1); dessiner(); };
     document.getElementById('tbPlus').onclick    = () => { st.pleins = Math.min(99, st.pleins + 1); dessiner(); };
     document.getElementById('tbRaz').onclick     = () => { st.niveau = 0; dessiner(); };
+    document.getElementById('tbRaz0').onclick    = () => { st.av1 = 0; st.av2 = 0; st.etape = 1; dessiner(); };
+    document.getElementById('tbChip1').onclick   = () => { st.etape = 1; dessiner(); };
+    document.getElementById('tbChip2').onclick   = () => { if (st.av1 > 0) { st.etape = 2; dessiner(); } };
     document.getElementById('tbAnnuler').onclick = closeTubes;
     document.getElementById('tbValider').onclick = valider;
 
-    // Toucher / glisser sur le tube incomplet pour indiquer le niveau
-    const svg2 = document.getElementById('tbSvg2');
-    let appui = false;
-    const viser = e => {
-      const rc = svg2.getBoundingClientRect();
-      if (!rc.height) return;
-      const y = (e.clientY - rc.top) * VB_H / rc.height;
-      let ml = Math.round(((Y_0 - y) / PX_ML) / PAS) * PAS;
-      ml = Math.max(0, Math.min(ML_MAX, ml));
-      st.niveau = ml > dilMl() ? ml : 0;       // au niveau du diluant ou en dessous = pas de semence
-      dessiner();
-    };
-    svg2.addEventListener('pointerdown', e => { appui = true; try { svg2.setPointerCapture(e.pointerId); } catch(_) {} viser(e); e.preventDefault(); });
-    svg2.addEventListener('pointermove', e => { if (appui) viser(e); });
-    svg2.addEventListener('pointerup',     () => { appui = false; });
-    svg2.addEventListener('pointercancel', () => { appui = false; });
+    // Toucher / glisser sur un tube pour indiquer un niveau
+    function brancher(svg, poser, relacher) {
+      let appui = false;
+      const viser = e => {
+        const rc = svg.getBoundingClientRect();
+        if (!rc.height) return;
+        const y = (e.clientY - rc.top) * VB_H / rc.height;
+        let ml = Math.round(((Y_0 - y) / PX_ML) / PAS) * PAS;
+        poser(Math.max(0, Math.min(ML_MAX, ml)));
+        dessiner();
+      };
+      svg.addEventListener('pointerdown', e => { appui = true; try { svg.setPointerCapture(e.pointerId); } catch(_) {} viser(e); e.preventDefault(); });
+      svg.addEventListener('pointermove', e => { if (appui) viser(e); });
+      const fin = () => { if (appui) { appui = false; if (relacher) { relacher(); dessiner(); } } };
+      svg.addEventListener('pointerup', fin);
+      svg.addEventListener('pointercancel', fin);
+    }
+
+    // Tube de fin de rangée : au niveau du diluant ou en dessous = pas de semence
+    brancher(document.getElementById('tbSvg2'), ml => { st.niveau = ml > dilMl() ? ml : 0; });
+
+    // Tube de la rangée d'avant : 1er toucher = déjà dedans, 2e toucher = après ajout
+    brancher(document.getElementById('tbSvg0'),
+      ml => {
+        if (st.etape === 1) {
+          if (ml > dilMl()) { st.av1 = ml; st.av2 = ml; }
+          else { st.av1 = 0; st.av2 = 0; }
+        } else {
+          st.av2 = Math.max(st.av1, ml);          // on ne peut pas descendre sous ce qui était déjà dedans
+        }
+      },
+      () => { if (st.etape === 1 && st.av1 > 0) st.etape = 2; });   // après le 1er toucher, on passe au 2e
   }
 
-  // Dessin d'un tube gradué de 1 à 12 ml. niveau = hauteur totale de liquide (ml).
-  function tubeSVG(id, niveau, avecRepere) {
-    const dil = Math.min(dilMl(), niveau > 0 ? niveau : dilMl());
+  // Dessin d'un tube gradué de 1 à 12 ml.
+  //   segs    : couches de liquide [{ a: ml bas, b: ml haut, c: couleur }]
+  //   reperes : traits de niveau   [{ ml, c: couleur }]
+  function tubeSVG(id, segs, reperes) {
     const corps = `M${X0},${Y_HAUT} L${X0},${Y_0 - 30} A30,30 0 0 0 ${X1},${Y_0 - 30} L${X1},${Y_HAUT}`;
     let g = `<defs><clipPath id="clip_${id}"><path d="${corps} Z"/></clipPath></defs>`;
     g += `<path d="${corps} Z" fill="rgba(255,255,255,0.05)"/>`;
-    // liquides
     g += `<g clip-path="url(#clip_${id})">`;
-    if (dil > 0) g += `<rect x="${X0}" y="${yDe(dil)}" width="${X1 - X0}" height="${Y_0 - yDe(dil) + 2}" fill="#38bdf8" opacity="0.85"/>`;
-    if (niveau > dil) g += `<rect x="${X0}" y="${yDe(niveau)}" width="${X1 - X0}" height="${yDe(dil) - yDe(niveau)}" fill="#fde68a"/>`;
+    segs.forEach(s => {
+      if (s.b > s.a) g += `<rect x="${X0}" y="${yDe(s.b)}" width="${X1 - X0}" height="${yDe(s.a) - yDe(s.b) + (s.a === 0 ? 2 : 0)}" fill="${s.c}" opacity="${s.c === C_DIL ? 0.85 : 1}"/>`;
+    });
     g += `</g>`;
     // graduations 1 à 12 ml (+ demi-ml)
     for (let m = 0.5; m <= ML_MAX; m += 0.5) {
-      const ent = Number.isInteger(m), y = yDe(m);
-      g += `<line x1="${X0}" y1="${y}" x2="${X0 + (ent ? 20 : 10)}" y2="${y}" stroke="${ent ? '#0a1520' : '#0a1520'}" stroke-width="${ent ? 2 : 1}" opacity="${ent ? 0.9 : 0.55}"/>`;
-      g += `<line x1="${X0}" y1="${y}" x2="${X0 + (ent ? 20 : 10)}" y2="${y}" stroke="#e8f4ff" stroke-width="${ent ? 1.2 : 0.7}" opacity="${ent ? 0.95 : 0.6}"/>`;
+      const ent = Number.isInteger(m), y = yDe(m), lg = ent ? 20 : 10;
+      g += `<line x1="${X0}" y1="${y}" x2="${X0 + lg}" y2="${y}" stroke="#0a1520" stroke-width="${ent ? 2 : 1}" opacity="${ent ? 0.9 : 0.55}"/>`;
+      g += `<line x1="${X0}" y1="${y}" x2="${X0 + lg}" y2="${y}" stroke="#e8f4ff" stroke-width="${ent ? 1.2 : 0.7}" opacity="${ent ? 0.95 : 0.6}"/>`;
       if (ent) g += `<text x="${X0 - 7}" y="${y + 5}" text-anchor="end" font-size="15" font-weight="700" fill="#c8d8e8" font-family="Arial,sans-serif">${m}</text>`;
     }
     g += `<text x="${X0 - 14}" y="${Y_HAUT + 4}" text-anchor="end" font-size="12" fill="#4a8cb0" font-family="Arial,sans-serif">ml</text>`;
     // verre
     g += `<path d="${corps}" fill="none" stroke="#7ab8e0" stroke-width="3" stroke-linecap="round"/>`;
     g += `<line x1="${X0 - 6}" y1="${Y_HAUT}" x2="${X1 + 6}" y2="${Y_HAUT}" stroke="#7ab8e0" stroke-width="4" stroke-linecap="round"/>`;
-    // repère du niveau touché
-    if (avecRepere && niveau > 0) {
-      const y = yDe(niveau);
-      g += `<line x1="${X0 - 4}" y1="${y}" x2="${X1 + 6}" y2="${y}" stroke="#f87171" stroke-width="3"/>`;
-      g += `<path d="M${X1 + 16},${y} l12,-8 v16 z" fill="#f87171"/>`;
-    }
+    // repères des niveaux touchés
+    (reperes || []).forEach(r => {
+      if (!(r.ml > 0)) return;
+      const y = yDe(r.ml);
+      g += `<line x1="${X0 - 4}" y1="${y}" x2="${X1 + 6}" y2="${y}" stroke="${r.c}" stroke-width="3"/>`;
+      g += `<path d="M${X1 + 16},${y} l12,-8 v16 z" fill="${r.c}"/>`;
+    });
     return g;
   }
 
   function dessiner() {
-    const dil = dilMl(), sMax = semMax(), sem = semMl();
+    const dil = dilMl(), sMax = semMax();
     // diluant
     document.getElementById('tbDil').innerHTML =
       PRESETS.map(p => `<button type="button" class="${st.dil === p ? 'on' : ''}" data-p="${p}">${p} ml</button>`).join('')
-      + `<span style="font-size:11px;color:#7a9ab0;margin-left:4px">ou</span>`
+      + `<span style="font-size:11px;color:#7a9ab0;margin-left:2px">ou</span>`
       + `<input type="number" id="tbDilInput" min="0" max="${DIL_MAX}" step="0.5" inputmode="decimal" value="${st.dil}" aria-label="Millilitres de diluant par tube">`
       + `<span style="font-size:13px;color:#7a9ab0">ml</span>`;
     document.querySelectorAll('#tbDil button').forEach(b => b.onclick = () => setDil(parseFloat(b.dataset.p)));
     document.getElementById('tbDilInput').onchange = e => setDil(parseFloat(String(e.target.value).replace(',', '.')));
-    document.getElementById('tbInfo').innerHTML = dil > 0
-      ? `<span style="color:#38bdf8">■</span> <b>${fr(dil)} ml de diluant</b> par tube — il faut <b>${fr(sMax)} ml de semence</b> <span style="color:#fde68a">■</span> pour remplir un tube.`
-      : `Pas de diluant — il faut <b>12 ml de semence</b> <span style="color:#fde68a">■</span> pour remplir un tube.`;
-    // tubes
-    document.getElementById('tbSvg1').innerHTML = tubeSVG('t1', ML_MAX, false);
-    document.getElementById('tbSvg2').innerHTML = tubeSVG('t2', st.niveau, true);
+    document.getElementById('tbInfo').innerHTML =
+      (dil > 0 ? `<span style="color:${C_DIL}">■</span> <b>${fr(dil)} ml de diluant</b> par tube — il faut <b>${fr(sMax)} ml de semence</b> pour remplir un tube.`
+               : `Pas de diluant — il faut <b>12 ml de semence</b> pour remplir un tube.`)
+      + `<br><span style="color:${C_OLD}">■</span> semence déjà dans le tube &nbsp; <span style="color:${C_SEM}">■</span> semence de cette rangée`;
+
+    // tube de la rangée d'avant
+    const a1 = st.av1 > dil ? st.av1 : 0, a2 = a1 ? Math.max(st.av2, a1) : 0;
+    document.getElementById('tbSvg0').innerHTML = tubeSVG('t0',
+      [{ a: 0, b: dil, c: C_DIL }, { a: dil, b: a1, c: C_OLD }, { a: a1, b: a2, c: C_SEM }],
+      [{ ml: a1, c: '#ea580c' }, { ml: a2 > a1 ? a2 : 0, c: '#f87171' }]);
+    const c1 = document.getElementById('tbChip1'), c2 = document.getElementById('tbChip2');
+    c1.className = st.etape === 1 ? 'on1' : '';
+    c2.className = st.etape === 2 ? 'on2' : '';
+    c2.style.opacity = a1 ? '1' : '0.45';
+    document.getElementById('tbSous0').innerHTML = !a1
+      ? `Touchez le tube à la hauteur où il était <i>déjà rempli</i>`
+      : (st.etape === 2 && a2 === a1
+          ? `déjà <i>${fr(semAvant())} ml</i> de semence<br>Touchez maintenant le niveau <b>après ajout</b>`
+          : `déjà <i>${fr(semAvant())} ml</i> de semence<br>ajouté <b>${fr(semAjout())} ml</b>`);
+
+    // tubes pleins
+    document.getElementById('tbSvg1').innerHTML = tubeSVG('t1', [{ a: 0, b: dil, c: C_DIL }, { a: dil, b: ML_MAX, c: C_SEM }], []);
     document.getElementById('tbPleins').textContent = st.pleins;
-    document.getElementById('tbSous2').innerHTML = st.niveau > 0
-      ? `niveau <b>${fr(st.niveau)} ml</b><br>= ${fr(sem)} ml de semence sur ${fr(sMax)}`
-      : `Touchez le tube à la hauteur<br>où il est rempli`;
+
+    // tube de fin de rangée
+    const nf = st.niveau > dil ? st.niveau : 0;
+    document.getElementById('tbSvg2').innerHTML = tubeSVG('t2',
+      [{ a: 0, b: dil, c: C_DIL }, { a: dil, b: nf, c: C_SEM }], [{ ml: nf, c: '#f87171' }]);
+    document.getElementById('tbSous2').innerHTML = nf
+      ? `niveau <b>${fr(nf)} ml</b><br>= ${fr(semFin())} ml de semence`
+      : `Touchez le tube à la hauteur où il est rempli`;
+
     // total
-    const t = total();
-    const part = st.niveau > 0 ? ` + ${fr(sem)} ml sur ${fr(sMax)}` : '';
+    const t = total(), parts = [];
+    if (semAjout() > 0) parts.push(`${fr(semAjout())} ml ajoutés au tube d'avant`);
+    parts.push(`${st.pleins} tube${st.pleins > 1 ? 's' : ''} plein${st.pleins > 1 ? 's' : ''}`);
+    if (semFin() > 0) parts.push(`${fr(semFin())} ml en fin de rangée`);
     document.getElementById('tbTotal').innerHTML =
-      `${st.pleins} tube${st.pleins > 1 ? 's' : ''} plein${st.pleins > 1 ? 's' : ''}${part}<b>${fr(t)} tube${t >= 2 ? 's' : ''}</b>`;
+      parts.join(' + ') + ` <span style="opacity:.75">(tube plein = ${fr(sMax)} ml de semence)</span>`
+      + `<b>${fr(t)} tube${t >= 2 ? 's' : ''}</b>`;
   }
 
   function setDil(p) {
     if (!isFinite(p)) p = 0;
     st.dil = Math.max(0, Math.min(DIL_MAX, Math.round(p * 2) / 2));   // au demi-ml
-    if (st.niveau > 0 && st.niveau <= dilMl()) st.niveau = 0;   // le niveau touché est passé sous le diluant
+    // les niveaux touchés passés sous le diluant ne veulent plus rien dire
+    if (st.niveau > 0 && st.niveau <= dilMl()) st.niveau = 0;
+    if (st.av1 > 0 && st.av1 <= dilMl()) { st.av1 = 0; st.av2 = 0; st.etape = 1; }
     dessiner();
   }
 
@@ -3008,7 +3102,7 @@ async function exportCSV(mode) {
     if (typeof currentAllee === 'undefined' || currentAllee === '__FAIBLES__') return;
     ensureUI();
     const al = currentAllee, date = currentDate;
-    st = { pleins: 0, niveau: 0, dil: 6, allee: al, date };
+    st = { pleins: 0, niveau: 0, av1: 0, av2: 0, etape: 1, dil: 6, allee: al, date };
     try { const p = parseFloat(localStorage.getItem(LS_DIL)); if (isFinite(p)) st.dil = Math.max(0, Math.min(DIL_MAX, p)); } catch(e) {}
 
     const actuel = parseFloat(tubesData[al]);
@@ -3021,6 +3115,8 @@ async function exportCSV(mode) {
     if (isFinite(actuel) && actuel > 0) {
       if (det && isFinite(det.total) && Math.abs(det.total - actuel) < 0.011) {
         st.pleins = det.pleins || 0; st.niveau = det.niveau || 0;
+        st.av1 = det.avant || 0; st.av2 = det.apres || 0;
+        if (st.av1 > 0) st.etape = 2;
       } else {
         // valeur saisie à l'ancienne (ou modifiée ailleurs) : on la redessine au plus proche
         st.pleins = Math.floor(actuel + 1e-9);
@@ -3043,7 +3139,8 @@ async function exportCSV(mode) {
     const al = st.allee, date = st.date, t = total();
     tubesData[al] = t;
     saveTubes(date, al);                                   // même enregistrement qu'avant (nombre de tubes)
-    const det = { pleins: st.pleins, niveau: st.niveau, dilMl: st.dil, total: t, maj: Date.now() };
+    const a1 = st.av1 > dilMl() ? st.av1 : 0;
+    const det = { pleins: st.pleins, niveau: st.niveau, avant: a1, apres: a1 ? Math.max(st.av2, a1) : 0, dilMl: st.dil, total: t, maj: Date.now() };
     try { localStorage.setItem(lsDet(date, al), JSON.stringify(det)); } catch(e) {}
     try { localStorage.setItem(LS_DIL, String(st.dil)); } catch(e) {}
     if (typeof firebaseOK !== 'undefined' && firebaseOK) {
